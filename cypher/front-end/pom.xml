@@ -1,0 +1,40 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>com.mware.bigconnect</groupId>
+    <artifactId>cypher-parent</artifactId>
+    <version>4.2.0-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>cypher-front-end-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>openCypher Front End Parent</name>
+  <description>Project that builds the openCypher front end modules</description>
+
+  <modules>
+    <module>ast</module>
+    <module>rewriting</module>
+    <module>parser</module>
+    <module>frontend</module>
+    <module>util</module>
+    <module>expressions</module>
+  </modules>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.11</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

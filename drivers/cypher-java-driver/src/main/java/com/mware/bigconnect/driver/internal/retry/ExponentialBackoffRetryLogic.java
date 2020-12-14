@@ -1,0 +1,369 @@
+/*
+ * Copyright (c) 2013-2020 "BigConnect,"
+ * MWARE SOLUTIONS SRL
+ *
+ * Copyright (c) 2002-2020 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package com.mware.bigconnect.driver.internal.retry;
+
+import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.EventExecutorGroup;
+import com.mware.bigconnect.driver.Logger;
+import com.mware.bigconnect.driver.Logging;
+import com.mware.bigconnect.driver.exceptions.ServiceUnavailableException;
+import com.mware.bigconnect.driver.exceptions.SessionExpiredException;
+import com.mware.bigconnect.driver.exceptions.TransientException;
+import com.mware.bigconnect.driver.internal.util.Clock;
+import com.mware.bigconnect.driver.internal.util.Futures;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.context.Context;
+import reactor.util.function.Tuples;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+public class ExponentialBackoffRetryLogic implements RetryLogic
+{
+    private final static String RETRY_LOGIC_LOG_NAME = "RetryLogic";
+
+    static final long DEFAULT_MAX_RETRY_TIME_MS = SECONDS.toMillis( 30 );
+
+    private static final long INITIAL_RETRY_DELAY_MS = SECONDS.toMillis( 1 );
+    private static final double RETRY_DELAY_MULTIPLIER = 2.0;
+    private static final double RETRY_DELAY_JITTER_FACTOR = 0.2;
+    private static final long MAX_RETRY_DELAY = Long.MAX_VALUE / 2;
+
+    private final long maxRetryTimeMs;
+    private final long initialRetryDelayMs;
+    private final double multiplier;
+    private final double jitterFactor;
+    private final EventExecutorGroup eventExecutorGroup;
+    private final Clock clock;
+    private final Logger log;
+
+    public ExponentialBackoffRetryLogic( RetrySettings settings, EventExecutorGroup eventExecutorGroup, Clock clock,
+            Logging logging )
+    {
+        this( settings.maxRetryTimeMs(), INITIAL_RETRY_DELAY_MS, RETRY_DELAY_MULTIPLIER, RETRY_DELAY_JITTER_FACTOR,
+                eventExecutorGroup, clock, logging );
+    }
+
+    ExponentialBackoffRetryLogic( long maxRetryTimeMs, long initialRetryDelayMs, double multiplier,
+            double jitterFactor, EventExecutorGroup eventExecutorGroup, Clock clock, Logging logging )
+    {
+        this.maxRetryTimeMs = maxRetryTimeMs;
+        this.initialRetryDelayMs = initialRetryDelayMs;
+        this.multiplier = multiplier;
+        this.jitterFactor = jitterFactor;
+        this.eventExecutorGroup = eventExecutorGroup;
+        this.clock = clock;
+        this.log = logging.getLog( RETRY_LOGIC_LOG_NAME );
+
+        verifyAfterConstruction();
+    }
+
+    @Override
+    public <T> T retry( Supplier<T> work )
+    {
+        List<Throwable> errors = null;
+        long startTime = -1;
+        long nextDelayMs = initialRetryDelayMs;
+
+        while ( true )
+        {
+            try
+            {
+                return work.get();
+            }
+            catch ( Throwable error )
+            {
+                if ( canRetryOn( error ) )
+                {
+                    long currentTime = clock.millis();
+                    if ( startTime == -1 )
+                    {
+                        startTime = currentTime;
+                    }
+
+                    long elapsedTime = currentTime - startTime;
+                    if ( elapsedTime < maxRetryTimeMs )
+                    {
+                        long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                        log.warn( "Transaction failed and will be retried in " + delayWithJitterMs + "ms", error );
+
+                        sleep( delayWithJitterMs );
+                        nextDelayMs = (long) (nextDelayMs * multiplier);
+                        errors = recordError( error, errors );
+                        continue;
+                    }
+                }
+                addSuppressed( error, errors );
+                throw error;
+            }
+        }
+    }
+
+    @Override
+    public <T> CompletionStage<T> retryAsync(Supplier<CompletionStage<T>> work )
+    {
+        CompletableFuture<T> resultFuture = new CompletableFuture<>();
+        executeWorkInEventLoop( resultFuture, work );
+        return resultFuture;
+    }
+
+    @Override
+    public <T> Publisher<T> retryRx( Publisher<T> work )
+    {
+        return Flux.from( work ).retryWhen( retryRxCondition() );
+    }
+
+    protected boolean canRetryOn( Throwable error )
+    {
+        return error instanceof SessionExpiredException ||
+               error instanceof ServiceUnavailableException ||
+               isTransientError( error );
+    }
+
+    private Function<Flux<Throwable>,Publisher<Context>> retryRxCondition()
+    {
+        return errorCurrentAttempt -> errorCurrentAttempt.flatMap( e -> Mono.subscriberContext().map( ctx -> Tuples.of( e, ctx ) ) ).flatMap( t2 -> {
+            Throwable lastError = t2.getT1();
+            Context ctx = t2.getT2();
+
+            List<Throwable> errors = ctx.getOrDefault( "errors", null );
+
+            long startTime  = ctx.getOrDefault( "startTime", -1L );
+            long nextDelayMs = ctx.getOrDefault( "nextDelayMs", initialRetryDelayMs );
+
+            if( !canRetryOn( lastError ) )
+            {
+                addSuppressed( lastError, errors );
+                return Mono.error( lastError );
+            }
+
+            long currentTime = clock.millis();
+            if ( startTime == -1 )
+            {
+                startTime = currentTime;
+            }
+
+            long elapsedTime = currentTime - startTime;
+            if ( elapsedTime < maxRetryTimeMs )
+            {
+                long delayWithJitterMs = computeDelayWithJitter( nextDelayMs );
+                log.warn( "Reactive transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", lastError );
+
+                nextDelayMs = (long) (nextDelayMs * multiplier);
+                errors = recordError( lastError, errors );
+
+                // retry on netty event loop thread
+                EventExecutor eventExecutor = eventExecutorGroup.next();
+                return Mono.just( ctx.put( "errors", errors ).put( "startTime", startTime ).put( "nextDelayMs", nextDelayMs ) )
+                        .delayElement( Duration.ofMillis( delayWithJitterMs ), Schedulers.fromExecutorService( eventExecutor ) );
+            }
+            else
+            {
+                addSuppressed( lastError, errors );
+
+                return Mono.error( lastError );
+            }
+        } );
+    }
+
+    private <T> void executeWorkInEventLoop(CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work )
+    {
+        // this is the very first time we execute given work
+        EventExecutor eventExecutor = eventExecutorGroup.next();
+
+        eventExecutor.execute( () -> executeWork( resultFuture, work, -1, initialRetryDelayMs, null ) );
+    }
+
+    private <T> void retryWorkInEventLoop(CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
+                                          Throwable error, long startTime, long delayMs, List<Throwable> errors )
+    {
+        // work has failed before, we need to schedule retry with the given delay
+        EventExecutor eventExecutor = eventExecutorGroup.next();
+
+        long delayWithJitterMs = computeDelayWithJitter( delayMs );
+        log.warn( "Async transaction failed and is scheduled to retry in " + delayWithJitterMs + "ms", error );
+
+        eventExecutor.schedule( () ->
+        {
+            long newRetryDelayMs = (long) (delayMs * multiplier);
+            executeWork( resultFuture, work, startTime, newRetryDelayMs, errors );
+        }, delayWithJitterMs, TimeUnit.MILLISECONDS );
+    }
+
+    private <T> void executeWork(CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
+                                 long startTime, long retryDelayMs, List<Throwable> errors )
+    {
+        CompletionStage<T> workStage;
+        try
+        {
+            workStage = work.get();
+        }
+        catch ( Throwable error )
+        {
+            // work failed in a sync way, attempt to schedule a retry
+            retryOnError( resultFuture, work, startTime, retryDelayMs, error, errors );
+            return;
+        }
+
+        workStage.whenComplete( ( result, completionError ) ->
+        {
+            Throwable error = Futures.completionExceptionCause( completionError );
+            if ( error != null )
+            {
+                // work failed in async way, attempt to schedule a retry
+                retryOnError( resultFuture, work, startTime, retryDelayMs, error, errors );
+            }
+            else
+            {
+                resultFuture.complete( result );
+            }
+        } );
+    }
+
+    private <T> void retryOnError(CompletableFuture<T> resultFuture, Supplier<CompletionStage<T>> work,
+                                  long startTime, long retryDelayMs, Throwable error, List<Throwable> errors )
+    {
+        if ( canRetryOn( error ) )
+        {
+            long currentTime = clock.millis();
+            if ( startTime == -1 )
+            {
+                startTime = currentTime;
+            }
+
+            long elapsedTime = currentTime - startTime;
+            if ( elapsedTime < maxRetryTimeMs )
+            {
+                errors = recordError( error, errors );
+                retryWorkInEventLoop( resultFuture, work, error, startTime, retryDelayMs, errors );
+                return;
+            }
+        }
+
+        addSuppressed( error, errors );
+        resultFuture.completeExceptionally( error );
+    }
+
+    private long computeDelayWithJitter( long delayMs )
+    {
+        if ( delayMs > MAX_RETRY_DELAY )
+        {
+            delayMs = MAX_RETRY_DELAY;
+        }
+
+        long jitter = (long) (delayMs * jitterFactor);
+        long min = delayMs - jitter;
+        long max = delayMs + jitter;
+        return ThreadLocalRandom.current().nextLong( min, max + 1 );
+    }
+
+    private void sleep( long delayMs )
+    {
+        try
+        {
+            clock.sleep( delayMs );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException( "Retries interrupted", e );
+        }
+    }
+
+    private void verifyAfterConstruction()
+    {
+        if ( maxRetryTimeMs < 0 )
+        {
+            throw new IllegalArgumentException( "Max retry time should be >= 0: " + maxRetryTimeMs );
+        }
+        if ( initialRetryDelayMs < 0 )
+        {
+            throw new IllegalArgumentException( "Initial retry delay should >= 0: " + initialRetryDelayMs );
+        }
+        if ( multiplier < 1.0 )
+        {
+            throw new IllegalArgumentException( "Multiplier should be >= 1.0: " + multiplier );
+        }
+        if ( jitterFactor < 0 || jitterFactor > 1 )
+        {
+            throw new IllegalArgumentException( "Jitter factor should be in [0.0, 1.0]: " + jitterFactor );
+        }
+        if ( clock == null )
+        {
+            throw new IllegalArgumentException( "Clock should not be null" );
+        }
+    }
+
+    private static boolean isTransientError( Throwable error )
+    {
+        if ( error instanceof TransientException )
+        {
+            String code = ((TransientException) error).code();
+            // Retries should not happen when transaction was explicitly terminated by the user.
+            // Termination of transaction might result in two different error codes depending on where it was
+            // terminated. These are really client errors but classification on the server is not entirely correct and
+            // they are classified as transient.
+            if ( "Cypher.TransientError.Transaction.Terminated".equals( code ) ||
+                 "Cypher.TransientError.Transaction.LockClientStopped".equals( code ) )
+            {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static List<Throwable> recordError(Throwable error, List<Throwable> errors )
+    {
+        if ( errors == null )
+        {
+            errors = new ArrayList<>();
+        }
+        errors.add( error );
+        return errors;
+    }
+
+    private static void addSuppressed(Throwable error, List<Throwable> suppressedErrors )
+    {
+        if ( suppressedErrors != null )
+        {
+            for ( Throwable suppressedError : suppressedErrors )
+            {
+                if ( error != suppressedError )
+                {
+                    error.addSuppressed( suppressedError );
+                }
+            }
+        }
+    }
+}

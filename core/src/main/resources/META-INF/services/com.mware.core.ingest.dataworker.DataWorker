@@ -1,0 +1,2 @@
+com.mware.core.ingest.MetadataDataWorker
+com.mware.core.ping.PingDataWorker

@@ -1,0 +1,3 @@
+com.mware.core.model.longRunningProcess.FindPathLongRunningProcessWorker
+com.mware.core.ping.PingLongRunningProcess
+com.mware.core.model.longRunningProcess.ReindexLongRunningProcessWorker

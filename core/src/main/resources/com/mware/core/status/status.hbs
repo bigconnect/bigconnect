@@ -1,0 +1,26 @@
+<h2>Running workers</h2>
+<ul>
+    {{#each runningWorkers}}
+        <li>{{className}}
+            <ul>
+                <li>Name: {{name}} </li>
+                <li>Total errors: {{metrics.totalErrors.count}} </li>
+                <li>Total processes: {{metrics.totalProcessed.count}} </li>
+                <li>Currently processing: {{metrics.processing.count}} </li>
+                <li>Processing time: {{metrics.processingTime.meanRate}} </li>
+            </ul>
+        </li>
+    {{/each}}
+</ul>
+
+<div>Start time: {{startTime}}</div>
+<div>Host: {{hostname}}</div>
+<br/>
+<div>
+    Config files:
+    <ul>
+        {{#each configuration.configurationInfo.loadedFiles}}
+            <li>{{this}}</li>
+        {{/each}}
+    </ul>
+</div>

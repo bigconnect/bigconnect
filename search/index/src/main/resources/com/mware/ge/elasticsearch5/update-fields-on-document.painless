@@ -1,0 +1,36 @@
+
+void updateFieldsToRemove(def ctx, def fieldsToRemove) {
+    for (def fieldName : fieldsToRemove) {
+        ctx._source.remove(fieldName);
+    }
+}
+
+void updateFieldsToRename(def ctx, def fieldsToRename) {
+    for (def fieldToRename : fieldsToRename.entrySet()) {
+        if (fieldToRename.getKey() != fieldToRename.getValue()) {
+            def existingValue = ctx._source[fieldToRename.getKey()];
+            if (existingValue != null) {
+                ctx._source[fieldToRename.getValue()] = existingValue;
+                ctx._source.remove(fieldToRename.getKey());
+            }
+        }
+    }
+}
+
+void updateFieldsToSet(def ctx, def fieldsToSet) {
+    for (def fieldToSet : fieldsToSet.entrySet()) {
+        ctx._source[fieldToSet.getKey()] = fieldToSet.getValue();
+    }
+}
+
+void updateExtendedDataColumnVisibilities(def ctx) {
+    if (ctx._source['__elementType'] == 'vertexextdata' || ctx._source['__elementType'] == 'edgeextdata') {
+        /* see helper-functions.painless for definition of getFieldVisibilities() */
+        ctx._source['__extendedDataColumnVisibilities'] = getFieldVisibilities(ctx._source).toArray();
+    }
+}
+
+updateFieldsToRemove(ctx, params.fieldsToRemove);
+updateFieldsToRename(ctx, params.fieldsToRename);
+updateFieldsToSet(ctx, params.fieldsToSet);
+updateExtendedDataColumnVisibilities(ctx);

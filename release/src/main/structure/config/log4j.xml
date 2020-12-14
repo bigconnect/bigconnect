@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd" [
+    <!-- Pattern: %d{yyyy-MM-dd HH:mm:ss.SSS/zzz} %-5p [%X{userId}:%X{userName}] [%c{3}] %m%n -->
+    <!ENTITY pattern "&#37;d{yyyy-MM-dd HH:mm:ss.SSS/zzz} &#37;-5p [&#37;X{userId}:&#37;X{userName}] [&#37;c{3}] &#37;m&#37;n">
+]
+>
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="&pattern;" />
+        </layout>
+    </appender>
+
+     <appender name="fileAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="File" value="${BIGCONNECT_DIR}/log/bigconnect.log"/>
+        <layout class="org.apache.log4j.PatternLayout">
+           <param name="ConversionPattern" value="%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n" />
+        </layout>
+    </appender>
+
+    <logger name="com.mware" additivity="false">
+        <level value="INFO" />
+    </logger>
+
+    <!-- Search Query Logging -->
+    <!--
+    <logger name="com.mware.ge.query.Query.QUERY" additivity="false">
+        <level value="TRACE" />
+        <appender-ref ref="console" />
+    </logger>
+    -->
+
+    <!-- Graph Query Logging -->
+    <!--
+    <logger name="com.mware.ge.Graph.QUERY" additivity="false">
+        <level value="TRACE" />
+        <appender-ref ref="console" />
+    </logger>
+    -->
+
+    <root>
+        <level value="WARN" />
+        <appender-ref ref="console" />
+        <appender-ref ref="fileAppender" />
+    </root>
+
+</log4j:configuration>

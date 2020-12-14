@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>com.mware.bigconnect</groupId>
+    <artifactId>cypher-parent</artifactId>
+    <version>4.2.0-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>cypher-runtime-util</artifactId>
+  <packaging>jar</packaging>
+  <name>BigConnect: Cypher: Runtime Utilities</name>
+
+  <dependencies>
+    <!-- shared versions are defined in the parent pom -->
+
+    <!-- neo4j -->
+
+    <dependency>
+      <groupId>com.mware.bigconnect</groupId>
+      <artifactId>cypher-logical-plans</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.mware.bigconnect</groupId>
+      <artifactId>cypher-planner-spi</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.mware.bigconnect</groupId>
+      <artifactId>cypher-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- scala -->
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-reflect</artifactId>
+    </dependency>
+
+    <!-- scala test dependencies -->
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.11</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.11</artifactId>
+    </dependency>
+
+    <!-- other -->
+
+    <dependency>
+      <groupId>org.parboiled</groupId>
+      <artifactId>parboiled-scala_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${plugin.maven.surefire.version}</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

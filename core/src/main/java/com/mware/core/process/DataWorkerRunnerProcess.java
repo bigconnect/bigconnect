@@ -1,0 +1,89 @@
+/*
+ * This file is part of the BigConnect project.
+ *
+ * Copyright (c) 2013-2020 MWARE SOLUTIONS SRL
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License version 3
+ * as published by the Free Software Foundation with the addition of the
+ * following permission added to Section 15 as permitted in Section 7(a):
+ * FOR ANY PART OF THE COVERED WORK IN WHICH THE COPYRIGHT IS OWNED BY
+ * MWARE SOLUTIONS SRL, MWARE SOLUTIONS SRL DISCLAIMS THE WARRANTY OF
+ * NON INFRINGEMENT OF THIRD PARTY RIGHTS
+
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Affero General Public License for more details.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program; if not, see http://www.gnu.org/licenses or write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA, 02110-1301 USA, or download the license from the following URL:
+ * https://www.gnu.org/licenses/agpl-3.0.txt
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License.
+ *
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving the BigConnect software without
+ * disclosing the source code of your own applications.
+ *
+ * These activities include: offering paid services to customers as an ASP,
+ * embedding the product in a web application, shipping BigConnect with a
+ * closed source product.
+ */
+package com.mware.core.process;
+
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.mware.core.config.Configurable;
+import com.mware.core.config.Configuration;
+import com.mware.core.ingest.dataworker.DataWorkerRunner;
+import com.mware.core.lifecycle.LifeSupportService;
+import com.mware.core.lifecycle.LifecycleAdapter;
+import com.mware.core.user.SystemUser;
+import com.mware.core.util.BcLogger;
+import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.StoppableRunnable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Singleton
+public class DataWorkerRunnerProcess extends LifecycleAdapter {
+    private static final BcLogger LOGGER = BcLoggerFactory.getLogger(DataWorkerRunnerProcess.class);
+    private final Config config;
+    private final List<StoppableRunnable> stoppables = new ArrayList<>();
+
+    public static class Config {
+        @Configurable
+        public int threadCount;
+    }
+
+    @Inject
+    public DataWorkerRunnerProcess(Configuration configuration, LifeSupportService lifeSupportService) {
+        this(configuration.setConfigurables(new Config(), DataWorkerRunnerProcess.class.getName()));
+        lifeSupportService.add(this);
+    }
+
+    public DataWorkerRunnerProcess(Config config) {
+        this.config = config;
+    }
+
+    @Override
+    public void start() {
+        if (config.threadCount <= 0) {
+            LOGGER.info("'threadCount' not configured or was 0");
+            return;
+        }
+
+        stoppables.addAll(DataWorkerRunner.startThreaded(config.threadCount, new SystemUser()));
+    }
+
+    @Override
+    public void shutdown() {
+        stoppables.forEach(StoppableRunnable::stop);
+    }
+}

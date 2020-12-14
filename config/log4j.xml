@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd" [
+    <!-- Pattern: %d{yyyy-MM-dd HH:mm:ss.SSS/zzz} %-5p [%X{userId}:%X{userName}] [%c{3}] %m%n -->
+    <!ENTITY pattern "&#37;d{yyyy-MM-dd HH:mm:ss.SSS/zzz} &#37;-5p [&#37;X{userId}:&#37;X{userName}] [&#37;c{3}] &#37;m&#37;n">
+]
+>
+
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+    <appender name="console" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="&pattern;" />
+        </layout>
+    </appender>
+
+    <logger name="org.neo4j" additivity="false">
+        <level value="INFO" />
+        <appender-ref ref="console" />
+    </logger>
+    <logger name="com.mware.core.model.ontology" additivity="false">
+        <level value="WARN" />
+        <appender-ref ref="console" />
+    </logger>
+        <logger name="com.mware" additivity="false">
+        <level value="INFO" />
+        <appender-ref ref="console" />
+        </logger>
+
+     <logger name="com.mware.web" additivity="false">
+        <level value="WARN" />
+        <appender-ref ref="console" />
+     </logger>
+
+    <!-- Ge Search Query Logging -->
+    <!--
+    <logger name="com.mware.ge.query.Query.QUERY" additivity="false">
+        <level value="TRACE" />
+        <appender-ref ref="console" />
+    </logger>
+    -->
+
+    <!-- Ge Graph Query Logging -->
+    <!--
+    <logger name="com.mware.ge.Graph.QUERY" additivity="false">
+        <level value="TRACE" />
+        <appender-ref ref="console" />
+    </logger>
+    -->
+
+    <root>
+        <level value="WARN" />
+        <appender-ref ref="console" />
+    </root>
+
+</log4j:configuration>

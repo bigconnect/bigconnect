@@ -1,0 +1,228 @@
+/*
+ * This file is part of the BigConnect project.
+ *
+ * Copyright (c) 2013-2020 MWARE SOLUTIONS SRL
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License version 3
+ * as published by the Free Software Foundation with the addition of the
+ * following permission added to Section 15 as permitted in Section 7(a):
+ * FOR ANY PART OF THE COVERED WORK IN WHICH THE COPYRIGHT IS OWNED BY
+ * MWARE SOLUTIONS SRL, MWARE SOLUTIONS SRL DISCLAIMS THE WARRANTY OF
+ * NON INFRINGEMENT OF THIRD PARTY RIGHTS
+
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU Affero General Public License for more details.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program; if not, see http://www.gnu.org/licenses or write to
+ * the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA, 02110-1301 USA, or download the license from the following URL:
+ * https://www.gnu.org/licenses/agpl-3.0.txt
+ *
+ * The interactive user interfaces in modified source and object code versions
+ * of this program must display Appropriate Legal Notices, as required under
+ * Section 5 of the GNU Affero General Public License.
+ *
+ * You can be released from the requirements of the license by purchasing
+ * a commercial license. Buying such a license is mandatory as soon as you
+ * develop commercial activities involving the BigConnect software without
+ * disclosing the source code of your own applications.
+ *
+ * These activities include: offering paid services to customers as an ASP,
+ * embedding the product in a web application, shipping BigConnect with a
+ * closed source product.
+ */
+package com.mware.ge.values.storable;
+
+import com.mware.ge.hashing.HashFunction;
+import com.mware.ge.values.ValueMapper;
+import com.mware.ge.values.virtual.ListValue;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.mware.ge.values.virtual.VirtualValues.list;
+import static java.lang.String.format;
+
+public final class CharValue extends TextValue {
+    final char value;
+
+    CharValue(char value) {
+        this.value = value;
+    }
+
+    @Override
+    public boolean eq(Object other) {
+        return other instanceof Value && equals((Value) other);
+    }
+
+    @Override
+    public boolean equals(Value other) {
+        return other.equals(value);
+    }
+
+    @Override
+    public boolean equals(char x) {
+        return value == x;
+    }
+
+    @Override
+    public boolean equals(String x) {
+        return x.length() == 1 && x.charAt(0) == value;
+    }
+
+    @Override
+    public int computeHash() {
+        //The 31 is there to give it the same hash as the string equivalent
+        return 31 + value;
+    }
+
+    @Override
+    public long updateHash(HashFunction hashFunction, long hash) {
+        return updateHash(hashFunction, hash, value);
+    }
+
+    public static long updateHash(HashFunction hashFunction, long hash, char value) {
+        hash = hashFunction.update(hash, value);
+        return hashFunction.update(hash, 1); // Pretend we're a string of length 1.
+    }
+
+    @Override
+    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+        writer.writeString(value);
+    }
+
+    @Override
+    public Object asObjectCopy() {
+        return value;
+    }
+
+    @Override
+    public String prettyPrint() {
+        return format("'%s'", value);
+    }
+
+    @Override
+    public String stringValue() {
+        return Character.toString(value);
+    }
+
+    @Override
+    public int length() {
+        return 1;
+    }
+
+    @Override
+    public TextValue substring(int start, int length) {
+        if (length != 1 && start != 0) {
+            return StringValue.EMPTY;
+        }
+
+        return this;
+    }
+
+    @Override
+    public TextValue trim() {
+        if (Character.isWhitespace(value)) {
+            return StringValue.EMPTY;
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public TextValue ltrim() {
+        return trim();
+    }
+
+    @Override
+    public TextValue rtrim() {
+        return trim();
+    }
+
+    @Override
+    public TextValue toLower() {
+        return new CharValue(Character.toLowerCase(value));
+    }
+
+    @Override
+    public TextValue toUpper() {
+        return new CharValue(Character.toUpperCase(value));
+    }
+
+    @Override
+    public ListValue split(String separator) {
+        if (separator.equals(stringValue())) {
+            return EMPTY_SPLIT;
+        } else {
+            return list(Values.stringValue(stringValue()));
+        }
+    }
+
+    @Override
+    public TextValue replace(String find, String replace) {
+        assert find != null;
+        assert replace != null;
+        if (stringValue().equals(find)) {
+            return Values.stringValue(replace);
+        } else {
+            return this;
+        }
+    }
+
+    @Override
+    public TextValue reverse() {
+        return this;
+    }
+
+    @Override
+    public TextValue plus(TextValue other) {
+        return Values.stringValue(value + other.stringValue());
+    }
+
+    @Override
+    public boolean startsWith(TextValue other) {
+        return other.length() == 1 && other.stringValue().charAt(0) == value;
+    }
+
+    @Override
+    public boolean endsWith(TextValue other) {
+        return startsWith(other);
+    }
+
+    @Override
+    public boolean contains(TextValue other) {
+        return startsWith(other);
+    }
+
+    public char value() {
+        return value;
+    }
+
+    @Override
+    public int compareTo(TextValue other) {
+        return TextValues.compareCharToString(value, other.stringValue());
+    }
+
+    @Override
+    public <T> T map(ValueMapper<T> mapper) {
+        return mapper.mapChar(this);
+    }
+
+    @Override
+    Matcher matcher(Pattern pattern) {
+        return pattern.matcher("" + value); // TODO: we should be able to do this without allocation
+    }
+
+    @Override
+    public String toString() {
+        return format("%s('%s')", getTypeName(), value);
+    }
+
+    @Override
+    public String getTypeName() {
+        return "Char";
+    }
+}

@@ -16,7 +16,7 @@ Welcome to BigConnect! [![Build Status](https://travis-ci.com/bigconnect/bigconn
 ----------------------
 [bigconnect.io](https://bigconnect.io)
 
-A multi-model Big Data store supporting graph, document, key/value, and object models.
+A multi-model Big Data graph store supporting document, key/value and object models.
 
 It’s an information-agnostic system where all data that flows into the system is transformed, mapped, enriched and then stored in a logical way using a semantic model of concepts, attributes and relationships. 
 

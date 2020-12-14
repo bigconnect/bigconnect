@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>com.mware.bigconnect</groupId>
+        <groupId>io.bigconnect</groupId>
         <artifactId>storage-accumulo-base</artifactId>
         <version>4.2.0-SNAPSHOT</version>
     </parent>
@@ -14,18 +14,18 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.mware.bigconnect</groupId>
+            <groupId>io.bigconnect</groupId>
             <artifactId>storage-accumulo-iterators</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.mware.bigconnect</groupId>
+            <groupId>io.bigconnect</groupId>
             <artifactId>test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.mware.bigconnect</groupId>
+            <groupId>io.bigconnect</groupId>
             <artifactId>core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -65,14 +65,14 @@
         </dependency>
 
         <dependency>
-            <groupId>com.mware.bigconnect</groupId>
+            <groupId>io.bigconnect</groupId>
             <artifactId>core</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.mware.bigconnect</groupId>
+            <groupId>io.bigconnect</groupId>
             <artifactId>test</artifactId>
             <type>test-jar</type>
             <version>${project.version}</version>

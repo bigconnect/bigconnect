@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>com.mware.bigconnect</groupId>
+    <groupId>io.bigconnect</groupId>
     <artifactId>cypher-front-end-parent</artifactId>
     <version>4.2.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
@@ -43,13 +43,13 @@
     <!-- shared versions are defined in the parent pom -->
 
     <dependency>
-      <groupId>com.mware.bigconnect</groupId>
+      <groupId>io.bigconnect</groupId>
       <artifactId>cypher-frontend-util</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.mware.bigconnect</groupId>
+      <groupId>io.bigconnect</groupId>
       <artifactId>cypher-frontend-util</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -57,13 +57,13 @@
     </dependency>
 
     <dependency>
-      <groupId>com.mware.bigconnect</groupId>
+      <groupId>io.bigconnect</groupId>
       <artifactId>cypher-frontend-ast</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.mware.bigconnect</groupId>
+      <groupId>io.bigconnect</groupId>
       <artifactId>cypher-frontend-ast</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -71,7 +71,7 @@
     </dependency>
 
     <dependency>
-      <groupId>com.mware.bigconnect</groupId>
+      <groupId>io.bigconnect</groupId>
       <artifactId>cypher-frontend-expressions</artifactId>
       <version>${project.version}</version>
     </dependency>

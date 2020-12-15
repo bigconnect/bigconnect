@@ -8,9 +8,13 @@ Welcome to BigConnect! [![Build Status](https://travis-ci.com/bigconnect/bigconn
 ----------------------
 [bigconnect.io](https://bigconnect.io)
 
-A massively scalable Big Data graph store designed for holding and querying vast amounts of raw data. It can store objects and links with multi-valued properties, supports many data types (including blobs), fast queries, aggregations, distributed data processing pipelines and super-strong security (row and property-level).
+A massively scalable Big Data graph store designed for holding and querying vast amounts of raw data. 
 
-Can be used to build solutions that cover most data analytics use cases and industry requirements, from financial analysis to social media and cybersecurity. It runs on-premise, in the cloud, or both.
+It can store objects and links with multi-valued properties and raw data, fast queries, aggregations, distributed data processing pipelines and super-strong security (row and property-level).
+
+Can be used to build solutions that cover most data analytics use cases and industry requirements, from financial analysis to social media and cybersecurity. 
+
+Can be deployed on-premise, in the cloud, or both.
 
 Features:
 

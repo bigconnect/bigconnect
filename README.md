@@ -2,15 +2,6 @@
   <img src="docs/logo.png"/>
   <br>A distributed, scalable, multi-model big data store<br>
 </p>
-<p align="center">
-  <a href="http://githubbadges.com/star.svg?user=bigconnect&repo=bigconnect&style=default">
-    <img src="http://githubbadges.com/star.svg?user=bigconnect&repo=bigconnect&style=default" alt="bigconnect star"/>
-  </a>
-  <a href="http://githubbadges.com/fork.svg?user=bigconnect&repo=bigconnect&style=default">
-    <img src="http://githubbadges.com/fork.svg?user=bigconnect&repo=bigconnect&style=default" alt="bigconnect fork"/>
-  </a>
-  <br>
-</p>
 
 Welcome to BigConnect! [![Build Status](https://travis-ci.com/bigconnect/bigconnect.svg?branch=master)](https://travis-ci.com/bigconnect/bigconnect)
 ----------------------

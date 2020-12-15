@@ -44,7 +44,7 @@ import com.mware.ge.values.storable.Value;
 
 /**
  * An element on the graph. This can be either a vertex or edge.
- * <p/>
+ * <p></p>
  * Elements also contain properties. These properties are unique given their key, name, and visibility.
  * For example a property with key "key1" and name "age" could have to values, one with visibility "a" and one
  * with visibility "b".

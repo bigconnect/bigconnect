@@ -223,15 +223,15 @@ public class TermMentionBuilder {
 
     /**
      * Saves the term mention to the graph.
-     * <p/>
+     * <p></p>
      * The resulting graph for non-resolved terms will be:
-     * <p/>
-     * Source  -- Has --> Term
+     * <p></p>
+     * Source  -- Has --&gt; Term
      * Vertex             Mention
-     * <p/>
+     * <p></p>
      * The resulting graph for resolved terms will be:
-     * <p/>
-     * Source  -- Has --> Term    -- Resolved To --> Resolved
+     * <p></p>
+     * Source  -- Has --&gt; Term    -- Resolved To --&gt; Resolved
      * Vertex             Mention                    Vertex
      */
     public Vertex save(Graph graph, VisibilityTranslator visibilityTranslator, User user, Authorizations authorizations) {

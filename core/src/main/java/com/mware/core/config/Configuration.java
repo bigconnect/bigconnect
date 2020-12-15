@@ -509,7 +509,7 @@ public class Configuration {
      *   {@literal @}Configurable
      *   public String dir;
      * }
-     * </pre></code>
+     * </core></pre>
      *
      * Would produce a map with two keys "dev" and "csv" mapped to an OwlItem object.
      *
@@ -542,17 +542,17 @@ public class Configuration {
 
     /**
      * Processing configuration items that looks like this:
-     * <p/>
+     * <p></p>
      * <pre><code>
      * repository.ontology.owl.dev.iri=http://bigconnect/dev
      * repository.ontology.owl.dev.dir=examples/ontology-dev/
      *
      * repository.ontology.owl.csv.iri=http://bigconnect/csv
      * repository.ontology.owl.csv.dir=storm/plugins/csv/ontology/
-     * </pre></code>
-     * <p/>
+     * </code></pre>
+     * <p></p>
      * Into a hash like this:
-     * <p/>
+     * <p></p>
      * - dev
      * - iri: http://bigconnect/dev
      * - dir: examples/ontology-dev/

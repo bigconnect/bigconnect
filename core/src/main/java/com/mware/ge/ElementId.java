@@ -49,13 +49,16 @@ public interface ElementId extends GeObjectId {
         return new DefaultElementId(elementType, id);
     }
 
+
     /**
-     * the type of the element.
+     * Get the type of the element
+     * @return element type
      */
     ElementType getElementType();
 
     /**
-     * id of the element.
+     * get the id of the element
+     * @return element id
      */
     String getId();
 }

@@ -58,7 +58,7 @@ import java.util.*;
  * - ${user.home}/.bigconnect
  * - ${appdata}/bigconnect
  * - /opt/bigconnect/ or c:/opt/bigconnect/
- * <p/>
+ *
  * You can override the default search order using a system property or environment property BC_CONFIGURATION_LOADER_SEARCH_LOCATIONS.
  * The default is: systemProperty,env,userHome,appdata,defaultDir
  */

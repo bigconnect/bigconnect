@@ -20,3 +20,4 @@ docs/java
 bc-elastic-plugin.zip
 /bolt.cert
 /bolt.key
+*.versionsBackup

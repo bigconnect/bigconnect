@@ -157,6 +157,10 @@ public class SchemaFactory {
                 .forEach(sc -> sc.patchSchema(this));
     }
 
+    public SchemaRepository getSchemaRepository() {
+        return schemaRepository;
+    }
+
     public class DefaultConcept {
         private Concept parent;
         private String conceptType;

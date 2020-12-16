@@ -929,16 +929,6 @@ public class DefaultSchemaCreator {
 
         schemaFactory.newConceptProperty()
                 .concepts(thingConcept)
-                .name(BcSchema.TRANSLATED_TEXT.getPropertyName())
-                .displayName("Translated Text")
-                .type(PropertyType.STRING)
-                .textIndexHints(EnumSet.of(TextIndexHint.FULL_TEXT))
-                .userVisible(true)
-                .displayType(SchemaConstants.CUSTOM_DISPLAY_LONGTEXT)
-                .save();
-
-        schemaFactory.newConceptProperty()
-                .concepts(thingConcept)
                 .name(BcSchema.TITLE.getPropertyName())
                 .displayName("Title")
                 .type(PropertyType.STRING)
@@ -946,7 +936,6 @@ public class DefaultSchemaCreator {
                 .userVisible(true)
                 .intents(SchemaConstants.INTENT_ARTIFACT_TITLE)
                 .save();
-
 
         schemaFactory.newConceptProperty()
                 .concepts(thingConcept)

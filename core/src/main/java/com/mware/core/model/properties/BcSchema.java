@@ -55,7 +55,6 @@ public class BcSchema {
 
     public static final StreamingSingleValueBcProperty METADATA_JSON = new StreamingSingleValueBcProperty("metadataJson");
     public static final StreamingBcProperty TEXT = new StreamingBcProperty("text");
-    public static final StreamingBcProperty TRANSLATED_TEXT = new StreamingBcProperty("transText");
     public static final StreamingSingleValueBcProperty RAW = new StreamingSingleValueBcProperty("raw");
 
     public static final StringBcProperty DATA_WORKER_WHITE_LIST = new StringBcProperty("graphPropertyWorkerWhiteList");

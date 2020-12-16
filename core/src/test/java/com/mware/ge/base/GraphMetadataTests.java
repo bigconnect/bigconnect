@@ -36,11 +36,15 @@
  */
 package com.mware.ge.base;
 
+import com.mware.core.model.clientapi.dto.VisibilityJson;
+import com.mware.core.model.properties.types.PropertyMetadata;
+import com.mware.core.user.SystemUser;
 import com.mware.ge.*;
 import com.mware.ge.event.GraphEvent;
 import com.mware.ge.event.GraphEventListener;
 import com.mware.ge.mutation.ExistingElementMutation;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -236,5 +240,31 @@ public abstract class GraphMetadataTests implements GraphTestSetup {
 
         v1 = getGraph().getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         assertEquals(stringValue("valueNew"), v1.getProperty("prop2").getMetadata().getEntry("prop2_key1", VISIBILITY_EMPTY).getValue());
+    }
+
+    @Test
+    public void testMetadataPropertyKeys() {
+        PropertyMetadata prop1Metadata = new PropertyMetadata(new SystemUser(), new VisibilityJson(), Visibility.EMPTY);
+        prop1Metadata.add("mkey1", stringValue("mvalue1"), VISIBILITY_EMPTY);
+        prop1Metadata.add("mkey2", stringValue("mvalue2"), VISIBILITY_EMPTY);
+
+        PropertyMetadata prop2Metadata = new PropertyMetadata(new SystemUser(), new VisibilityJson(), Visibility.EMPTY);
+        prop2Metadata.add("mkey1", stringValue("xvalue1"), VISIBILITY_EMPTY);
+        prop2Metadata.add("mkey2", stringValue("xvalue2"), VISIBILITY_EMPTY);
+
+        getGraph().prepareVertex("v1", VISIBILITY_A, CONCEPT_TYPE_THING)
+                .addPropertyValue("k1", "p1", stringValue("value1"), prop1Metadata.createMetadata(), Visibility.EMPTY)
+                .addPropertyValue("k2", "p1", stringValue("value2"), prop2Metadata.createMetadata(), Visibility.EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().flush();
+
+        Vertex v1 = getGraph().getVertex("v1", AUTHORIZATIONS_ALL);
+        Property property1 = v1.getProperty("k1", "p1");
+        Assert.assertEquals(stringValue("mvalue1"), property1.getMetadata().getValue("mkey1"));
+        Assert.assertEquals(stringValue("mvalue2"), property1.getMetadata().getValue("mkey2"));
+
+        Property property2 = v1.getProperty("k2", "p1");
+        Assert.assertEquals(stringValue("xvalue1"), property2.getMetadata().getValue("mkey1"));
+        Assert.assertEquals(stringValue("xvalue2"), property2.getMetadata().getValue("mkey2"));
     }
 }

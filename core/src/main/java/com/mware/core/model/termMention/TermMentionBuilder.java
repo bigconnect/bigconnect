@@ -36,9 +36,6 @@
  */
 package com.mware.core.model.termMention;
 
-import com.google.common.base.Charsets;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
 import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.schema.SchemaConstants;
@@ -52,14 +49,12 @@ import com.mware.ge.*;
 import com.mware.ge.mutation.EdgeMutation;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class TermMentionBuilder {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(TermMentionBuilder.class);
-    private static final String TERM_MENTION_VERTEX_ID_PREFIX = "TM_";
     private Vertex outVertex;
     private String propertyKey;
     private String propertyName;
@@ -252,10 +247,9 @@ public class TermMentionBuilder {
         }
 
         ZonedDateTime now = ZonedDateTime.now();
-        String vertexId = createVertexId();
         Visibility defaultVisibility = visibilityTranslator.getDefaultVisibility();
         Visibility visibility = BcVisibility.and(visibilityTranslator.toVisibility(this.visibilityJson).getVisibility(), TermMentionRepository.VISIBILITY_STRING);
-        VertexBuilder vertexBuilder = graph.prepareVertex(vertexId, visibility, SchemaConstants.CONCEPT_TYPE_THING);
+        VertexBuilder vertexBuilder = graph.prepareVertex(visibility, SchemaConstants.CONCEPT_TYPE_THING);
         BcSchema.TERM_MENTION_VISIBILITY_JSON.setProperty(vertexBuilder, this.visibilityJson, visibility);
         BcSchema.TERM_MENTION_CONCEPT_TYPE.setProperty(vertexBuilder, this.conceptName, visibility);
         BcSchema.TERM_MENTION_TITLE.setProperty(vertexBuilder, this.title, visibility);
@@ -280,61 +274,28 @@ public class TermMentionBuilder {
         Authorizations termMentionAuthorizations = graph.createAuthorizations(authorizations, TermMentionRepository.VISIBILITY_STRING);
         Vertex termMentionVertex = vertexBuilder.save(termMentionAuthorizations);
 
-        String hasTermMentionId = vertexId + "_hasTermMention";
-        EdgeBuilder termMentionEdgeBuilder = graph.prepareEdge(hasTermMentionId, this.outVertex, termMentionVertex, BcSchema.TERM_MENTION_LABEL_HAS_TERM_MENTION, visibility);
+        EdgeBuilder termMentionEdgeBuilder = graph.prepareEdge(this.outVertex, termMentionVertex, BcSchema.TERM_MENTION_LABEL_HAS_TERM_MENTION, visibility);
         BcSchema.TERM_MENTION_VISIBILITY_JSON.setProperty(termMentionEdgeBuilder, this.visibilityJson, visibility);
         BcSchema.MODIFIED_BY.setProperty(termMentionEdgeBuilder, user.getUserId(), defaultVisibility);
         BcSchema.MODIFIED_DATE.setProperty(termMentionEdgeBuilder, now, defaultVisibility);
-        termMentionEdgeBuilder.save(authorizations);
+        termMentionEdgeBuilder.save(termMentionAuthorizations);
+
         if (this.resolvedToVertexId != null) {
-            String resolvedToId = vertexId + "_resolvedTo";
-            EdgeMutation resolvedToEdgeBuilder = graph.prepareEdge(resolvedToId, termMentionVertex.getId(), resolvedToVertexId, BcSchema.TERM_MENTION_LABEL_RESOLVED_TO, visibility);
+            EdgeMutation resolvedToEdgeBuilder = graph.prepareEdge(termMentionVertex.getId(), resolvedToVertexId, BcSchema.TERM_MENTION_LABEL_RESOLVED_TO, visibility);
             BcSchema.TERM_MENTION_VISIBILITY_JSON.setProperty(resolvedToEdgeBuilder, this.visibilityJson, visibility);
             BcSchema.MODIFIED_BY.setProperty(resolvedToEdgeBuilder, user.getUserId(), defaultVisibility);
             BcSchema.MODIFIED_DATE.setProperty(resolvedToEdgeBuilder, now, defaultVisibility);
-            resolvedToEdgeBuilder.save(authorizations);
+            resolvedToEdgeBuilder.save(termMentionAuthorizations);
 
             if (this.resolvedFromTermMention != null) {
-                String resolvedFromId = vertexId + "_resolvedFrom";
-                EdgeMutation resolvedFromEdgeBuilder = graph.prepareEdge(resolvedFromId, termMentionVertex.getId(), resolvedFromTermMention, BcSchema.TERM_MENTION_RESOLVED_FROM, visibility);
+                EdgeMutation resolvedFromEdgeBuilder = graph.prepareEdge(termMentionVertex.getId(), resolvedFromTermMention, BcSchema.TERM_MENTION_RESOLVED_FROM, visibility);
                 BcSchema.TERM_MENTION_VISIBILITY_JSON.setProperty(resolvedFromEdgeBuilder, this.visibilityJson, visibility);
                 BcSchema.MODIFIED_BY.setProperty(resolvedFromEdgeBuilder, user.getUserId(), defaultVisibility);
                 BcSchema.MODIFIED_DATE.setProperty(resolvedFromEdgeBuilder, now, defaultVisibility);
-                resolvedFromEdgeBuilder.save(authorizations);
+                resolvedFromEdgeBuilder.save(termMentionAuthorizations);
             }
         }
 
         return termMentionVertex;
-    }
-
-    private String createVertexId() {
-        Hasher id = Hashing.sha1().newHasher();
-
-        id.putUnencodedChars(this.outVertex.getId());
-
-        if (this.visibilityJson == null) {
-            LOGGER.warn ("Visibility Json should not be null");
-        } else if (this.visibilityJson.getSource() != null && this.visibilityJson.getSource().length() > 0) {
-            id.putString(this.visibilityJson.getSource(), Charsets.UTF_8);
-        }
-        if (this.propertyName != null) {
-            id.putUnencodedChars(this.propertyName);
-        }
-        if (this.propertyKey != null) {
-            id.putUnencodedChars(this.propertyKey);
-        }
-        if (this.title != null) {
-            id.putString(this.title, Charsets.UTF_8);
-        }
-        if (this.process != null) {
-            id.putUnencodedChars(this.process);
-        }
-
-        return TERM_MENTION_VERTEX_ID_PREFIX
-                + this.start
-                + "-"
-                + this.end
-                + "-"
-                + id.hash().toString();
     }
 }

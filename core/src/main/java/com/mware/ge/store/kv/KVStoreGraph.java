@@ -53,9 +53,12 @@ import com.mware.ge.store.mutations.StoreMutation;
 import com.mware.ge.util.IncreasingTime;
 import com.mware.ge.util.LookAheadIterable;
 import org.apache.commons.io.IOUtils;
+import org.apache.curator.shaded.com.google.common.io.Files;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -307,9 +310,7 @@ public abstract class KVStoreGraph extends AbstractStorableGraph<StorableVertex,
             Iterator<Pair<StoreKey, StoreValue>> iter2 =
                     Iterators.map(o -> Pair.of(KVKeyUtils.storeKey(o.first()), StoreValue.deserialize(o.other())), iter);
 
-            System.out.println("EXTENDED DATA");
-            System.out.println("=================================");
-            List<DumpTableRow> data = new ArrayList<>();
+             List<DumpTableRow> data = new ArrayList<>();
 
             while (iter2.hasNext()) {
                 Pair<StoreKey, StoreValue> pair = iter2.next();
@@ -319,25 +320,23 @@ public abstract class KVStoreGraph extends AbstractStorableGraph<StorableVertex,
                 data.add(new DumpTableRow(key.id(), key.cf(), key.cq(), key.visibilityString(), v.ts(), ""));
             }
 
-            System.out.println(
-                    AsciiTable.getTable(data, Arrays.asList(
-                            new Column().header("ID").with(row -> row.id),
-                            new Column().header("CF").with(row -> row.cf),
-                            new Column().header("CQ").with(row -> row.cq),
-                            new Column().header("VIS").with(row -> row.vis),
-                            new Column().header("TS").with(row -> String.valueOf(row.ts)),
-                            new Column().header("VAL").with(row -> row.val)
-                    ))
-            );
+            File tempFile = File.createTempFile(getExtendedDataTableName(), "");
+            String content = AsciiTable.getTable(data, Arrays.asList(
+                    new Column().header("ID").with(row -> row.id),
+                    new Column().header("CF").with(row -> row.cf),
+                    new Column().header("CQ").with(row -> row.cq),
+                    new Column().header("VIS").with(row -> row.vis),
+                    new Column().header("TS").with(row -> String.valueOf(row.ts)),
+                    new Column().header("VAL").with(row -> row.val)
+            ));
+            Files.write(content, tempFile, StandardCharsets.UTF_8);
+
         } catch (IOException ex) {
             ex.printStackTrace();
         }
 
 
         try (ScanIterator iter = kvStore.scan(getMetadataTableName())) {
-            System.out.println("METADATA");
-            System.out.println("=================================");
-
             List<GraphMetadataEntry> data = new ArrayList<>();
             Iterator<GraphMetadataEntry> iter2 = Iterators.map(pair ->
                             new GraphMetadataEntry(
@@ -350,13 +349,13 @@ public abstract class KVStoreGraph extends AbstractStorableGraph<StorableVertex,
                 data.add(iter2.next());
             }
 
-            System.out.println(
-                    AsciiTable.getTable(data, Arrays.asList(
-                            new Column().header("Key").with(row -> row.getKey()),
-                            new Column().header("Value").with(row -> row.getValue() == null ? null : row.getValue().toString())
-                    ))
-            );
-        }  catch (IOException ex) {
+            File tempFile = File.createTempFile(getMetadataTableName(), "");
+            String content = AsciiTable.getTable(data, Arrays.asList(
+                    new Column().header("Key").with(row -> row.getKey()),
+                    new Column().header("Value").with(row -> row.getValue() == null ? null : row.getValue().toString())
+            ));
+            Files.write(content, tempFile, StandardCharsets.UTF_8);
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
@@ -365,9 +364,6 @@ public abstract class KVStoreGraph extends AbstractStorableGraph<StorableVertex,
         try (ScanIterator iter = kvStore.scan(table)) {
             Iterator<Pair<StoreKey, StoreValue>> iter2 =
                     Iterators.map(o -> Pair.of(KVKeyUtils.storeKey(o.first()), StoreValue.deserialize(o.other())), iter);
-
-            System.out.println(name);
-            System.out.println("=================================");
 
             List<DumpTableRow> data = new ArrayList<>();
 
@@ -384,16 +380,16 @@ public abstract class KVStoreGraph extends AbstractStorableGraph<StorableVertex,
                 data.add(new DumpTableRow(key.id(), key.cf(), key.cq(), key.visibilityString(), v.ts(), obj != null ? obj.toString() : null));
             }
 
-            System.out.println(
-                    AsciiTable.getTable(data, Arrays.asList(
-                            new Column().header("ID").with(row -> row.id),
-                            new Column().header("CF").with(row -> row.cf),
-                            new Column().header("CQ").with(row -> row.cq),
-                            new Column().header("VIS").with(row -> row.vis),
-                            new Column().header("TS").with(row -> String.valueOf(row.ts)),
-                            new Column().header("VAL").with(row -> row.val)
-                    ))
-            );
+            File tempFile = File.createTempFile(table, "");
+            String content = AsciiTable.getTable(data, Arrays.asList(
+                    new Column().header("ID").with(row -> row.id),
+                    new Column().header("CF").with(row -> row.cf),
+                    new Column().header("CQ").with(row -> row.cq),
+                    new Column().header("VIS").with(row -> row.vis),
+                    new Column().header("TS").with(row -> String.valueOf(row.ts)),
+                    new Column().header("VAL").with(row -> row.val)
+            ));
+            Files.write(content, tempFile, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             ex.printStackTrace();
         }

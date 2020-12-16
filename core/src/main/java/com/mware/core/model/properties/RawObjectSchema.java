@@ -48,7 +48,7 @@ public class RawObjectSchema {
     public static final StringSingleValueBcProperty ENTITY_IMAGE_VERTEX_ID = new StringSingleValueBcProperty("entityImageVertexId");
     public static final StringSingleValueBcProperty IMAGE_OWNER_VERTEX_ID = new StringSingleValueBcProperty("imageOwnerVertexId");
     public static final StringSingleValueBcProperty IMAGE_OWNER_CONCEPT_TYPE = new StringSingleValueBcProperty("imageOwnerConceptType");
-    public static final StringSingleValueBcProperty RAW_LANGUAGE = new StringSingleValueBcProperty("language");
+    public static final StringBcProperty RAW_LANGUAGE = new StringBcProperty("language");
     public static final StringSingleValueBcProperty RAW_SENTIMENT = new StringSingleValueBcProperty("sentiment");
     public static final StringSingleValueBcProperty RAW_TYPE = new StringSingleValueBcProperty("rawType");
     public static final DetectedObjectProperty DETECTED_OBJECT = new DetectedObjectProperty("detectedObject");

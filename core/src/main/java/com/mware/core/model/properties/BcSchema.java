@@ -44,6 +44,7 @@ import java.lang.reflect.Field;
 
 public class BcSchema {
     public static final StringMetadataBcProperty TEXT_DESCRIPTION_METADATA = new StringMetadataBcProperty("textDescription");
+    public static final StringMetadataBcProperty TEXT_LANGUAGE_METADATA = new StringMetadataBcProperty("textLanguage");
     public static final StringMetadataBcProperty MIME_TYPE_METADATA = new StringMetadataBcProperty("mimeType");
 
     public static final DateSingleValueBcProperty MODIFIED_DATE = new DateSingleValueBcProperty("modifiedDate");

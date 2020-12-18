@@ -70,10 +70,10 @@ public class LoggingAuditService implements AuditService {
     }
 
     @Override
-    public void auditGenericEvent(User user, String workspaceId, AuditEventType type, String description) {
+    public void auditGenericEvent(User user, String workspaceId, AuditEventType type, String key, String value) {
         if (AUDIT_LOGGER.isInfoEnabled()) {
-            AUDIT_LOGGER.info("Event of type \"%s\" on user with id \"%s\" and username \"%s\" (workspace \"%s\")" +
-                    " :: \"%s\"", type.name(), user.getUserId(), user.getUsername(), workspaceId, description);
+            AUDIT_LOGGER.info("Event \"%s\" on user with username \"%s\" (workspace \"%s\")" +
+                    " :: \"%s:%s\"", type.name(), user.getUsername(), workspaceId, key, value);
         }
     }
 }

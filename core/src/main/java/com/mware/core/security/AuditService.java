@@ -45,5 +45,5 @@ public interface AuditService {
 
     void auditAccessDenied(String message, User user, Object resourceId);
 
-    void auditGenericEvent(User user, String workspaceId, AuditEventType type, String description);
+    void auditGenericEvent(User user, String workspaceId, AuditEventType type, String name, String value);
 }

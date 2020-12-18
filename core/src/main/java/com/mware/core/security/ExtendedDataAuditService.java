@@ -38,38 +38,44 @@ package com.mware.core.security;
 
 import com.google.inject.Inject;
 import com.mware.core.model.role.GeAuthorizationRepository;
+import com.mware.core.model.user.UserRepository;
 import com.mware.core.user.User;
 import com.mware.ge.Authorizations;
 import com.mware.ge.Graph;
 import com.mware.ge.Visibility;
 import com.mware.ge.time.Clocks;
+import com.mware.ge.util.Preconditions;
 import com.mware.ge.values.storable.LocalDateTimeValue;
 import com.mware.ge.values.storable.Values;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
 
 public class ExtendedDataAuditService implements AuditService {
     private final Graph graph;
+    private final UserRepository userRepository;
 
     private static final String AUDIT_VERTEX_ID = "audit_vertex";
     private static final String AUDIT_TABLE = "audit_table";
 
     private static final String AUDIT_WORKSPACE_ID_COLUMN = "workspace_id";
-    private static final String AUDIT_USER_ID_COLUMN = "user_id";
-    private static final String AUDIT_USERNAME_COLUMN = "username";
+    private static final String AUDIT_USERID_COLUMN = "user_id";
+    private static final String AUDIT_USERNAME_COLUMN = "user_name";
     private static final String AUDIT_DATETIME_COLUMN = "time";
     private static final String AUDIT_EVENT_TYPE_COLUMN = "event_type";
-    private static final String AUDIT_EVENT_DESCRIPTION_COLUMN = "event_description";
+    private static final String AUDIT_EVENT_KEY_COLUMN = "event_key";
+    private static final String AUDIT_EVENT_VALUE_COLUMN = "event_value";
 
     private static final Authorizations AUTHORIZATIONS_ALL = new Authorizations(GeAuthorizationRepository.ADMIN_ROLE);
     private static final Visibility VISIBILITY_PUBLIC = new Visibility(GeAuthorizationRepository.ADMIN_ROLE);
 
     @Inject
-    public ExtendedDataAuditService(Graph graph) {
+    public ExtendedDataAuditService(Graph graph, UserRepository userRepository) {
         this.graph = graph;
+        this.userRepository = userRepository;
         ensureAuditVertexExists();
     }
 
@@ -85,45 +91,52 @@ public class ExtendedDataAuditService implements AuditService {
     @Override
     public void auditLogin(User user) {
         this.createAuditRow(StringUtils.EMPTY, user.getUserId(), user.getUsername(),
-                AuditEventType.LOGIN.name(), "User logged in");
+                AuditEventType.LOGIN, "", "");
     }
 
     @Override
     public void auditLogout(String userId) {
-        this.createAuditRow(StringUtils.EMPTY, userId, StringUtils.EMPTY,
-                AuditEventType.LOGOUT.name(), "User logged out");
+        User user = userRepository.findById(userId);
+        this.createAuditRow(StringUtils.EMPTY, userId, user.getUsername(),
+                AuditEventType.LOGOUT, "", "");
     }
 
     @Override
     public void auditAccessDenied(String message, User user, Object resourceId) {
         this.createAuditRow(StringUtils.EMPTY, user.getUserId(), user.getUsername(),
-                AuditEventType.ACCESS_DENIED.name(), message + " :: Resource ID: " + resourceId);
+                AuditEventType.ACCESS_DENIED, Objects.toString(resourceId), message);
     }
 
     @Override
-    public void auditGenericEvent(User user, String workspaceId, AuditEventType type, String description) {
-        this.createAuditRow(workspaceId, user.getUserId(), user.getUsername(), type.name(), description);
+    public void auditGenericEvent(User user, String workspaceId, AuditEventType type, String key, String value) {
+        this.createAuditRow(workspaceId, user.getUserId(), user.getUsername(), type, key, value);
     }
 
     private void createAuditRow(String workspaceId,
                                 String userId,
                                 String userName,
-                                String type,
-                                String description) {
+                                AuditEventType type,
+                                String key,
+                                String value) {
+
+        Preconditions.checkNotNull(type);
+
         final String rowId = UUID.randomUUID().toString();
         this.graph.getVertex(AUDIT_VERTEX_ID, AUTHORIZATIONS_ALL).prepareMutation()
                 .addExtendedData(AUDIT_TABLE, rowId,
-                        AUDIT_WORKSPACE_ID_COLUMN, Values.of(workspaceId), VISIBILITY_PUBLIC)
+                        AUDIT_WORKSPACE_ID_COLUMN, Values.stringValue(workspaceId), VISIBILITY_PUBLIC)
                 .addExtendedData(AUDIT_TABLE, rowId,
-                        AUDIT_USER_ID_COLUMN, Values.of(userId), VISIBILITY_PUBLIC)
+                        AUDIT_USERID_COLUMN, Values.stringValue(userId), VISIBILITY_PUBLIC)
                 .addExtendedData(AUDIT_TABLE, rowId,
-                        AUDIT_USERNAME_COLUMN, Values.of(userName), VISIBILITY_PUBLIC)
+                        AUDIT_USERNAME_COLUMN, Values.stringValue(userName), VISIBILITY_PUBLIC)
                 .addExtendedData(AUDIT_TABLE, rowId,
                         AUDIT_DATETIME_COLUMN, LocalDateTimeValue.now(Clocks.systemClock()), VISIBILITY_PUBLIC)
                 .addExtendedData(AUDIT_TABLE, rowId,
-                        AUDIT_EVENT_TYPE_COLUMN, Values.of(type), VISIBILITY_PUBLIC)
+                        AUDIT_EVENT_TYPE_COLUMN, Values.stringValue(type.name()), VISIBILITY_PUBLIC)
                 .addExtendedData(AUDIT_TABLE, rowId,
-                        AUDIT_EVENT_DESCRIPTION_COLUMN, Values.of(description), VISIBILITY_PUBLIC)
+                        AUDIT_EVENT_KEY_COLUMN, Values.stringValue(key), VISIBILITY_PUBLIC)
+                .addExtendedData(AUDIT_TABLE, rowId,
+                        AUDIT_EVENT_VALUE_COLUMN, Values.stringValue(value), VISIBILITY_PUBLIC)
                 .save(AUTHORIZATIONS_ALL);
         this.graph.flush();
     }

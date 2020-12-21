@@ -231,31 +231,29 @@ public class GeCypherQueryContext {
         Iterable<Element> elements = graph.saveElementMutations(values, authorizations);
 
         if (!values.isEmpty() && workQueueRepository != null) {
-            executor.submit(() -> {
-                for (ElementMutation<? extends Element> mutation : values) {
-                    Element savedElement = null;
-                    for (Element element : elements) {
-                        if (element.getId().equals(mutation.getId())) {
-                            savedElement = element;
-                            break;
-                        }
-                    }
-                    if (savedElement != null) {
-                        for (Property property : mutation.getProperties()) {
-                            workQueueRepository.pushGraphPropertyQueue(
-                                    savedElement,
-                                    property.getKey(),
-                                    property.getName(),
-                                    null,
-                                    null,
-                                    Priority.LOW,
-                                    ElementOrPropertyStatus.UPDATE,
-                                    null
-                            );
-                        }
+            for (ElementMutation<? extends Element> mutation : values) {
+                Element savedElement = null;
+                for (Element element : elements) {
+                    if (element.getId().equals(mutation.getId())) {
+                        savedElement = element;
+                        break;
                     }
                 }
-            });
+                if (savedElement != null) {
+                    for (Property property : mutation.getProperties()) {
+                        workQueueRepository.pushGraphPropertyQueue(
+                                savedElement,
+                                property.getKey(),
+                                property.getName(),
+                                null,
+                                null,
+                                Priority.LOW,
+                                ElementOrPropertyStatus.UPDATE,
+                                null
+                        );
+                    }
+                }
+            }
         }
 
         Optional<ElementMutation<? extends Element>> aVertexMutation = values.parallelStream().filter(m -> ElementType.VERTEX.equals(m.getElementType())).findFirst();

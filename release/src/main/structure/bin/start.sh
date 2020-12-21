@@ -21,7 +21,7 @@ BIGCONNECT_DIR=$(readlink -m "$BINDIR/..")
 mkdir -p $BIGCONNECT_DIR/log
 
 BC_JAVA_OPTS="-Xms4g -Xmx4g -server -XX:+UseG1GC -XX:+DisableExplicitGC -XX:-OmitStackTraceInFastThrow"
-BC_JAVA_OPTS="$BC_JAVA_OPTS -Dfile.encoding=UTF-8 -Dfile.encoding=utf8 -Djava.net.preferIPv4Stack=true"
+BC_JAVA_OPTS="$BC_JAVA_OPTS -Dfile.encoding=utf8 -Djava.net.preferIPv4Stack=true"
 BC_JAVA_OPTS="$BC_JAVA_OPTS -Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom -Djava.io.tmpdir=/tmp"
 BC_JAVA_OPTS="$BC_JAVA_OPTS -DBIGCONNECT_DIR=$BIGCONNECT_DIR"
 

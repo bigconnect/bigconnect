@@ -26,5 +26,5 @@ Features:
 * Super extensible and modular
 * Beautiful feature-rich visual explorer
 * Developed in Java
-* Runs on RocksD/Apache Accumulo and ElasticSearch
+* Runs on RocksDB or Apache Accumulo and ElasticSearch
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png"/>
+  <img src="https://github.com/bigconnect/bigconnect/raw/master/docs/logo.png"/>
   <br>
   The multi-model Big Graph Store<br>
 </p>

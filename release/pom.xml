@@ -16,7 +16,7 @@
 
     <profiles>
         <profile>
-            <id>release</id>
+            <id>bin-release</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>

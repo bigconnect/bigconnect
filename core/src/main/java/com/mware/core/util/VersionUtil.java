@@ -90,8 +90,7 @@ public class VersionUtil {
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 for (VersionData versionData : versionDatas) {
                     String buildOnDateString = sdf.format(versionData.getBuildOnDate());
-                    String ago = BcDateTime.getHumanTimeAgo(versionData.getBuildOnDate());
-                    System.out.println(String.format("%-" + maxPathWidth + "s: %s (%s)", versionData.getPath(), buildOnDateString, ago));
+                    System.out.println(String.format("%-" + maxPathWidth + "s: %s", versionData.getPath(), buildOnDateString));
                 }
             }
         } catch (IOException ex) {

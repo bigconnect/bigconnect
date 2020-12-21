@@ -495,16 +495,6 @@ public class GeCypherQueryContext {
             BcSchema.MIME_TYPE_METADATA.setMetadata(metadata, "text/plain", Visibility.EMPTY);
             StreamingPropertyValue spv = DefaultStreamingPropertyValue.create(((TextValue) value).stringValue());
             BcSchema.TEXT.addPropertyValue(mutation, "", spv, metadata, Visibility.EMPTY);
-        } else if (BcSchema.TRANSLATED_TEXT.getPropertyName().equals(propertyName) && value instanceof TextValue) {
-            Metadata metadata = Metadata.create();
-            BcSchema.TEXT_DESCRIPTION_METADATA.setMetadata(
-                    metadata,
-                    "Translated Text",
-                    Visibility.EMPTY
-            );
-            BcSchema.MIME_TYPE_METADATA.setMetadata(metadata, "text/plain", Visibility.EMPTY);
-            StreamingPropertyValue spv = DefaultStreamingPropertyValue.create(((TextValue) value).stringValue());
-            BcSchema.TRANSLATED_TEXT.addPropertyValue(mutation, "", spv, Visibility.EMPTY);
         } else if (BcSchema.RAW.getPropertyName().equals(propertyName)) {
             if (value instanceof TextValue) {
                 byte[] b = ((TextValue) value).stringValue().getBytes(StandardCharsets.UTF_8);

@@ -231,6 +231,7 @@
                     <scalaVersion>${scala.version}</scalaVersion>
                     <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
                     <args>
+                        <arg>-nobootcp</arg>
                         <arg>-Xmax-classfile-name</arg>
                         <arg>100</arg>
                         <arg>-Xlint</arg>

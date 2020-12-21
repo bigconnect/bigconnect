@@ -13,12 +13,6 @@
     <dependencies>
         <dependency>
             <groupId>io.bigconnect</groupId>
-            <artifactId>test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.bigconnect</groupId>
             <artifactId>core</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -40,11 +34,6 @@
             <type>test-jar</type>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.bigconnect</groupId>
-            <artifactId>security</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.rocksdb</groupId>

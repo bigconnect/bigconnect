@@ -4,7 +4,7 @@
   The multi-model Big Graph Store<br>
 </p>
 
-Welcome to BigConnect! [![Build Status](https://travis-ci.com/bigconnect/bigconnect.svg?branch=master)](https://travis-ci.com/bigconnect/bigconnect)
+Welcome to BigConnect!
 ----------------------
 [bigconnect.io](https://bigconnect.io)
 

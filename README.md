@@ -26,6 +26,8 @@ Can be deployed on-premise, in the cloud, or both.
 * Beautiful feature-rich visual explorer
 * Developed in Java
 
+Have a look at the [Architecture and Concepts](https://docs.bigconnect.io/cloud/bigconnect-core/architecture-and-concepts) page to understand how the platform works.
+
 ### Supported backends
 - Memory
 - RocksDB
@@ -50,6 +52,10 @@ Login with the following details:
 - Connect URL: **bolt://localhost:10242** 
 - Username: **admin**
 - Password **admin**
+
+The easiest way to interact with BigConnect is to use the Cypher query language. 
+
+Get started by following the Cypher tutorials available [here](https://docs.bigconnect.io/tutorials/cypher/cypher-basics-i).
 
 ### Locally
 To run the latest build you need to build the project first. You need to have Maven installed and JDK11.

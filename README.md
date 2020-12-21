@@ -73,5 +73,3 @@ Contributions are warmly welcomed and greatly appreciated. Here are a few ways y
 
 ## License
 BigConnect is an open source product licensed under AGPLv3.
-
-In order to prevent cloud providers from monetizing the project without contributing back, we added Commons Clause 1.0 to the project. As mentioned, we are fully committed to the open source community. We would love to hear your thoughts on the licensing model and are willing to make it more suitable for the community.

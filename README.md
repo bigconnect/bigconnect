@@ -34,7 +34,29 @@ Have a look at the [Architecture and Concepts](https://docs.bigconnect.io/cloud/
 - Apache Accumulo
 - ElasticSearch
 
-## Installation
+## BigConnect Explorer
+The visual face of BigConnect, available in the [bigconnect-explorer](https://github.com/bigconnect/bigconnect-explorer) repository.
+
+<p align="center">
+   <img src="https://uploads-ssl.webflow.com/5fd0eb9e564ba4f3491a33d0/5fe1cbc41a9717f97cda5dd1_explorer-min.png"/>
+</p>
+
+## Features:
+* Dashboard with configurable widgets
+* Collaboration using spaces
+* Global faceted search with aggregation support
+* Graph visualization with advanced features
+* Charts
+* Map visualization
+* Timeline visualization
+* Custom item viewer for documents, video, audio & images
+* Annotation of text & images
+* Data Schema configuration
+* Extensible at all levels with plugins
+* LDAP & SSO integration
+* Developed in Java, React & FlightJS
+
+## BigConnect Core Installation
 BigConnect can be run just about anywhere using the deployment methods described below.
 
 ### Docker

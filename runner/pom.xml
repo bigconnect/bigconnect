@@ -36,11 +36,6 @@
         </dependency>
         <dependency>
             <groupId>io.bigconnect</groupId>
-            <artifactId>storage-accumulo</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.bigconnect</groupId>
             <artifactId>search-index</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -54,12 +49,6 @@
             <artifactId>grizzly-http-server</artifactId>
             <version>2.4.0</version>
         </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>

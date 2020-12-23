@@ -18,7 +18,7 @@ ENV BIGCONNECT_DIR=/bc
 ENV JAVA_OPTS="-Xms4g -Xmx4g -server -XX:+UseG1GC -Dfile.encoding=utf8 -Djava.awt.headless=true"
 RUN mkdir -p ${BIGCONNECT_DIR}/datastore
 
-COPY --from=builder /source/release/target/bc-core-4.2.0/bc-core-4.2.0 ${BIGCONNECT_DIR}
+COPY --from=builder /source/release/target/bc-core/bc-core ${BIGCONNECT_DIR}
 
 VOLUME /bc/datastore
 

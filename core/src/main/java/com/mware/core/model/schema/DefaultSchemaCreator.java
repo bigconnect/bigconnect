@@ -1216,7 +1216,7 @@ public class DefaultSchemaCreator {
                 .save();
 
         schemaFactory.newConceptProperty()
-                .concepts(raw)
+                .concepts(thingConcept)
                 .name(RawObjectSchema.RAW_LANGUAGE.getPropertyName())
                 .displayName("Language")
                 .type(PropertyType.STRING)

@@ -56,6 +56,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.time.Duration;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -125,6 +128,7 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     public static void createQueue(Channel channel, String queueName) throws IOException {
         Map<String, Object> args = new HashMap<>();
         args.put("x-max-priority", 3);
+        args.put("x-message-ttl",  6 * 3600 * 1000); // 6h
         channel.queueDeclare(queueName, true, false, false, args);
     }
 

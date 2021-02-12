@@ -128,6 +128,7 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     public static void createQueue(Channel channel, String queueName) throws IOException {
         Map<String, Object> args = new HashMap<>();
         args.put("x-max-priority", 3);
+        args.put("x-message-ttl",  12 * 3600 * 1000); // 12h
         channel.queueDeclare(queueName, true, false, false, args);
     }
 

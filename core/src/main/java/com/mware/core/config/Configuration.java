@@ -99,10 +99,12 @@ public class Configuration {
     public static final String DEFAULT_SEARCH_RESULT_COUNT = "search.defaultSearchCount";
     public static final String DEFAULT_TIME_ZONE = "default.timeZone";
     public static final String RABBITMQ_PREFETCH_COUNT = "rabbitmq.prefetch.count";
-    public static final String DW_INTERNAL_QUEUE_NAME = "dw.internal.queue.name";
-    public static final String DW_EXTERNAL_QUEUE_NAME = "dw.external.queue.name";
-    public static final String LRP_INTERNAL_QUEUE_NAME = "lrp.internal.queue.name";
-    public static final String LRP_EXTERNAL_QUEUE_NAME = "lrp.external.queue.name";
+
+    public static final String DW_QUEUE_PREFIX = "dw.queue";
+    public static final String DW_QUEUE_NAME = "dw.queue.name";
+    public static final String LRP_QUEUE_PREFIX = "lrp.queue";
+    public static final String LRP_QUEUE_NAME = "lrp.queue.name";
+
     public static final String STATUS_PORT_RANGE = "status.portRange";
     public static final String DEFAULT_STATUS_PORT_RANGE = "40000-41000";
     public static final String COMMENTS_AUTO_PUBLISH = "comments.autoPublish";

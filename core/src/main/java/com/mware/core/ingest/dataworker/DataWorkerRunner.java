@@ -71,7 +71,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_INTERNAL_QUEUE_NAME;
+import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_QUEUE_NAME;
 import static com.mware.ge.util.IterableUtils.toList;
 
 // Unlike many other injected classes, this is not a singleton
@@ -103,7 +103,7 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
         super(workQueueRepository, webQueueRepository, configuration, metricsManager);
         this.statusRepository = statusRepository;
         this.authorizationRepository = authorizationRepository;
-        this.queueName = configuration.get(Configuration.DW_INTERNAL_QUEUE_NAME, DW_DEFAULT_INTERNAL_QUEUE_NAME);
+        this.queueName = configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME);
     }
 
     @Override

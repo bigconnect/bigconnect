@@ -36,6 +36,7 @@
  */
 package com.mware.core.model.workQueue;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
 import com.mware.core.ingest.WorkerSpout;
@@ -46,18 +47,19 @@ import com.mware.ge.Element;
 import com.mware.ge.Graph;
 import org.json.JSONObject;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+
+import static com.mware.core.config.Configuration.DW_QUEUE_PREFIX;
+import static com.mware.core.config.Configuration.LRP_QUEUE_PREFIX;
 
 public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
     // primary
-    private final RabbitMQWorkQueueRepository internalWorkQueue;
-    // secondary
-    private final RabbitMQWorkQueueRepository externalWorkQueue;
+    private final RabbitMQWorkQueueRepository workQueueRepository;
 
-    private final String internalDwQueueName;
-    private final String externalDwQueueName;
-    private final String internalLrpQueueName;
-    private final String externalLrpQueueName;
+    private final Set<String> dwQueueNames;
+    private final Set<String> lrpQueueNames;
 
     @Inject
     public DuplicatingWorkQueueRepository(
@@ -67,52 +69,55 @@ public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
     ) {
         super(graph, configuration);
 
-        this.internalDwQueueName = configuration.get(Configuration.DW_INTERNAL_QUEUE_NAME, DW_DEFAULT_INTERNAL_QUEUE_NAME);
-        this.externalDwQueueName = configuration.get(Configuration.DW_EXTERNAL_QUEUE_NAME, DW_DEFAULT_EXTERNAL_QUEUE_NAME);
-        this.internalLrpQueueName = configuration.get(Configuration.LRP_INTERNAL_QUEUE_NAME, LRP_DEFAULT_INTERNAL_QUEUE_NAME);
-        this.externalLrpQueueName = configuration.get(Configuration.LRP_EXTERNAL_QUEUE_NAME, LRP_DEFAULT_EXTERNAL_QUEUE_NAME);
+        ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+        for (String key : configuration.getKeys(DW_QUEUE_PREFIX)) {
+            if (key.endsWith(".name")) {
+                String queue = configuration.get(key, null);
+                builder.add(queue);
+            }
+        }
+        dwQueueNames = builder.build();
 
-        this.externalWorkQueue = new RabbitMQWorkQueueRepository(graph, configuration);
-        externalWorkQueue.setQueueName(externalDwQueueName);
-        this.internalWorkQueue = new RabbitMQWorkQueueRepository(graph, configuration);
-        internalWorkQueue.setQueueName(internalDwQueueName);
+        builder = ImmutableSet.builder();
+        for (String key : configuration.getKeys(LRP_QUEUE_PREFIX)) {
+            if (key.endsWith(".name")) {
+                String queue = configuration.get(key, null);
+                builder.add(queue);
+            }
+        }
+        lrpQueueNames = builder.build();
 
-        lifeSupportService.add(internalWorkQueue);
-        lifeSupportService.add(externalWorkQueue);
+        workQueueRepository = new RabbitMQWorkQueueRepository(graph, configuration);
+        lifeSupportService.add(workQueueRepository);
     }
 
     @Override
     public void pushOnQueue(String queueName, byte[] data, Priority priority) {
-        internalWorkQueue.pushOnQueue(internalDwQueueName, data, priority);
-        externalWorkQueue.pushOnQueue(externalDwQueueName, data, priority);
+        dwQueueNames.forEach(q -> workQueueRepository.pushOnQueue(q, data, priority));
     }
 
     @Override
     public void pushLongRunningProcessQueue(JSONObject queueItem, Priority priority) {
-        internalWorkQueue.pushOnQueue(internalLrpQueueName, queueItem, priority);
-        externalWorkQueue.pushOnQueue(externalLrpQueueName, queueItem, priority);
+        lrpQueueNames.forEach(q -> workQueueRepository.pushOnQueue(q, queueItem, priority));
     }
 
     @Override
     public void flush() {
-        internalWorkQueue.flush();
-        externalWorkQueue.flush();
+        workQueueRepository.flush();
     }
 
     @Override
     protected void deleteQueue(String queueName) {
-        internalWorkQueue.deleteQueue(internalDwQueueName);
-        externalWorkQueue.deleteQueue(externalDwQueueName);
     }
 
     @Override
     public WorkerSpout createWorkerSpout(String queueName) {
-        return internalWorkQueue.createWorkerSpout(queueName);
+        return workQueueRepository.createWorkerSpout(queueName);
     }
 
     @Override
     public Map<String, Status> getQueuesStatus() {
-        return internalWorkQueue.getQueuesStatus();
+        return workQueueRepository.getQueuesStatus();
     }
 
     @Override

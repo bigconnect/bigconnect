@@ -87,8 +87,7 @@ public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
         }
         lrpQueueNames = builder.build();
 
-        workQueueRepository = new RabbitMQWorkQueueRepository(graph, configuration);
-        lifeSupportService.add(workQueueRepository);
+        workQueueRepository = new RabbitMQWorkQueueRepository(graph, configuration, lifeSupportService);
     }
 
     @Override

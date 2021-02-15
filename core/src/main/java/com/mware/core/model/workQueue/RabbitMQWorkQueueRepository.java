@@ -41,6 +41,7 @@ import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
+import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.status.model.QueueStatus;
 import com.mware.core.status.model.Status;
 import com.mware.core.util.BcLogger;
@@ -76,9 +77,11 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     @Inject
     public RabbitMQWorkQueueRepository(
             Graph graph,
-            Configuration configuration
+            Configuration configuration,
+            LifeSupportService lifeSupportService
     ) {
         super(graph, configuration);
+        lifeSupportService.add(this);
     }
 
     @Override

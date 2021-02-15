@@ -47,6 +47,7 @@ import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.model.termMention.TermMentionRepository;
 import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.user.UserRepository;
+import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.model.workspace.WorkspaceRepository;
 import com.mware.core.process.DataWorkerRunnerProcess;
 import com.mware.core.process.ExternalResourceRunnerProcess;
@@ -75,6 +76,7 @@ public class BigConnectRunner extends CommandLineTool {
         verifyGraphVersion();
         setupGraphAuthorizations();
 
+        InjectHelper.getInstance(WorkQueueRepository.class);
         InjectHelper.getInstance(DataWorkerRunnerProcess.class);
         InjectHelper.getInstance(ExternalResourceRunnerProcess.class);
         InjectHelper.getInstance(LongRunningProcessRunnerProcess.class);

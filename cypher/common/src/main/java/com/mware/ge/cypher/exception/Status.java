@@ -92,37 +92,6 @@ public interface Status
         }
     }
 
-    // TODO: rework the names and uses of Invalid and InvalidFormat and reconsider their categorisation (ClientError
-    // TODO: MUST be resolvable by the user, do we need ProtocolError/DriverError?)
-    enum Request implements Status
-    {
-        // client
-        Invalid( ClientError,  // TODO: see above
-                "The client provided an invalid request." ),
-        InvalidFormat( ClientError,  // TODO: see above
-                "The client provided a request that was missing required fields, or had values that are not allowed." ),
-        TransactionRequired( ClientError,
-                "The request cannot be performed outside of a transaction, and there is no transaction present to " +
-                "use. Wrap your request in a transaction and retry." ),
-        InvalidUsage( ClientError,  // TODO: see above
-                "The client made a request but did not consume outgoing buffers in a timely fashion." ),
-        NoThreadsAvailable( TransientError,  // TODO: see above
-                "There are no available threads to serve this request at the moment. You can retry at a later time " +
-                        "or consider increasing max thread pool size for bolt connector(s)." );
-        private final Code code;
-
-        @Override
-        public Code code()
-        {
-            return code;
-        }
-
-        Request(Classification classification, String description )
-        {
-            this.code = new Code( classification, this, description );
-        }
-    }
-
     enum Transaction implements Status
     {
         // client errors

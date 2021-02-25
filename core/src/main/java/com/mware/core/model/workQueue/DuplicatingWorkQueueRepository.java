@@ -39,6 +39,7 @@ package com.mware.core.model.workQueue;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
+import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.lifecycle.LifeSupportService;
@@ -47,7 +48,7 @@ import com.mware.ge.Element;
 import com.mware.ge.Graph;
 import org.json.JSONObject;
 
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -88,6 +89,19 @@ public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
         lrpQueueNames = builder.build();
 
         workQueueRepository = new RabbitMQWorkQueueRepository(graph, configuration, lifeSupportService);
+
+        lifeSupportService.add(this);
+    }
+
+    @Override
+    public void start() throws Throwable {
+        dwQueueNames.forEach(q -> {
+            try {
+                workQueueRepository.ensureQueue(q);
+            } catch (IOException e) {
+                throw new BcException("Could not create queue", e);
+            }
+        });
     }
 
     @Override

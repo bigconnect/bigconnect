@@ -53,6 +53,7 @@ import com.mware.core.user.User;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.core.util.StoppableRunnable;
+import com.mware.ge.Vertex;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -142,6 +143,11 @@ public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorke
         LongRunningProcessWorker worker = workers.stream().filter(w -> w.isHandled(longRunningProcessQueueItem))
                 .findFirst().orElse(null);
 
+        if (worker == null) {
+            LOGGER.debug("Could not find interested LRP workers.");
+            return;
+        }
+
         try {
             longRunningProcessQueueItem.put("startTime", System.currentTimeMillis());
             longRunningProcessQueueItem.put("progress", 0.0);
@@ -165,7 +171,7 @@ public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorke
 
     @Override
     protected String getQueueName() {
-        return configuration.get(Configuration.LRP_INTERNAL_QUEUE_NAME, WorkQueueRepository.LRP_DEFAULT_INTERNAL_QUEUE_NAME);
+        return configuration.get(Configuration.LRP_QUEUE_NAME, WorkQueueRepository.LRP_DEFAULT_QUEUE_NAME);
     }
 
     @Inject

@@ -84,6 +84,11 @@ public class RabbitMQUtils {
                     Connection recoveredConnection = (Connection) recoverable;
                     LOGGER.warn("recovered RabbitMQ connection to %s:%d", recoveredConnection.getAddress(), recoveredConnection.getPort());
                 }
+
+                @Override
+                public void handleRecoveryStarted(Recoverable recoverable) {
+
+                }
             });
             return connection;
         } catch (TimeoutException e) {

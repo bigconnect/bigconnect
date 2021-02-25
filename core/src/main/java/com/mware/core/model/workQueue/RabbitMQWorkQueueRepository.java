@@ -41,6 +41,7 @@ import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
+import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.status.model.QueueStatus;
 import com.mware.core.status.model.Status;
 import com.mware.core.util.BcLogger;
@@ -76,9 +77,11 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     @Inject
     public RabbitMQWorkQueueRepository(
             Graph graph,
-            Configuration configuration
+            Configuration configuration,
+            LifeSupportService lifeSupportService
     ) {
         super(graph, configuration);
+        lifeSupportService.add(this);
     }
 
     @Override
@@ -128,7 +131,7 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     public static void createQueue(Channel channel, String queueName) throws IOException {
         Map<String, Object> args = new HashMap<>();
         args.put("x-max-priority", 3);
-        args.put("x-message-ttl",  6 * 3600 * 1000); // 6h
+        args.put("x-message-ttl",  12 * 3600 * 1000); // 12h
         channel.queueDeclare(queueName, true, false, false, args);
     }
 

@@ -61,10 +61,8 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public abstract class WorkQueueRepository extends LifecycleAdapter {
-    public static final String DW_DEFAULT_INTERNAL_QUEUE_NAME = "intDataWorker";
-    public static final String DW_DEFAULT_EXTERNAL_QUEUE_NAME = "extDataWorker";
-    public static final String LRP_DEFAULT_INTERNAL_QUEUE_NAME = "intLongRunningProcess";
-    public static final String LRP_DEFAULT_EXTERNAL_QUEUE_NAME = "extLongRunningProcess";
+    public static final String DW_DEFAULT_QUEUE_NAME = "dwQueue";
+    public static final String LRP_DEFAULT_QUEUE_NAME = "lrpQueue";
 
     protected static final BcLogger LOGGER = BcLoggerFactory.getLogger(WorkQueueRepository.class);
     private final Configuration configuration;
@@ -78,7 +76,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
     ) {
         this.graph = graph;
         this.configuration = configuration;
-        setQueueName(configuration.get(Configuration.DW_INTERNAL_QUEUE_NAME, DW_DEFAULT_INTERNAL_QUEUE_NAME));
+        setQueueName(configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME));
     }
 
     public void pushGraphPropertyQueue(
@@ -330,5 +328,5 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
     }
 
     public void pushLongRunningProcessQueue(JSONObject queueItem, Priority priority) {
-        pushOnQueue(configuration.get(Configuration.LRP_INTERNAL_QUEUE_NAME, LRP_DEFAULT_INTERNAL_QUEUE_NAME), queueItem, priority);
+        pushOnQueue(configuration.get(Configuration.LRP_QUEUE_NAME, LRP_DEFAULT_QUEUE_NAME), queueItem, priority);
     }}

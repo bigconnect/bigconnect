@@ -6,6 +6,7 @@ import com.mware.core.security.AuthTokenService;
 import com.mware.core.security.DirectVisibilityTranslator;
 import com.mware.ge.Authorizations;
 import com.mware.ge.base.TestGraphFactory;
+import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import com.mware.ge.inmemory.InMemoryGraphFactory;
 import org.junit.Test;
 
@@ -15,7 +16,7 @@ public class CypherQueriesTest extends GraphTestBase {
     @Test
     public void test1() {
         GeCypherExecutionEngine ee = new GeCypherExecutionEngine(
-                getGraph(), getSchemaRepository(), new LifeSupportService(), getUserRepository(), null, null, null, null, null, null, null, null);
+                getGraph(), getSchemaRepository(), new LifeSupportService(), getUserRepository(), null, null, null, null, null, null, null, null, NetworkConnectionTracker.NO_OP);
         Authorizations authorizations = getGraphAuthorizations();
 
         ee.executeQuery("CREATE (n1 {prop: 1}), (n2 {prop: 3}), (n3 {prop: -5})", authorizations);
@@ -36,7 +37,8 @@ public class CypherQueriesTest extends GraphTestBase {
         GeCypherExecutionEngine ee = new GeCypherExecutionEngine(
                 getGraph(), getSchemaRepository(), new LifeSupportService(),
                 getUserRepository(), getAuthorizationRepository(), null, getAuditService(), new AuthTokenService(getConfiguration(), getUserRepository()),
-                new DirectVisibilityTranslator(), null, getWorkspaceRepository(), null
+                new DirectVisibilityTranslator(), null, getWorkspaceRepository(), null,
+                NetworkConnectionTracker.NO_OP
         );
         Authorizations authorizations = getGraphAuthorizations();
 

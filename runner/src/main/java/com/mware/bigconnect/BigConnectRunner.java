@@ -54,6 +54,8 @@ import com.mware.core.process.LongRunningProcessRunnerProcess;
 import com.mware.core.process.SystemNotificationProcess;
 import com.mware.core.security.BcVisibility;
 import com.mware.core.util.VersionUtil;
+import com.mware.ge.cypher.connection.DefaultNetworkConnectionTracker;
+import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import com.mware.ge.metric.DropWizardMetricRegistry;
 
 import java.util.concurrent.ExecutorService;

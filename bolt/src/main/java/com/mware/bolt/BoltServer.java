@@ -32,22 +32,31 @@ import com.mware.core.lifecycle.LifecycleAdapter;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.cypher.GeCypherExecutionEngine;
+import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import io.netty.handler.ssl.SslContext;
 
 @Singleton
 public class BoltServer extends LifecycleAdapter {
     private static BcLogger LOGGER = BcLoggerFactory.getLogger(BoltServer.class);
+    private final LifeSupportService lifeSupportService;
     private BoltConnector boltConnector;
-    private NetworkConnectionTracker connectionTracker = NetworkConnectionTracker.NO_OP;
+    private final NetworkConnectionTracker connectionTracker;
     private GeCypherExecutionEngine executionEngine;
     private ExecutorBoltSchedulerProvider boltSchedulerProvider;
     private NettyServer server;
     private SslPolicyLoader sslPolicyLoader;
 
     @Inject
-    public BoltServer(GeCypherExecutionEngine executionEngine, LifeSupportService lifeSupportService, BoltConnector boltConnector) {
+    public BoltServer(
+            GeCypherExecutionEngine executionEngine,
+            LifeSupportService lifeSupportService,
+            BoltConnector boltConnector,
+            NetworkConnectionTracker connectionTracker
+    ) {
         this.executionEngine = executionEngine;
+        this.lifeSupportService = lifeSupportService;
         this.boltConnector = boltConnector;
+        this.connectionTracker = connectionTracker;
         lifeSupportService.add(this);
     }
 

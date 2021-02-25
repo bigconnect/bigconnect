@@ -121,6 +121,7 @@ public class GeCypherQueryContext {
     private volatile Map<String, Object> userMetaData;
     private final Statement statement;
     private final ExecutingQuery executingQuery;
+    private final SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
 
     private Concept thingConcept;
     private Relationship topRelationship;
@@ -188,7 +189,7 @@ public class GeCypherQueryContext {
     }
 
     public SecurityContext securityContext() {
-        throw new UnsupportedOperationException("not implemented");
+        return securityContext;
     }
 
     public ProceduresSupport procedures() {

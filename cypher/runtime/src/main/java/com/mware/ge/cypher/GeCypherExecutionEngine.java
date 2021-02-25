@@ -20,8 +20,10 @@ import com.mware.ge.*;
 import com.mware.ge.collection.RawIterator;
 import com.mware.ge.cypher.builtin.proc.*;
 import com.mware.ge.cypher.builtin.proc.datetime.DateFunctions;
+import com.mware.ge.cypher.builtin.proc.dbms.BuiltInDbmsProcedures;
 import com.mware.ge.cypher.builtin.proc.jdbc.JdbcProcedures;
 import com.mware.ge.cypher.builtin.proc.spatial.SpecialBuiltInProcedures;
+import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import com.mware.ge.cypher.exception.ProcedureException;
 import com.mware.ge.cypher.ge.GeCypherQueryContext;
 import com.mware.ge.cypher.internal.CacheTracer;
@@ -81,6 +83,7 @@ public class GeCypherExecutionEngine {
     private AuthTokenService authTokenService;
     private final WorkspaceRepository workspaceRepository;
     private final GraphRepository graphRepository;
+    private NetworkConnectionTracker connectionTracker;
 
     @Inject
     public GeCypherExecutionEngine(
@@ -95,7 +98,8 @@ public class GeCypherExecutionEngine {
             VisibilityTranslator visibilityTranslator,
             TermMentionRepository termMentionRepository,
             WorkspaceRepository workspaceRepository,
-            GraphRepository graphRepository
+            GraphRepository graphRepository,
+            NetworkConnectionTracker connectionTracker
     ) {
         this.graph = (GraphWithSearchIndex) graph;
         this.schemaRepository = schemaRepository;
@@ -109,6 +113,7 @@ public class GeCypherExecutionEngine {
         this.termMentionRepository = termMentionRepository;
         this.workspaceRepository = workspaceRepository;
         this.graphRepository = graphRepository;
+        this.connectionTracker = connectionTracker;
 
         Map<String, String> initialConfig = new HashMap<>();
         initialConfig.put("dbms.security.procedures.unrestricted", "algo.*");
@@ -127,6 +132,8 @@ public class GeCypherExecutionEngine {
         dependencyResolver.satisfyDependencies(queryRegistrationOperations);
         dependencyResolver.satisfyDependencies(new StatementOperationParts(queryRegistrationOperations));
         dependencyResolver.satisfyDependencies(visibilityTranslator);
+        dependencyResolver.satisfyDependency(connectionTracker);
+
         if (termMentionRepository != null) {
             dependencyResolver.satisfyDependencies(termMentionRepository);
         }
@@ -158,6 +165,7 @@ public class GeCypherExecutionEngine {
         procedures.register(new UserRepositoryProcedures.GetUserProcedure(userRepository));
         procedures.register(new ClusterProcedures.ClusterRoleProcedure());
         procedures.registerProcedure(BuiltInProcedures.class);
+        procedures.registerProcedure(BuiltInDbmsProcedures.class);
         procedures.registerBuiltInFunctions(BuiltInFunctions.class);
         procedures.registerBuiltInFunctions(DateFunctions.class);
         procedures.registerProcedure(JdbcProcedures.class);

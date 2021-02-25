@@ -2,6 +2,8 @@
  * Copyright (c) 2002-2020 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
+ * This file is part of Neo4j.
+ *
  * Neo4j is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -15,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mware.bolt.transport;
+package com.mware.ge.cypher.builtin.proc.dbms;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-public final class NetworkConnectionIdGenerator
+public class ConnectionTerminationFailedResult extends ConnectionTerminationResult
 {
-    private final AtomicLong idGenerator = new AtomicLong();
+    private static final String UNKNOWN_USER = "n/a";
+    private static final String FAILURE_MESSAGE = "No connection found with this id";
 
-    public String newConnectionId( String connector )
+    ConnectionTerminationFailedResult(String connectionId )
     {
-        return connector + '-' + idGenerator.getAndIncrement();
+        super( connectionId, UNKNOWN_USER, FAILURE_MESSAGE );
     }
 }

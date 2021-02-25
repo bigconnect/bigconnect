@@ -73,6 +73,7 @@ object GeCallSupport {
     ctx.put(Context.STATEMENT_CLOCK, Clock.systemUTC())
     ctx.put(Context.DEPENDENCY_RESOLVER, cypherQueryContext.getDependencyResolver)
     ctx.put(Context.CYPHER_QUERY_CONTEXT, cypherQueryContext)
+    ctx.put(Context.SECURITY_CONTEXT, cypherQueryContext.securityContext())
     return ctx;
   }
 

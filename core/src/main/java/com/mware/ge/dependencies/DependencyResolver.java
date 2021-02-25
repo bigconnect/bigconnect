@@ -53,7 +53,6 @@ public interface DependencyResolver {
      * @param <T>  the type that the returned instance must implement
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
-     * @deprecated in next major version default selection strategy will be changed to more strict {@link DependencyResolver.SelectionStrategy#ONLY}
      */
     <T> T resolveDependency(Class<T> type) throws IllegalArgumentException;
 

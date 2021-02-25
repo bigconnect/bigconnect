@@ -21,6 +21,7 @@ import com.mware.core.security.AuthTokenService;
 import com.mware.core.security.DirectVisibilityTranslator;
 import com.mware.core.security.VisibilityTranslator;
 import com.mware.ge.*;
+import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import com.mware.ge.id.LongIdGenerator;
 import com.mware.ge.id.UUIDIdGenerator;
 import com.mware.ge.inmemory.InMemoryGraph;
@@ -80,7 +81,8 @@ public class TestCypherQueryContextFactory implements CypherQueryContextFactory 
                 visibilityTranslator,
                 null,
                 null,
-                graphRepository
+                graphRepository,
+                NetworkConnectionTracker.NO_OP
         );
     }
 

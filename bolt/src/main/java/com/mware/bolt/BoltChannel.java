@@ -17,8 +17,8 @@
  */
 package com.mware.bolt;
 
-import com.mware.bolt.transport.configuration.TrackedNetworkConnection;
 import com.mware.ge.Authorizations;
+import com.mware.ge.cypher.connection.TrackedNetworkConnection;
 import io.netty.channel.Channel;
 
 import java.net.SocketAddress;

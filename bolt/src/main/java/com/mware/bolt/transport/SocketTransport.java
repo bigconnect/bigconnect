@@ -20,6 +20,7 @@ package com.mware.bolt.transport;
 import com.mware.bolt.BoltChannel;
 import com.mware.bolt.BoltConnector;
 import com.mware.bolt.util.ListenSocketAddress;
+import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -56,12 +57,12 @@ public class SocketTransport implements NettyServer.ProtocolInitializer {
             protected void initChannel(Channel ch) throws Exception {
                 ch.config().setAllocator(PooledByteBufAllocator.DEFAULT);
                 BoltChannel boltChannel = newBoltChannel(ch);
-
+                connectionTracker.add( boltChannel );
                 // install throttles
                 throttleGroup.install(ch);
 
                 // add a close listener that will uninstall throttles
-                ch.closeFuture().addListener(future -> throttleGroup.uninstall(ch));
+                ch.closeFuture().addListener(future -> { throttleGroup.uninstall(ch); connectionTracker.remove( boltChannel ); });
 
                 TransportSelectionHandler transportSelectionHandler = new TransportSelectionHandler(boltChannel, sslCtx,
                         encryptionRequired, false, boltProtocolFactory);

@@ -90,7 +90,7 @@ import org.junit.Before;
 
 import java.util.*;
 
-import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_INTERNAL_QUEUE_NAME;
+import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_QUEUE_NAME;
 import static com.mware.ge.util.GeAssert.addGraphEvent;
 import static com.mware.ge.util.GeAssert.clearGraphEvents;
 
@@ -573,6 +573,6 @@ public abstract class GraphTestBase {
     }
 
     protected List<byte[]> getGraphPropertyQueueItems() {
-        return getWorkQueueItems(configuration.get(Configuration.DW_INTERNAL_QUEUE_NAME, DW_DEFAULT_INTERNAL_QUEUE_NAME));
+        return getWorkQueueItems(configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME));
     }
 }

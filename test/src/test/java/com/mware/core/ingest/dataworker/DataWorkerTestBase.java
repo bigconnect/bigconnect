@@ -61,10 +61,10 @@ import com.mware.ge.id.IdGenerator;
 import com.mware.ge.id.QueueIdGenerator;
 import com.mware.ge.inmemory.InMemoryGraph;
 import com.mware.ge.inmemory.InMemoryGraphConfiguration;
-import com.mware.ge.values.storable.DateTimeValue;
-import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.search.DefaultSearchIndex;
 import com.mware.ge.search.SearchIndex;
+import com.mware.ge.values.storable.DateTimeValue;
+import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.values.storable.TextValue;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -76,9 +76,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_INTERNAL_QUEUE_NAME;
+import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_QUEUE_NAME;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -385,7 +388,7 @@ public abstract class DataWorkerTestBase {
 
     protected List<byte[]> getGraphPropertyQueue() {
         return InMemoryWorkQueueRepository.getQueue(
-                getConfiguration().get(Configuration.DW_INTERNAL_QUEUE_NAME, DW_DEFAULT_INTERNAL_QUEUE_NAME));
+                getConfiguration().get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME));
     }
 
     protected VisibilityTranslator getVisibilityTranslator() {

@@ -49,6 +49,7 @@ public final class Privilege {
     public static final String HISTORY_READ = "HISTORY_READ"; // read vertex/edge/property history
     public static final String SEARCH_SAVE_GLOBAL = "SEARCH_SAVE_GLOBAL";
     public static final String EDIT = "EDIT";
+    public static final String UNRESOLVE = "UNRESOLVE";
     public static final String PUBLISH = "PUBLISH";
     public static final String ADMIN = "ADMIN";
     public static final String ONTOLOGY_ADD = "ONTOLOGY_ADD"; // Add to ontology from interface
@@ -67,7 +68,8 @@ public final class Privilege {
                 PUBLISH,
                 ADMIN,
                 ONTOLOGY_ADD,
-                ONTOLOGY_PUBLISH
+                ONTOLOGY_PUBLISH,
+                UNRESOLVE
         };
         Set<Privilege> allPrivileges = new HashSet<Privilege>(allNames.length);
         for (String name : allNames) {

@@ -46,8 +46,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public abstract class Notification {
-    static final String ACTION_EVENT_EXTERNAL_URL = "EXTERNAL_URL";
-    static final String ACTION_EVENT_OBJECT_ID = "OBJECT_ID";
+    public static final String ACTION_EVENT_EXTERNAL_URL = "EXTERNAL_URL";
+    public static final String ACTION_EVENT_OBJECT_ID = "OBJECT_ID";
 
     @Id
     private String id;

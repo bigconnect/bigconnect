@@ -46,7 +46,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public abstract class Notification {
-    static final String ACTION_EVENT_EXTERNAL_URL = "EXTERNAL_URL";
+    public static final String ACTION_EVENT_EXTERNAL_URL = "EXTERNAL_URL";
+    public static final String ACTION_EVENT_OBJECT_ID = "OBJECT_ID";
 
     @Id
     private String id;
@@ -117,6 +118,16 @@ public abstract class Notification {
         setActionEvent(ACTION_EVENT_EXTERNAL_URL);
         JSONObject payload = new JSONObject();
         payload.put("url", externalUrl);
+        this.setActionPayload(payload);
+    }
+
+    public void setElementId(String id) {
+        if (getActionPayload() != null || getActionEvent() != null) {
+            throw new IllegalStateException("actionPayload or actionEvent is already assigned");
+        }
+        setActionEvent(ACTION_EVENT_OBJECT_ID);
+        JSONObject payload = new JSONObject();
+        payload.put("eid", id);
         this.setActionPayload(payload);
     }
 

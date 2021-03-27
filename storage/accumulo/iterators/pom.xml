@@ -48,11 +48,17 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
-                    <artifactSet>
-                        <includes>
-                            <include>com.mware.bigconnect:security</include>
-                        </includes>
-                    </artifactSet>
+                    <filters>
+                        <filter>
+                            <artifact>io.bigconnect:security</artifact>
+                            <includes>
+                                <include>com/mware/**</include>
+                            </includes>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
                 <executions>
                     <execution>

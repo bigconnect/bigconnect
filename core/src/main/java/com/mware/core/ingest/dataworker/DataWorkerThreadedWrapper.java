@@ -196,8 +196,6 @@ public class DataWorkerThreadedWrapper implements Runnable {
                                     Thread.currentThread().getName()
                             );
                             if (getElapsedTime(startTime) > DEQUEUE_WARN_THRESHOLD_MS) {
-                                LOGGER.warn("%s", message);
-                            } else {
                                 LOGGER.debug("%s", message);
                             }
                             lastMessageTime = new Date();

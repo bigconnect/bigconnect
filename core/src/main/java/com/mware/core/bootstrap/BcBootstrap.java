@@ -65,6 +65,8 @@ import com.mware.core.model.role.AuthorizationRepositoryBase;
 import com.mware.core.model.role.GeAuthorizationRepository;
 import com.mware.core.model.schema.GeSchemaRepository;
 import com.mware.core.model.schema.SchemaRepository;
+import com.mware.core.model.search.GeSearchRepository;
+import com.mware.core.model.search.SearchRepository;
 import com.mware.core.model.user.*;
 import com.mware.core.model.workQueue.InMemoryWebQueueRepository;
 import com.mware.core.model.workQueue.InMemoryWorkQueueRepository;
@@ -239,6 +241,9 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
                 .in(Scopes.SINGLETON);
         bind(CacheService.class)
                 .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.CACHE_SERVICE, InMemoryCacheService.class))
+                .in(Scopes.SINGLETON);
+        bind(SearchRepository.class)
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, null, GeSearchRepository.class))
                 .in(Scopes.SINGLETON);
 
         injectProviders();

@@ -42,7 +42,7 @@ import com.mware.core.exception.BcException;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
-import com.mware.ge.Graph;
+import com.mware.ge.io.IOUtils;
 import com.rabbitmq.client.*;
 import org.json.JSONObject;
 
@@ -53,35 +53,29 @@ import java.util.concurrent.TimeoutException;
 
 public class RabbitMQWebQueueRepository extends WebQueueRepository {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(RabbitMQWebQueueRepository.class);
-    public static final String CONFIG_BROADCAST_EXCHANGE_NAME = "rabbitmq.broadcastExchangeName";
     public static final String CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT = "exBroadcast";
 
     private final Connection connection;
     private final Channel channel;
-    private final Integer deliveryMode;
-    private final Address[] rabbitMqAddresses;
-    private Set<String> declaredQueues = new HashSet<>();
+    private Thread thread;
 
     @Inject
     public RabbitMQWebQueueRepository(
-            Graph graph,
             Configuration configuration,
             LifeSupportService lifeSupportService
     )
             throws IOException {
         this.connection = RabbitMQUtils.openConnection(configuration);
         this.channel = RabbitMQUtils.openChannel(this.connection);
-        this.channel.exchangeDeclare(getExchangeName(), "fanout");
-        this.deliveryMode = configuration.getInt(RabbitMQUtils.RABBITMQ_DELIVERY_MODE, MessageProperties.PERSISTENT_BASIC.getDeliveryMode());
-        this.rabbitMqAddresses = RabbitMQUtils.getAddresses(configuration);
+        this.channel.exchangeDeclare(CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT, "fanout");
         lifeSupportService.add(this);
     }
 
     @Override
     public void broadcastJson(JSONObject json) {
         try {
-            LOGGER.debug("publishing message to broadcast exchange [%s]: %s", getExchangeName(), json.toString());
-            channel.basicPublish(getExchangeName(), "", null, json.toString().getBytes());
+            LOGGER.debug("publishing message to broadcast exchange [%s]: %s", CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT, json.toString());
+            channel.basicPublish(CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT, "", null, json.toString().getBytes());
         } catch (IOException ex) {
             throw new BcException("Could not broadcast json", ex);
         }
@@ -91,34 +85,30 @@ public class RabbitMQWebQueueRepository extends WebQueueRepository {
     public void subscribeToBroadcastMessages(final BroadcastConsumer broadcastConsumer) {
         try {
             String queueName = this.channel.queueDeclare().getQueue();
-            this.channel.queueBind(queueName, getExchangeName(), "");
+            this.channel.queueBind(queueName, CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT, "");
 
             final QueueingConsumer callback = new QueueingConsumer(this.channel);
             this.channel.basicConsume(queueName, true, callback);
 
-            final Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        //noinspection InfiniteLoopStatement
-                        while (true) {
-                            QueueingConsumer.Delivery delivery = callback.nextDelivery();
-                            try {
-                                JSONObject json = new JSONObject(new String(delivery.getBody()));
-                                LOGGER.debug("received message from broadcast exchange [%s]: %s", getExchangeName(), json.toString());
-                                broadcastConsumer.broadcastReceived(json);
-                            } catch (Throwable ex) {
-                                LOGGER.error("problem in broadcast thread", ex);
-                            }
+            this.thread = new Thread(() -> {
+                try {
+                    while (true) {
+                        QueueingConsumer.Delivery delivery = callback.nextDelivery();
+                        try {
+                            JSONObject json = new JSONObject(new String(delivery.getBody()));
+                            LOGGER.debug("received message from broadcast exchange [%s]: %s", CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT, json.toString());
+                            broadcastConsumer.broadcastReceived(json);
+                        } catch (Throwable ex) {
+                            LOGGER.error("problem in broadcast thread", ex);
                         }
-                    } catch (InterruptedException e) {
-                        throw new BcException("broadcast listener has died", e);
                     }
+                } catch (InterruptedException e) {
+                    throw new BcException("broadcast listener has died", e);
                 }
             });
-            t.setName("rabbitmq-subscribe-" + broadcastConsumer.getClass().getName());
-            t.setDaemon(true);
-            t.start();
+            thread.setName("rabbitmq-subscribe-" + broadcastConsumer.getClass().getName());
+            thread.setDaemon(true);
+            thread.start();
         } catch (IOException e) {
             throw new BcException("Could not subscribe to broadcasts", e);
         }
@@ -128,19 +118,28 @@ public class RabbitMQWebQueueRepository extends WebQueueRepository {
     public void unsubscribeFromBroadcastMessages(BroadcastConsumer broadcastConsumer) {
         try {
             this.channel.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            // do nothing
         }
     }
 
     @Override
     public void shutdown() {
-
-    }
-
-    private String getExchangeName() {
-        return CONFIG_BROADCAST_EXCHANGE_NAME_DEFAULT;
+        try {
+            LOGGER.debug("Closing RabbitMQ channel");
+            this.channel.close();
+        } catch (Throwable e) {
+            LOGGER.error("Could not close RabbitMQ channel", e);
+        }
+        try {
+            LOGGER.debug("Closing RabbitMQ connection");
+            this.connection.close();
+        } catch (Throwable e) {
+            LOGGER.error("Could not close RabbitMQ connection", e);
+        }
+        try {
+            this.thread.interrupt();
+        } catch (Exception e) {
+        }
     }
 }

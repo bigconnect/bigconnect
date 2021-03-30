@@ -102,6 +102,11 @@ public abstract class BcElementMapperBase<KEYIN, VALUEIN> extends ElementMapper<
         context.write(getKey(context, verticesTableName, m), m);
     }
 
+    @Override
+    protected void saveExtendedDataMutation(Context context, Text extendedDataTableName, StoreMutation m) throws IOException, InterruptedException {
+        context.write(getKey(context, extendedDataTableName, m), m);
+    }
+
     protected Text getKey(Mapper.Context context, Text tableName, StoreMutation m) {
         return tableName;
     }

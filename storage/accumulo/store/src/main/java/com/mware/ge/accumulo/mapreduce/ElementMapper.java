@@ -37,24 +37,23 @@
 package com.mware.ge.accumulo.mapreduce;
 
 import com.mware.ge.*;
-import com.mware.ge.accumulo.*;
+import com.mware.ge.accumulo.AccumuloGraph;
+import com.mware.ge.accumulo.AccumuloGraphConfiguration;
 import com.mware.ge.id.IdGenerator;
 import com.mware.ge.id.NameSubstitutionStrategy;
 import com.mware.ge.serializer.GeSerializer;
 import com.mware.ge.store.StorableEdge;
-import com.mware.ge.store.StorableGraph;
 import com.mware.ge.store.StorableVertex;
 import com.mware.ge.store.mutations.ElementMutationBuilder;
 import com.mware.ge.store.mutations.StoreMutation;
 import com.mware.ge.store.util.StreamingPropertyValueStorageStrategy;
 import com.mware.ge.util.IncreasingTime;
-import org.apache.accumulo.core.data.Mutation;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 
-public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> implements StorableGraph {
+public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {
     public static final String GRAPH_CONFIG_PREFIX = "graphConfigPrefix";
     private ElementMutationBuilder elementMutationBuilder;
     private ElementMapperGraph graph;
@@ -75,7 +74,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         GeSerializer geSerializer = accumuloGraphConfiguration.createSerializer(this.graph);
         nameSubstitutionStrategy = accumuloGraphConfiguration.createSubstitutionStrategy(this.graph);
         StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy = accumuloGraphConfiguration.createStreamingPropertyValueStorageStrategy(this.graph);
-        this.elementMutationBuilder = new ElementMutationBuilder(streamingPropertyValueStorageStrategy, this, geSerializer) {
+        this.elementMutationBuilder = new ElementMutationBuilder(streamingPropertyValueStorageStrategy, null, geSerializer) {
             @Override
             protected void saveVertexMutation(StoreMutation m) {
                 try {

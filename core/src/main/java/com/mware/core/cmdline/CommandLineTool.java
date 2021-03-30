@@ -65,22 +65,22 @@ public abstract class CommandLineTool {
     public static final String THREAD_NAME = "BigConnect CLI";
     protected BcLogger LOGGER;
     public static final boolean DEFAULT_INIT_FRAMEWORK = true;
-    private Configuration configuration;
-    private boolean willExit = false;
-    private UserRepository userRepository;
-    private AuthorizationRepository authorizationRepository;
-    private Authorizations authorizations;
-    private PrivilegeRepository privilegeRepository;
-    private LockRepository lockRepository;
-    private User user;
-    private Graph graph;
-    private WorkQueueRepository workQueueRepository;
-    private SchemaRepository schemaRepository;
-    private VisibilityTranslator visibilityTranslator;
-    private SimpleOrmSession simpleOrmSession;
-    private LifeSupportService lifeSupportService;
-    private JCommander jCommander;
-    private boolean frameworkInitialized;
+    protected Configuration configuration;
+    protected boolean willExit = false;
+    protected UserRepository userRepository;
+    protected AuthorizationRepository authorizationRepository;
+    protected Authorizations authorizations;
+    protected PrivilegeRepository privilegeRepository;
+    protected LockRepository lockRepository;
+    protected User user;
+    protected Graph graph;
+    protected WorkQueueRepository workQueueRepository;
+    protected SchemaRepository schemaRepository;
+    protected VisibilityTranslator visibilityTranslator;
+    protected SimpleOrmSession simpleOrmSession;
+    protected LifeSupportService lifeSupportService;
+    protected JCommander jCommander;
+    protected boolean frameworkInitialized;
 
     @Parameter(names = {"--help", "-h"}, description = "Print help", help = true)
     private boolean help;

@@ -2186,8 +2186,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
      * Visible to allow special handling of the client, particularly in unit tests.
      */
     protected void shutdownElasticsearchClient() {
-        client.close();
-        sidecar.stop();
+        if (client != null)
+            client.close();
+
+        if (sidecar != null)
+            sidecar.stop();
     }
 
     @SuppressWarnings("unused")

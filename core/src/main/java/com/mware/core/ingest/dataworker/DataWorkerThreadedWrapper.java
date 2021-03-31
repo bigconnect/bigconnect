@@ -158,7 +158,7 @@ public class DataWorkerThreadedWrapper implements Runnable {
         if (work.getData().isTraceEnabled()) {
             Map<String, String> parameters = new HashMap<>();
             parameters.put("elementId", elementId);
-            traceSpan = Trace.on("GPW: " + this.worker.getClass().getName(), parameters);
+            traceSpan = Trace.on("DW: " + this.worker.getClass().getName(), parameters);
         }
         return traceSpan;
     }

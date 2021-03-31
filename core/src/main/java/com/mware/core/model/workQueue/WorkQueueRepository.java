@@ -315,6 +315,10 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         this.dataWorkerRunner = graphPropertyRunner;
     }
 
+    public boolean hasDataWorkerRunner() {
+        return this.dataWorkerRunner != null;
+    }
+
     public void setQueueName(String queueName) {
         this.queueName = queueName;
     }

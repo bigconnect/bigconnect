@@ -105,6 +105,7 @@ public class DataWorkerThreadedWrapper implements Runnable {
                     long startTime = System.currentTimeMillis();
                     TraceSpan traceSpan = startTraceIfEnabled(work, elementId);
                     try {
+                        DataWorkerMemoryTracer.log(workerClassName, elementId, work.getData() != null ? work.getData().getProperty() : null);
                         this.worker.execute(in, work.getData());
                     } finally {
                         stopTraceIfEnabled(work, traceSpan);

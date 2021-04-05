@@ -734,28 +734,28 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { if(doc[fieldName].size() !=0) { fieldValues.addAll(doc[fieldName]); }} " +
                         "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
 
-                if (propertyDefinition.getDataType().isAssignableFrom(TextValue.class)) {
+                if (TextValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
                     scriptSrc += "return fieldValues.length > 0 ? (fieldValues[0] instanceof JodaCompatibleZonedDateTime ? fieldValues[0].getMillis() : fieldValues[0]) : (params.esOrder == 'asc' ? Character.toString(Character.MAX_VALUE) : '');";
                 } else {
                     scriptSrc += "return fieldValues.length > 0 ? (fieldValues[0] instanceof JodaCompatibleZonedDateTime ? fieldValues[0].getMillis() : fieldValues[0]) : (params.esOrder == 'asc' ? Long.MAX_VALUE : Long.MIN_VALUE);";
                 }
 
                 List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
-                        propertyName + (propertyDefinition.getDataType().isAssignableFrom(TextValue.class) ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
+                        propertyName + (TextValue.class.isAssignableFrom(propertyDefinition.getDataType()) ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
                 ).collect(Collectors.toList());
                 HashMap<String, Object> scriptParams = new HashMap<>();
                 scriptParams.put("fieldNames", fieldNames);
                 scriptParams.put("esOrder", esOrder == SortOrder.DESC ? "desc" : "asc");
                 scriptParams.put("dataType", propertyDefinition.getDataType().getSimpleName());
                 Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
-                ScriptSortBuilder.ScriptSortType sortType = propertyDefinition.getDataType().isAssignableFrom(TextValue.class) ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
+                ScriptSortBuilder.ScriptSortType sortType = TextValue.class.isAssignableFrom(propertyDefinition.getDataType()) ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
                 q.addSort(SortBuilders.scriptSort(script, sortType)
                         .order(esOrder)
                         .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
             } else if (propertyNames.length == 1) {
                 String sortField = propertyNames[0];
                 String unmappedType = ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType());
-                if (propertyDefinition.getDataType().isAssignableFrom(TextValue.class)) {
+                if (TextValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
                     sortField += Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
                     unmappedType = KEYWORD_UNMAPPED_TYPE;
                 }
@@ -1829,7 +1829,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (propertyDefinition == null) {
             throw new GeException("Unknown property " + agg.getFieldName() + " for geohash aggregation.");
         }
-        if (!propertyDefinition.getDataType().isAssignableFrom(GeoPointValue.class)) {
+        if (!GeoPointValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
             throw new GeNotSupportedException("Only GeoPoint properties are valid for Geohash aggregation. Invalid property " + agg.getFieldName());
         }
         for (String propertyName : getPropertyNames(agg.getFieldName())) {

@@ -566,7 +566,6 @@ public final class CypherFunctions {
         }
     }
 
-    //NOTE all usage except for paths is deprecated
     public static IntegralValue length(AnyValue item) {
         if (item instanceof PathValue) {
             return longValue(((PathValue) item).size());
@@ -574,6 +573,8 @@ public final class CypherFunctions {
             return longValue(((TextValue) item).length());
         } else if (item instanceof SequenceValue) {
             return longValue(((SequenceValue) item).length());
+        } else if (item instanceof StreamingPropertyValue) {
+            return longValue(((StreamingPropertyValue)item).getLength());
         } else {
             return longValue(1);
         }

@@ -495,8 +495,15 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                 } else if (">".equals(predicateString)) {
                     graphQuery.has(propertyName, Compare.GREATER_THAN, (Value) value0);
                 } else if ("range".equals(predicateString)) {
-                    graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, (Value) value0);
-                    graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, (Value) jsonValueToObject(values, propertyDataType, 1));
+                    Object value1 = jsonValueToObject(values, propertyDataType, 1);
+                    if (value0 instanceof DateTimeValue && value1 instanceof DateTimeValue) {
+                        ZonedDateTime start = ((DateTimeValue) value0).asObjectCopy();
+                        ZonedDateTime end = ((DateTimeValue) value1).asObjectCopy();
+                        graphQuery.has(propertyName, Compare.RANGE,
+                                Values.of(new Range<>(start, true, end, false)));
+                    } else {
+                        throw new IllegalArgumentException("Range query must have DateTimeValue values");
+                    }
                 } else if ("=".equals(predicateString) || "equal".equals(predicateString)) {
                     if (PropertyType.DOUBLE.equals(propertyDataType)) {
                         applyDoubleEqualityToQuery(graphQuery, obj, value0);
@@ -707,20 +714,21 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                 if (!isRelative) {
                     calendar = moveDateToStart(calendar);
                 }
-                graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, calendar);
+                ZonedDateTime start = calendar.asObjectCopy();
 
                 if (values.get(1) instanceof JSONObject) {
                     JSONObject fromNow = (JSONObject) values.get(1);
                     calendar = DateTimeValue.now(Clocks.systemClock());
                     calendar = moveDateToStart(calendar);
                     calendar = moveDate(calendar, fromNow.getInt("unit"), fromNow.getInt("amount"));
-                    calendar = moveDateToEnd(calendar, isDateOnly);
-                    graphQuery.has(propertyName, Compare.LESS_THAN, calendar);
                 } else {
-                    calendar= (DateTimeValue) jsonValueToObject(values, propertyDataType, 1);
-                    calendar = moveDateToEnd(calendar, isDateOnly);
-                    graphQuery.has(propertyName, Compare.LESS_THAN, calendar);
+                    calendar = (DateTimeValue) jsonValueToObject(values, propertyDataType, 1);
                 }
+                calendar = moveDateToEnd(calendar, isDateOnly);
+                ZonedDateTime end = calendar.asObjectCopy();
+
+                graphQuery.has(propertyName, Compare.RANGE,
+                        Values.of(new Range<>(start, true, end, false)));
             } else if (predicate.equals("<")) {
                 calendar = moveDateToStart(calendar);
                 graphQuery.has(propertyName, Compare.LESS_THAN, calendar);

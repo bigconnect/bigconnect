@@ -36,6 +36,7 @@
  */
 package com.mware.ge.values.storable;
 
+import com.mware.ge.Range;
 import com.mware.ge.type.*;
 
 import java.lang.reflect.Array;
@@ -319,6 +320,14 @@ public final class Values {
         return new ShortArray(value);
     }
 
+    public static Value temporalRangeValue(Range range) {
+        if (range.getStart() instanceof ZonedDateTime && range.getEnd() instanceof ZonedDateTime) {
+            return dateTimeArray(new ZonedDateTime[] {(ZonedDateTime)range.getStart(), (ZonedDateTime)range.getEnd()});
+        } else {
+            throw new IllegalArgumentException("Range must contain ZonedDateTime values");
+        }
+    }
+
     public static Value temporalValue(Temporal value) {
         if (value instanceof ZonedDateTime) {
             return datetime((ZonedDateTime) value);
@@ -443,6 +452,9 @@ public final class Values {
         }
         if (value instanceof Temporal) {
             return temporalValue((Temporal) value);
+        }
+        if (value instanceof Range) {
+            return temporalRangeValue((Range) value);
         }
         if (value instanceof TemporalAmount) {
             return durationValue((TemporalAmount) value);

@@ -1623,35 +1623,19 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 }
                 return QueryBuilders.prefixQuery(propertyName, (String) convertedValue);
             case RANGE:
-                if (!(convertedValue instanceof Range)) {
-                    throw new GeException("RANGE may only be used to query Range values");
+                if (!(convertedValue instanceof ZonedDateTime[])) {
+                    throw new GeException("RANGE may only be used to query ZonedDateTime[] values");
                 }
-                Range range = (Range) convertedValue;
-
-                Object startValue = convertQueryValue(Values.of(range.getStart(), false));
-                Object endValue = convertQueryValue(Values.of(range.getEnd(), false));
-                if (range.getEnd() instanceof TemporalValue) {
-                    endValue = ((ZonedDateTime) endValue).plusDays(1).minus(1, ChronoUnit.MILLIS);
-                }
-
-                if (startValue instanceof String || endValue instanceof String) {
-                    propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-                }
+                ZonedDateTime[] range = (ZonedDateTime[]) convertedValue;
+                ZonedDateTime startValue = range[0];
+                ZonedDateTime endValue = range[1];
 
                 RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(propertyName);
                 if (startValue != null) {
-                    if (range.isInclusiveStart()) {
-                        rangeQueryBuilder = rangeQueryBuilder.gte(startValue);
-                    } else {
-                        rangeQueryBuilder = rangeQueryBuilder.gt(startValue);
-                    }
+                    rangeQueryBuilder = rangeQueryBuilder.gte(startValue.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
                 }
                 if (endValue != null) {
-                    if (range.isInclusiveEnd()) {
-                        rangeQueryBuilder = rangeQueryBuilder.lte(endValue);
-                    } else {
-                        rangeQueryBuilder = rangeQueryBuilder.lt(endValue);
-                    }
+                    rangeQueryBuilder = rangeQueryBuilder.lt(endValue.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
                 }
                 return rangeQueryBuilder;
             default:
@@ -1675,6 +1659,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             return IntStream.of(array).boxed().toArray(Integer[]::new);
         } else if (value instanceof GeoShapeValue) {
             return ((GeoShapeValue)value).asObjectCopy();
+        } else if (value instanceof DateTimeArray) {
+            return ((DateTimeArray)value).asObjectCopy();
         }
         throw new IllegalArgumentException("Don't know how to convert to query value: " + value.getClass().getName());
     }

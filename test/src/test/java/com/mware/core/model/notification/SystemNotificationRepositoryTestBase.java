@@ -144,4 +144,25 @@ public abstract class SystemNotificationRepositoryTestBase extends GraphTestBase
         assertEquals(startDate, notification.getStartDate());
         assertEquals(null, notification.getEndDate());
     }
+
+    @Test
+    public void testDelete() {
+        Date startDate = Date.from(ZonedDateTime.of(2017, 11, 28, 10, 12, 13, 0, ZoneId.of("GMT")).toInstant());
+        getSystemNotificationRepository().createNotification(
+                SystemNotificationSeverity.INFORMATIONAL,
+                "notification title",
+                "notification message",
+                "http://example.com/notification/test",
+                startDate,
+                null,
+                getUserRepository().getSystemUser()
+        );
+
+        List<SystemNotification> notifications = getSystemNotificationRepository().getActiveNotifications(getUserRepository().getSystemUser());
+        assertEquals(1, notifications.size());
+
+        getSystemNotificationRepository().clearNotifications();
+        notifications = getSystemNotificationRepository().getActiveNotifications(getUserRepository().getSystemUser());
+        assertEquals(0, notifications.size());
+    }
 }

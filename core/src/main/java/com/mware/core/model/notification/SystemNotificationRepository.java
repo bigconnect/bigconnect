@@ -40,6 +40,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.model.role.GeAuthorizationRepository;
+import com.mware.core.orm.SimpleOrmContext;
 import com.mware.core.orm.SimpleOrmSession;
 import org.json.JSONObject;
 import com.mware.core.model.user.UserRepository;
@@ -64,13 +65,18 @@ public class SystemNotificationRepository extends NotificationRepository {
         super(simpleOrmSession);
     }
 
+    public void clearNotifications() {
+        SimpleOrmContext ctx = getUserRepository().getSimpleOrmContext(GeAuthorizationRepository.ADMIN_ROLE);
+        for (SystemNotification notification : getSimpleOrmSession().findAll(SystemNotification.class, ctx)) {
+            getSimpleOrmSession().delete(SystemNotification.class, notification.getId(), ctx);
+        }
+    }
+
     public List<SystemNotification> getActiveNotifications(User user) {
         Date now = new Date();
         List<SystemNotification> activeNotifications = new ArrayList<>();
-        for (SystemNotification notification : getSimpleOrmSession().findAll(
-                SystemNotification.class,
-                getUserRepository().getSimpleOrmContext(GeAuthorizationRepository.ADMIN_ROLE)
-        )) {
+        SimpleOrmContext ctx = getUserRepository().getSimpleOrmContext(GeAuthorizationRepository.ADMIN_ROLE);
+        for (SystemNotification notification : getSimpleOrmSession().findAll(SystemNotification.class, ctx)) {
             if (notification.getStartDate().before(now)) {
                 if (notification.getEndDate() == null || notification.getEndDate().after(now)) {
                     activeNotifications.add(notification);

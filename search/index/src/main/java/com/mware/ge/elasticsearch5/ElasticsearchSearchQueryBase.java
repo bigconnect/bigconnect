@@ -1661,6 +1661,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             return ((GeoShapeValue)value).asObjectCopy();
         } else if (value instanceof DateTimeArray) {
             return ((DateTimeArray)value).asObjectCopy();
+        } else if (value instanceof NoValue) {
+            return null;
         }
         throw new IllegalArgumentException("Don't know how to convert to query value: " + value.getClass().getName());
     }

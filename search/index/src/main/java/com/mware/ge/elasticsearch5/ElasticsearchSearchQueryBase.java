@@ -521,13 +521,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
             for (HasContainer has : getParameters().getHasContainers()) {
                 if (has instanceof HasValueContainer) {
-                    switch (has.conjunction) {
-                        case AND:
-                            hasContainerQueryBuilder.must(getFiltersForHasValueContainer((HasValueContainer) has));
-                            break;
-                        case OR:
-                            hasContainerQueryBuilder.should(getFiltersForHasValueContainer((HasValueContainer) has));
-                            break;
+                    if (!(((HasValueContainer) has).value instanceof NoValue)) {
+                        switch (has.conjunction) {
+                            case AND:
+                                hasContainerQueryBuilder.must(getFiltersForHasValueContainer((HasValueContainer) has));
+                                break;
+                            case OR:
+                                hasContainerQueryBuilder.should(getFiltersForHasValueContainer((HasValueContainer) has));
+                                break;
+                        }
                     }
                 } else if (has instanceof HasPropertyContainer) {
                     switch (has.conjunction) {

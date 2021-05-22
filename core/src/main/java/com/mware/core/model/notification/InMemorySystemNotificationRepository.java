@@ -97,6 +97,11 @@ public class InMemorySystemNotificationRepository extends SystemNotificationRepo
     }
 
     @Override
+    public void clearNotifications() {
+        notifications.clear();
+    }
+
+    @Override
     public List<SystemNotification> getFutureNotifications(Date maxDate, User user) {
         Date now = new Date();
         return notifications.values().stream()

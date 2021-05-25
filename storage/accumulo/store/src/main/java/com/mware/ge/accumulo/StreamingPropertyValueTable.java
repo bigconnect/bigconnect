@@ -135,7 +135,8 @@ public class StreamingPropertyValueTable extends StreamingPropertyValue {
                     }
                 }
                 if (result == null) {
-                    throw new GeException("Could not find data with key: " + dataRowKey);
+                    return new byte[0];
+//                    throw new GeException("Could not find data with key: " + dataRowKey);
                 }
                 return result;
             } finally {

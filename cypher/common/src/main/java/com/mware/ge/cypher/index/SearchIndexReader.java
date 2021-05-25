@@ -101,6 +101,7 @@ public class SearchIndexReader {
                         IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) predicate;
                         propName = sp.propertyKeyId();
                         return query.range(propName, sp.from(), sp.to());
+                    case DATE:
                     case ZONED_DATE_TIME:
                         IndexQuery.RangePredicate<DateTimeValue> rp = (IndexQuery.RangePredicate<DateTimeValue>) predicate;
                         propName = rp.propertyKeyId();

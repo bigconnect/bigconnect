@@ -217,9 +217,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                         throw new BcException("Invalid aggregation type: " + type);
                 }
 
-                if (aggregation != null) {
-                    query.addAggregation(aggregation);
-                }
+                query.addAggregation(aggregation);
             }
         }
     }
@@ -364,7 +362,6 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
             String propertyName = sort;
             SortDirection direction = SortDirection.ASCENDING;
             if (propertyName.toUpperCase().endsWith(":ASCENDING")) {
-                direction = SortDirection.ASCENDING;
                 propertyName = propertyName.substring(0, propertyName.length() - ":ASCENDING".length());
             } else if (propertyName.toUpperCase().endsWith(":DESCENDING")) {
                 direction = SortDirection.DESCENDING;
@@ -437,17 +434,6 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return null;
     }
 
-    private Collection<SchemaRepository.ElementTypeFilter> getTypeFilters(String typesStr) {
-        JSONArray types = new JSONArray(typesStr);
-        List<SchemaRepository.ElementTypeFilter> filters = new ArrayList<>(types.length());
-        for (int i = 0; i < types.length(); i++) {
-            JSONObject type = (JSONObject) types.get(i);
-            SchemaRepository.ElementTypeFilter filter = ClientApiConverter.toClientApi(type, SchemaRepository.ElementTypeFilter.class);
-            filters.add(filter);
-        }
-        return filters;
-    }
-
     protected void applyFiltersToQuery(Query query, JSONArray filterJson, User user, SearchOptions searchOptions) {
         for (int i = 0; i < filterJson.length(); i++) {
             JSONObject obj = filterJson.getJSONObject(i);
@@ -459,7 +445,6 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                 } else {
                     throw new BcException("Query filters must have either a propertyName or dataType field. Invalid filter: " + filterJson.toString());
                 }
-//                updateQueryWithFilter(queryAndData.getQuery(), obj, user, searchOptions);
             }
         }
     }
@@ -686,57 +671,47 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
 
     private void applyDateToQuery(Query graphQuery, JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions) throws ParseException {
         String propertyName = obj.getString("propertyName");
-        PropertyType propertyDataType = PropertyType.DATE;
         SchemaProperty property = schemaRepository.getPropertyByName(propertyName, searchOptions.getWorkspaceId());
 
         if (property != null && values.length() > 0) {
-            String displayType = property.getDisplayType();
-            boolean isDateOnly = displayType != null && displayType.equals("dateOnly");
-            boolean isRelative = values.get(0) instanceof JSONObject;
-
-            DateTimeValue calendar;
-
-            if (isRelative) {
-                JSONObject fromNow = (JSONObject) values.get(0);
-                calendar = DateTimeValue.now(Clocks.systemClock());
-                calendar = moveDateToStart(calendar);
-                calendar = moveDate(calendar, fromNow.getInt("unit"), fromNow.getInt("amount"));
-            } else {
-                calendar = (DateTimeValue) jsonValueToObject(values, propertyDataType, 0);
-            }
+            DateTimeValue calendar = convertToDateTimeValue(values, 0);
 
             if (predicate == null || predicate.equals("equal") || predicate.equals("=")) {
-                calendar = moveDateToStart(calendar);
                 graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, calendar);
-                calendar = moveDateToEnd(calendar, isDateOnly);
-                graphQuery.has(propertyName, Compare.LESS_THAN, calendar);
+                graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, calendar);
             } else if (predicate.equals("range")) {
-                if (!isRelative) {
-                    calendar = moveDateToStart(calendar);
+                if (values.length() > 1) {
+                    DateTimeValue startCalendar = convertToDateTimeValue(values, 0);
+                    DateTimeValue endCalendar = convertToDateTimeValue(values, 1);
+                    ZonedDateTime start = startCalendar.asObjectCopy();
+                    ZonedDateTime end = endCalendar.asObjectCopy();
+                    if (start.isBefore(end)) {
+                        graphQuery.has(propertyName, Compare.RANGE,
+                                Values.of(new Range<>(start, true, end, false)));
+                    } else {
+                        graphQuery.has(propertyName, Compare.RANGE,
+                                Values.of(new Range<>(end, true, start, false)));
+                    }
                 }
-                ZonedDateTime start = calendar.asObjectCopy();
-
-                if (values.get(1) instanceof JSONObject) {
-                    JSONObject fromNow = (JSONObject) values.get(1);
-                    calendar = DateTimeValue.now(Clocks.systemClock());
-                    calendar = moveDateToStart(calendar);
-                    calendar = moveDate(calendar, fromNow.getInt("unit"), fromNow.getInt("amount"));
-                } else {
-                    calendar = (DateTimeValue) jsonValueToObject(values, propertyDataType, 1);
-                }
-                calendar = moveDateToEnd(calendar, isDateOnly);
-                ZonedDateTime end = calendar.asObjectCopy();
-
-                graphQuery.has(propertyName, Compare.RANGE,
-                        Values.of(new Range<>(start, true, end, false)));
             } else if (predicate.equals("<")) {
-                calendar = moveDateToStart(calendar);
-                graphQuery.has(propertyName, Compare.LESS_THAN, calendar);
+                graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, calendar);
             } else if (predicate.equals(">")) {
-                calendar = moveDateToEnd(calendar, isDateOnly);
                 graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, calendar);
             }
         }
+    }
+
+    DateTimeValue convertToDateTimeValue(JSONArray values, int index) throws ParseException {
+        DateTimeValue calendar;
+        boolean isRelative = values.get(index) instanceof JSONObject;
+        if (isRelative) {
+            JSONObject fromNow = (JSONObject) values.get(index);
+            calendar = DateTimeValue.now(Clocks.systemClock());
+            calendar = moveDate(calendar, fromNow.getInt("unit"), fromNow.getInt("amount"));
+        } else {
+            calendar = (DateTimeValue) jsonValueToObject(values, PropertyType.DATE, index);
+        }
+        return calendar;
     }
 
     private DateTimeValue moveDate(DateTimeValue calendar, int calendarField, int amount) {

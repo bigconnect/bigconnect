@@ -40,6 +40,8 @@ import com.google.common.collect.Lists;
 import com.mware.ge.GeException;
 import com.mware.ge.accumulo.keys.DataTableRowKey;
 import com.mware.ge.accumulo.util.RangeUtils;
+import com.mware.ge.util.GeLogger;
+import com.mware.ge.util.GeLoggerFactory;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.ScannerBase;
@@ -58,6 +60,7 @@ import java.util.Map;
 import static com.mware.ge.accumulo.AccumuloGraph.GRAPH_LOGGER;
 
 public class StreamingPropertyValueTable extends StreamingPropertyValue {
+    private static final GeLogger LOGGER = GeLoggerFactory.getLogger(StreamingPropertyValueTable.class);
     private static final long serialVersionUID = 400244414843534240L;
     private final AccumuloGraph graph;
     private final String dataRowKey;
@@ -135,8 +138,8 @@ public class StreamingPropertyValueTable extends StreamingPropertyValue {
                     }
                 }
                 if (result == null) {
-                    return new byte[0];
-//                    throw new GeException("Could not find data with key: " + dataRowKey);
+                    LOGGER.warn("Could not find data with key: " + dataRowKey);
+                    result = new byte[0];
                 }
                 return result;
             } finally {

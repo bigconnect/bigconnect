@@ -38,10 +38,7 @@ package com.mware.core.model.properties.types;
 
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.video.VideoTranscript;
-import com.mware.ge.values.storable.ByteArray;
-import com.mware.ge.values.storable.DefaultStreamingPropertyValue;
-import com.mware.ge.values.storable.StreamingPropertyValue;
-import com.mware.ge.values.storable.Value;
+import com.mware.ge.values.storable.*;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 
@@ -64,17 +61,22 @@ public class VideoTranscriptProperty extends BcProperty<VideoTranscript> {
 
     @Override
     public VideoTranscript unwrap(Value value) {
-        String strValue = null;
-        if (value instanceof StreamingPropertyValue) {
-            try {
-                strValue = IOUtils.toString(((StreamingPropertyValue) value).getInputStream());
-            } catch (IOException e) {
-                throw new BcException("Could not read propery value", e);
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else {
+
+            String strValue = null;
+            if (value instanceof StreamingPropertyValue) {
+                try {
+                    strValue = IOUtils.toString(((StreamingPropertyValue) value).getInputStream());
+                } catch (IOException e) {
+                    throw new BcException("Could not read propery value", e);
+                }
+            } else if (value != null) {
+                strValue = value.toString();
             }
-        } else if (value != null) {
-            strValue = value.toString();
+            JSONObject json = new JSONObject(strValue);
+            return new VideoTranscript(json);
         }
-        JSONObject json = new JSONObject(strValue);
-        return new VideoTranscript(json);
     }
 }

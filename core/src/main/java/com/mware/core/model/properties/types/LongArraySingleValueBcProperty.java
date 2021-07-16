@@ -52,6 +52,9 @@ public class LongArraySingleValueBcProperty extends SingleValueBcProperty<long[]
 
     @Override
     public long[] unwrap(Value value) {
-        return ((LongArray)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((LongArray)value).asObjectCopy();
     }
 }

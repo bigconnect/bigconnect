@@ -53,7 +53,10 @@ public class BooleanBcProperty extends BcProperty<Boolean> {
 
     @Override
     public Boolean unwrap(Value value) {
-        return ((BooleanValue)value).booleanValue();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((BooleanValue)value).booleanValue();
     }
 
     public boolean getPropertyValue(Element element, String propertyKey, boolean defaultValue) {

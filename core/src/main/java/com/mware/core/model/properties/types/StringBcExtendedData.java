@@ -52,6 +52,9 @@ public class StringBcExtendedData extends BcExtendedData<String> {
 
     @Override
     public String graphToRaw(Value value) {
-        return ((TextValue)value).stringValue();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((TextValue)value).stringValue();
     }
 }

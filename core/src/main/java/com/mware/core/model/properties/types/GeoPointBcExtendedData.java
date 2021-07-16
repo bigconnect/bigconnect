@@ -53,6 +53,9 @@ public class GeoPointBcExtendedData extends BcExtendedData<GeoPoint> {
 
     @Override
     public GeoPoint graphToRaw(Value value) {
-        return (GeoPoint) ((GeoPointValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return (GeoPoint) ((GeoPointValue)value).asObjectCopy();
     }
 }

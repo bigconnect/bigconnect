@@ -68,6 +68,9 @@ public class TermMentionBuilder {
     private String resolvedEdgeId;
     private String snippet;
     private String resolvedFromTermMention;
+    private String type;
+    private String style;
+    private Double score;
 
     public TermMentionBuilder() {
 
@@ -89,7 +92,34 @@ public class TermMentionBuilder {
         this.title = BcSchema.TERM_MENTION_TITLE.getPropertyValue(existingTermMention, "");
         this.snippet = BcSchema.TERM_MENTION_SNIPPET.getPropertyValue(existingTermMention);
         this.conceptName = BcSchema.TERM_MENTION_CONCEPT_TYPE.getPropertyValue(existingTermMention, "");
+        this.type = BcSchema.TERM_MENTION_TYPE.getPropertyValue(existingTermMention, "");
+        this.style = BcSchema.TERM_MENTION_STYLE.getPropertyValue(existingTermMention, "");
+        this.score = BcSchema.TERM_MENTION_SCORE.getPropertyValue(existingTermMention, 0.0d);
         this.visibilityJson = BcSchema.TERM_MENTION_VISIBILITY_JSON.getPropertyValue(existingTermMention, new VisibilityJson());
+    }
+
+    /**
+     * The type of term mention
+     */
+    public TermMentionBuilder type(String type) {
+        this.type = type;
+        return this;
+    }
+
+    /**
+     * The CSS style for this term mention
+     */
+    public TermMentionBuilder style(String style) {
+        this.style = style;
+        return this;
+    }
+
+    /**
+     * The score of term mention
+     */
+    public TermMentionBuilder score(Double score) {
+        this.score = score;
+        return this;
     }
 
     /**
@@ -234,8 +264,6 @@ public class TermMentionBuilder {
         checkNotNull(propertyKey, "propertyKey cannot be null");
         checkNotNull(title, "title cannot be null");
         checkArgument(title.length() > 0, "title cannot be an empty string");
-        checkNotNull(conceptName, "conceptName cannot be null");
-        checkArgument(conceptName.length() > 0, "conceptName cannot be an empty string");
         checkNotNull(visibilityJson, "visibilityJson cannot be null");
         checkNotNull(process, "process cannot be null");
         checkArgument(process.length() > 0, "process cannot be an empty string");
@@ -252,11 +280,15 @@ public class TermMentionBuilder {
         VertexBuilder vertexBuilder = graph.prepareVertex(visibility, SchemaConstants.CONCEPT_TYPE_THING);
         BcSchema.TERM_MENTION_VISIBILITY_JSON.setProperty(vertexBuilder, this.visibilityJson, visibility);
         BcSchema.TERM_MENTION_CONCEPT_TYPE.setProperty(vertexBuilder, this.conceptName, visibility);
-        BcSchema.TERM_MENTION_TITLE.setProperty(vertexBuilder, this.title, visibility);
+        BcSchema.TERM_MENTION_TYPE.setProperty(vertexBuilder, this.type, visibility);
         BcSchema.TERM_MENTION_START_OFFSET.setProperty(vertexBuilder, this.start, visibility);
         BcSchema.TERM_MENTION_END_OFFSET.setProperty(vertexBuilder, this.end, visibility);
         BcSchema.TERM_MENTION_PROCESS.setProperty(vertexBuilder, this.process, visibility);
         BcSchema.TERM_MENTION_PROPERTY_KEY.setProperty(vertexBuilder, this.propertyKey, visibility);
+        BcSchema.TERM_MENTION_TITLE.setProperty(vertexBuilder, this.title, visibility);
+        BcSchema.TERM_MENTION_STYLE.setProperty(vertexBuilder, this.style, visibility);
+        BcSchema.TERM_MENTION_SCORE.setProperty(vertexBuilder, this.score, visibility);
+
         if (this.propertyName != null) {
             BcSchema.TERM_MENTION_PROPERTY_NAME.setProperty(vertexBuilder, this.propertyName, visibility);
         }

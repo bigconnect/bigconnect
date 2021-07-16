@@ -54,10 +54,10 @@ public class JsonSingleValueBcProperty extends SingleValueBcProperty<JSONObject>
 
     @Override
     public JSONObject unwrap(Value value) {
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
-        }
-        return JSONUtil.parse(((TextValue)value).stringValue());
+        else
+            return JSONUtil.parse(((TextValue)value).stringValue());
     }
 
     @Override

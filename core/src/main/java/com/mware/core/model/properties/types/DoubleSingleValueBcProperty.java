@@ -38,6 +38,7 @@ package com.mware.core.model.properties.types;
 
 import com.mware.ge.Element;
 import com.mware.ge.values.storable.DoubleValue;
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
 
@@ -53,7 +54,10 @@ public class DoubleSingleValueBcProperty extends SingleValueBcProperty<Double> {
 
     @Override
     public Double unwrap(Value value) {
-        return ((DoubleValue)value).doubleValue();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((DoubleValue)value).doubleValue();
     }
 
     public double getPropertyValue(Element element, double defaultValue) {

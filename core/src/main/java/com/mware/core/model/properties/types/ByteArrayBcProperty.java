@@ -52,6 +52,9 @@ public class ByteArrayBcProperty extends BcProperty<byte[]> {
 
     @Override
     public byte[] unwrap(Value value) {
-        return ((ByteArray)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((ByteArray)value).asObjectCopy();
     }
 }

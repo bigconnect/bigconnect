@@ -41,6 +41,7 @@ import com.mware.ge.ExtendedDataRow;
 import com.mware.ge.mutation.ElementMutation;
 import com.mware.core.model.graph.ElementUpdateContext;
 import com.mware.ge.values.storable.Value;
+import com.mware.ge.values.storable.Values;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -114,9 +115,9 @@ public abstract class BcExtendedData<TRaw> {
 
     public TRaw getValue(ExtendedDataRow row) {
         Value value = row.getPropertyValue(columnName);
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
-        }
-        return graphToRaw(value);
+        else
+            return graphToRaw(value);
     }
 }

@@ -52,6 +52,9 @@ public class DoubleMetadataBcProperty extends MetadataBcProperty<Double> {
 
     @Override
     public Double unwrap(Value value) {
-        return ((DoubleValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((DoubleValue)value).asObjectCopy();
     }
 }

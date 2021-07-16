@@ -215,7 +215,7 @@ public final class Values {
     }
 
     public static TextValue stringValue(String value) {
-        if (value.isEmpty()) {
+        if (value == null || value.isEmpty()) {
             return EMPTY_STRING;
         }
         return new StringWrappingStringValue(value);

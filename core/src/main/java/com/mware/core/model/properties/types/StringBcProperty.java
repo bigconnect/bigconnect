@@ -53,7 +53,10 @@ public class StringBcProperty extends BcProperty<String> {
 
     @Override
     public String unwrap(final Value value) {
-        return ((TextValue)value).stringValue();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((TextValue)value).stringValue();
     }
 
     public static String getValue(Property property) {

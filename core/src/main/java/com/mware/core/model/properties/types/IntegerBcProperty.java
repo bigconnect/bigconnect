@@ -53,7 +53,10 @@ public class IntegerBcProperty extends BcProperty<Integer> {
 
     @Override
     public Integer unwrap(Value value) {
-        return ((IntValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((IntValue)value).asObjectCopy();
     }
 
     public Integer getPropertyValue(Element element, String propertyKey, Integer defaultValue) {

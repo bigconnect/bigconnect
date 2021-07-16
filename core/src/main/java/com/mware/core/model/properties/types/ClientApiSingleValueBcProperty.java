@@ -56,7 +56,7 @@ public abstract class ClientApiSingleValueBcProperty<TClientApi> extends SingleV
 
     @Override
     public TClientApi unwrap(Value value) {
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value)) {
             return null;
         }
         String valueStr;

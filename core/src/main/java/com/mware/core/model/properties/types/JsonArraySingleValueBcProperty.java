@@ -53,10 +53,10 @@ public class JsonArraySingleValueBcProperty extends SingleValueBcProperty<JSONAr
 
     @Override
     public JSONArray unwrap(Value value) {
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
-        }
-        return JSONUtil.parseArray(value.toString());
+        else
+            return JSONUtil.parseArray(value.toString());
     }
 
     @Override

@@ -54,7 +54,10 @@ public class GeoPointBcProperty extends BcProperty<GeoPoint> {
 
     @Override
     public GeoPoint unwrap(Value value) {
-        return (GeoPoint) ((GeoPointValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return (GeoPoint) ((GeoPointValue)value).asObjectCopy();
     }
 
     public GeoPoint getPropertyValue(Element element, String propertyKey, GeoPoint defaultValue) {

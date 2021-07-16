@@ -62,6 +62,9 @@ public class LocalDateBcProperty extends BcProperty<LocalDate> {
 
     @Override
     public LocalDate unwrap(Value value) {
-        return ((DateValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((DateValue)value).asObjectCopy();
     }
 }

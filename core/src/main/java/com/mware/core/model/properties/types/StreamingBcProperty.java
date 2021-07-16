@@ -37,6 +37,7 @@
 package com.mware.core.model.properties.types;
 
 import com.mware.ge.values.storable.Value;
+import com.mware.ge.values.storable.Values;
 import org.apache.commons.io.IOUtils;
 import com.mware.ge.Element;
 import com.mware.ge.values.storable.StreamingPropertyValue;
@@ -64,7 +65,10 @@ public class StreamingBcProperty extends BcProperty<StreamingPropertyValue> {
 
     @Override
     public StreamingPropertyValue unwrap(Value value) {
-        return (StreamingPropertyValue) value;
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return (StreamingPropertyValue) value;
     }
 
     public byte[] getFirstPropertyValueAsBytes(Element element) {

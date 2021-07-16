@@ -55,11 +55,11 @@ public class StringListSingleValueBcProperty extends SingleValueBcProperty<List<
 
     @Override
     public List<String> unwrap(Value value) {
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
+        else {
+            StringArray arr = (StringArray) value;
+            return Arrays.asList(arr.asObjectCopy());
         }
-
-        StringArray arr = (StringArray) value;
-        return Arrays.asList(arr.asObjectCopy());
     }
 }

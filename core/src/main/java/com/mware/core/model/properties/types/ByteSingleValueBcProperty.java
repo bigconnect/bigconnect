@@ -54,7 +54,10 @@ public class ByteSingleValueBcProperty extends SingleValueBcProperty<Byte> {
 
     @Override
     public Byte unwrap(Value value) {
-        return ((ByteValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((ByteValue) value).asObjectCopy();
     }
 
     public Byte getPropertyValue(Map<String, Value> map, Byte defaultValue) {

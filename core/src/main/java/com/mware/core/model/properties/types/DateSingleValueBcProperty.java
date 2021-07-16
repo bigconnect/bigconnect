@@ -55,9 +55,9 @@ public class DateSingleValueBcProperty extends SingleValueBcProperty<ZonedDateTi
 
     @Override
     public ZonedDateTime unwrap(Value value) {
-        if (value == null)
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
-
-        return ((DateTimeValue)value).asObjectCopy();
+        else
+            return ((DateTimeValue) value).asObjectCopy();
     }
 }

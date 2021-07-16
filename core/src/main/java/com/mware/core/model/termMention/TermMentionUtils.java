@@ -65,8 +65,17 @@ public class TermMentionUtils {
         this.user = user;
     }
 
-    public Vertex createTermMention(Vertex outVertex, String propertyKey, String propertyName, String tmName, String tmType, int tmStartOffset, int tmEndOffset, VisibilityJson visibilityJson) {
-        String schemaClassName = mapToSchemaName(tmType);
+    public Vertex createTermMention(
+            Vertex outVertex,
+            String propertyKey,
+            String propertyName,
+            String tmName,
+            String tmConceptType,
+            int tmStartOffset,
+            int tmEndOffset,
+            VisibilityJson visibilityJson
+    ) {
+        String schemaClassName = mapToConceptType(tmConceptType);
 
         if (visibilityJson == null) {
             visibilityJson = new VisibilityJson(Visibility.EMPTY.getVisibilityString());
@@ -167,15 +176,15 @@ public class TermMentionUtils {
         }
     }
 
-    protected String mapToSchemaName(String type) {
-        String ontologyClassUri = SchemaConstants.CONCEPT_TYPE_THING;
+    protected String mapToConceptType(String type) {
+        String conceptType = SchemaConstants.CONCEPT_TYPE_THING;
         ;
         if (SchemaConstants.CONCEPT_TYPE_LOCATION.equals(type)
                 || SchemaConstants.CONCEPT_TYPE_ORGANIZATION.equals(type)
                 || SchemaConstants.CONCEPT_TYPE_PERSON.equals(type)) {
-            ontologyClassUri = type;
+            conceptType = type;
         }
 
-        return ontologyClassUri;
+        return conceptType;
     }
 }

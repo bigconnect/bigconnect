@@ -64,7 +64,10 @@ public class DateBcProperty extends BcProperty<ZonedDateTime> {
 
     @Override
     public ZonedDateTime unwrap(Value value) {
-        return ((DateTimeValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((DateTimeValue) value).asObjectCopy();
     }
 
     public <T extends Element> void updateProperty(

@@ -56,7 +56,7 @@ public abstract class ClientApiBcProperty<TClientApi> extends BcProperty<TClient
 
     @Override
     public TClientApi unwrap(Value value) {
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value)) {
             return null;
         }
         String valueStr;

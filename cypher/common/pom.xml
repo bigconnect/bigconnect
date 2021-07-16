@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.bigconnect</groupId>
         <artifactId>cypher-parent</artifactId>
-        <version>4.2.0</version>
+        <version>4.2.1</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -73,7 +73,7 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>1.19.3</version>
+            <version>1.9</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.ws.rs</groupId>

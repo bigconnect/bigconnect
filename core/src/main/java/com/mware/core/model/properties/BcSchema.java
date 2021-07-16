@@ -76,6 +76,9 @@ public class BcSchema {
     public static final StringSingleValueBcProperty TERM_MENTION_RESOLVED_EDGE_ID = new StringSingleValueBcProperty("tmResolvedEdgeId");
     public static final StringSingleValueBcProperty TERM_MENTION_TITLE = new StringSingleValueBcProperty("tmTitle");
     public static final StringSingleValueBcProperty TERM_MENTION_CONCEPT_TYPE = new StringSingleValueBcProperty("tmConceptType");
+    public static final StringSingleValueBcProperty TERM_MENTION_TYPE = new StringSingleValueBcProperty("tmType");
+    public static final StringSingleValueBcProperty TERM_MENTION_STYLE = new StringSingleValueBcProperty("tmStyle");
+    public static final DoubleSingleValueBcProperty TERM_MENTION_SCORE = new DoubleSingleValueBcProperty("tmScore");
     public static final VisibilityJsonBcProperty TERM_MENTION_VISIBILITY_JSON = new VisibilityJsonBcProperty("tmVisibilityJson");
     public static final StringSingleValueBcProperty TERM_MENTION_REF_PROPERTY_KEY = new StringSingleValueBcProperty("tmRefPropertyKey");
     public static final StringSingleValueBcProperty TERM_MENTION_REF_PROPERTY_NAME = new StringSingleValueBcProperty("tmRefPropertyName");

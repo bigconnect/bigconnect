@@ -54,7 +54,10 @@ public class ShortSingleValueBcProperty extends SingleValueBcProperty<Short> {
 
     @Override
     public Short unwrap(Value value) {
-        return ((ShortValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((ShortValue)value).asObjectCopy();
     }
 
     public Short getPropertyValue(Map<String, Value> map, Short defaultValue) {

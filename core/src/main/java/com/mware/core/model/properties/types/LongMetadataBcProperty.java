@@ -52,6 +52,9 @@ public class LongMetadataBcProperty extends MetadataBcProperty<Long> {
 
     @Override
     public Long unwrap(Value value) {
-        return ((LongValue)value).asObjectCopy();
+        if (value == null || Values.NO_VALUE.eq(value))
+            return null;
+        else
+            return ((LongValue)value).asObjectCopy();
     }
 }

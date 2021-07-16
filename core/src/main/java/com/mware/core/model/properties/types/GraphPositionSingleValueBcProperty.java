@@ -54,11 +54,11 @@ public class GraphPositionSingleValueBcProperty extends SingleValueBcProperty<Gr
 
     @Override
     public GraphPosition unwrap(Value value) {
-        if (value == null) {
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
+        else {
+            TextValue textValue = (TextValue) value;
+            return GraphPosition.fromJSONObject(JSONUtil.parse(textValue.stringValue()));
         }
-
-        TextValue textValue = (TextValue) value;
-        return GraphPosition.fromJSONObject(JSONUtil.parse(textValue.stringValue()));
     }
 }

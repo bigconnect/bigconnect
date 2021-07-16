@@ -52,9 +52,9 @@ public class StringMetadataBcProperty extends MetadataBcProperty<String> {
 
     @Override
     public String unwrap(Value value) {
-        if (value == null)
+        if (value == null || Values.NO_VALUE.eq(value))
             return null;
-
-        return ((TextValue)value).stringValue();
+        else
+            return ((TextValue)value).stringValue();
     }
 }

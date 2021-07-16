@@ -36,6 +36,7 @@
  */
 package com.mware.core.model.properties.types;
 
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -52,7 +53,7 @@ public class StringMetadataBcProperty extends MetadataBcProperty<String> {
 
     @Override
     public String unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return ((TextValue)value).stringValue();

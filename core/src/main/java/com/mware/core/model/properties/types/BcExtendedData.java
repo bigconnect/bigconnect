@@ -40,6 +40,7 @@ import com.mware.ge.Element;
 import com.mware.ge.ExtendedDataRow;
 import com.mware.ge.mutation.ElementMutation;
 import com.mware.core.model.graph.ElementUpdateContext;
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
 
@@ -115,7 +116,7 @@ public abstract class BcExtendedData<TRaw> {
 
     public TRaw getValue(ExtendedDataRow row) {
         Value value = row.getPropertyValue(columnName);
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return graphToRaw(value);

@@ -37,6 +37,7 @@
 package com.mware.core.model.properties.types;
 
 import com.mware.core.util.ClientApiConverter;
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -56,7 +57,7 @@ public abstract class ClientApiSingleValueBcProperty<TClientApi> extends SingleV
 
     @Override
     public TClientApi unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value)) {
+        if (value == null || value instanceof NoValue) {
             return null;
         }
         String valueStr;

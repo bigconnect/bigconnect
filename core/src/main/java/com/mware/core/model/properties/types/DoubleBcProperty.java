@@ -37,10 +37,7 @@
 package com.mware.core.model.properties.types;
 
 import com.mware.ge.Element;
-import com.mware.ge.values.storable.DoubleValue;
-import com.mware.ge.values.storable.TextValue;
-import com.mware.ge.values.storable.Value;
-import com.mware.ge.values.storable.Values;
+import com.mware.ge.values.storable.*;
 
 public class DoubleBcProperty extends BcProperty<Double> {
     public DoubleBcProperty(String key) {
@@ -54,7 +51,7 @@ public class DoubleBcProperty extends BcProperty<Double> {
 
     @Override
     public Double unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return ((DoubleValue) value).asObjectCopy();

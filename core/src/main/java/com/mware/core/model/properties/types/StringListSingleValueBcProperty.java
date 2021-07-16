@@ -36,6 +36,7 @@
  */
 package com.mware.core.model.properties.types;
 
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.StringArray;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -55,7 +56,7 @@ public class StringListSingleValueBcProperty extends SingleValueBcProperty<List<
 
     @Override
     public List<String> unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else {
             StringArray arr = (StringArray) value;

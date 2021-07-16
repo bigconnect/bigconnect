@@ -38,6 +38,7 @@ package com.mware.core.model.properties.types;
 
 import com.mware.core.util.JSONUtil;
 import com.mware.core.model.clientapi.dto.GraphPosition;
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -54,7 +55,7 @@ public class GraphPositionSingleValueBcProperty extends SingleValueBcProperty<Gr
 
     @Override
     public GraphPosition unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else {
             TextValue textValue = (TextValue) value;

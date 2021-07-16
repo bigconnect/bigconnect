@@ -38,6 +38,7 @@ package com.mware.core.model.properties.types;
 
 import com.mware.ge.Element;
 import com.mware.ge.values.storable.LongValue;
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
 
@@ -53,7 +54,7 @@ public class LongBcProperty extends BcProperty<Long> {
 
     @Override
     public Long unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return ((LongValue)value).asObjectCopy();

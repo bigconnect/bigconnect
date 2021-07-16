@@ -61,7 +61,7 @@ public class VideoTranscriptProperty extends BcProperty<VideoTranscript> {
 
     @Override
     public VideoTranscript unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else {
 

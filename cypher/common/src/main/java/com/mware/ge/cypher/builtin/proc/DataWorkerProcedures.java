@@ -150,7 +150,9 @@ public class DataWorkerProcedures {
 
         if (remove) {
             termMentionUtils.removeHasDetectedEntityRelations(node);
-            termMentionRepository.deleteTermMentions(node.getId(), bcApi.getAuthorizations());
+            termMentionRepository.deleteTermMentions("ent", node.getId(), bcApi.getAuthorizations());
+            //backwards compatibility
+            termMentionRepository.deleteTermMentions("", node.getId(), bcApi.getAuthorizations());
         }
 
 

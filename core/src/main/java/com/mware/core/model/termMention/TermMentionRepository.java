@@ -55,6 +55,7 @@ import com.mware.ge.util.FilterIterable;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.util.JoinIterable;
 import com.mware.ge.util.StreamUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -112,7 +113,7 @@ public class TermMentionRepository {
         );
     }
 
-    public void deleteTermMentions(String outVertexId, Authorizations authorizations) {
+    public void deleteAllTermMentions(String outVertexId, Authorizations authorizations) {
         Authorizations authorizationsWithTermMention = getAuthorizations(authorizations);
         Vertex outVertex = graph.getVertex(outVertexId, authorizationsWithTermMention);
         Iterable<String> termMentionVertices = outVertex.getVertexIds(
@@ -122,6 +123,28 @@ public class TermMentionRepository {
         );
         graph.deleteElements(
                 StreamUtils.stream(termMentionVertices).map(id -> ElementId.create(ElementType.VERTEX, id)),
+                authorizationsWithTermMention
+        );
+    }
+
+    public void deleteTermMentions(String type, String outVertexId, Authorizations authorizations) {
+        Authorizations authorizationsWithTermMention = getAuthorizations(authorizations);
+        Vertex outVertex = graph.getVertex(outVertexId, authorizationsWithTermMention);
+        Iterable<Vertex> termMentionVertices = outVertex.getVertices(
+                Direction.OUT,
+                BcSchema.TERM_MENTION_LABEL_HAS_TERM_MENTION,
+                authorizationsWithTermMention
+        );
+        graph.deleteElements(
+                StreamUtils.stream(termMentionVertices)
+                        .filter(v -> {
+                            if (StringUtils.isEmpty(type)) {
+                                return StringUtils.isEmpty(BcSchema.TERM_MENTION_TYPE.getPropertyValue(v));
+                            } else {
+                                return type.equals(BcSchema.TERM_MENTION_TYPE.getPropertyValue(v));
+                            }
+                        })
+                        .map(v -> ElementId.create(ElementType.VERTEX, v.getId())),
                 authorizationsWithTermMention
         );
     }

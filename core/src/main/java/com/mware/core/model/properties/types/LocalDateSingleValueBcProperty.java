@@ -37,6 +37,7 @@
 package com.mware.core.model.properties.types;
 
 import com.mware.ge.values.storable.DateValue;
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
 
@@ -59,7 +60,7 @@ public class LocalDateSingleValueBcProperty extends SingleValueBcProperty<LocalD
 
     @Override
     public LocalDate unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return ((DateValue) value).asObjectCopy();

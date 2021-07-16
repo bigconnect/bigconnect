@@ -36,6 +36,7 @@
  */
 package com.mware.core.model.properties.types;
 
+import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -52,7 +53,7 @@ public class StreamingSingleValueBcProperty extends SingleValueBcProperty<Stream
 
     @Override
     public StreamingPropertyValue unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return (StreamingPropertyValue) value;

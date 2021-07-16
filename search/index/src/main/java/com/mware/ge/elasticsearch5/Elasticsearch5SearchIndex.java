@@ -2248,7 +2248,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     protected boolean shouldIgnoreType(Class<? extends Value> dataType) {
-        return dataType == ByteArray.class;
+        return dataType == ByteArray.class || dataType == NoValue.class;
     }
 
     @Override

@@ -54,7 +54,7 @@ public class DoubleSingleValueBcProperty extends SingleValueBcProperty<Double> {
 
     @Override
     public Double unwrap(Value value) {
-        if (value == null || Values.NO_VALUE.eq(value))
+        if (value == null || value instanceof NoValue)
             return null;
         else
             return ((DoubleValue)value).doubleValue();

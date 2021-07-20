@@ -37,24 +37,29 @@
 package com.mware.ge;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.mware.ge.event.GraphEventListener;
 import com.mware.ge.id.IdGenerator;
+import com.mware.ge.id.IdentityNameSubstitutionStrategy;
 import com.mware.ge.id.NameSubstitutionStrategy;
 import com.mware.ge.metric.GeMetricRegistry;
 import com.mware.ge.mutation.ElementMutation;
+import com.mware.ge.util.FilterIterable;
+import com.mware.ge.util.IterableUtils;
+import com.mware.ge.util.LookAheadIterable;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.query.GraphQuery;
 import com.mware.ge.query.MultiVertexQuery;
 import com.mware.ge.query.SimilarToGraphQuery;
+import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.mware.ge.util.IterableUtils.count;
 import static com.mware.ge.util.Preconditions.checkNotNull;
 
 public interface Graph {
@@ -65,7 +70,9 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The newly added vertex.
      */
-    Vertex addVertex(Visibility visibility, Authorizations authorizations, String conceptType);
+    default Vertex addVertex(Visibility visibility, Authorizations authorizations, String conceptType) {
+        return prepareVertex(visibility, conceptType).save(authorizations);
+    }
 
     /**
      * Adds a vertex to the graph.
@@ -75,7 +82,9 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The newly added vertex.
      */
-    Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations, String conceptType);
+    default Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations, String conceptType) {
+        return prepareVertex(vertexId, visibility, conceptType).save(authorizations);
+    }
 
     /**
      * Adds the vertices to the graph.
@@ -84,7 +93,13 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The vertices.
      */
-    Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations);
+    default Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
+        List<Vertex> addedVertices = new ArrayList<>();
+        for (ElementBuilder<Vertex> vertexBuilder : vertices) {
+            addedVertices.add(vertexBuilder.save(authorizations));
+        }
+        return addedVertices;
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -93,7 +108,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
-    VertexBuilder prepareVertex(Visibility visibility, String conceptType);
+    default VertexBuilder prepareVertex(Visibility visibility, String conceptType) {
+        return prepareVertex(getIdGenerator().nextId(), null, visibility, conceptType);
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -103,7 +120,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
-    VertexBuilder prepareVertex(Long timestamp, Visibility visibility, String conceptType);
+    default VertexBuilder prepareVertex(Long timestamp, Visibility visibility, String conceptType) {
+        return prepareVertex(getIdGenerator().nextId(), timestamp, visibility, conceptType);
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -113,16 +132,18 @@ public interface Graph {
      * @param visibility The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
-    VertexBuilder prepareVertex(String vertexId, Visibility visibility, String conceptType);
+    default VertexBuilder prepareVertex(String vertexId, Visibility visibility, String conceptType) {
+        return prepareVertex(vertexId, null, visibility, conceptType);
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
      * with a single operation.
      *
-     * @param vertexId   The id to assign the new vertex.
-     * @param conceptType   The concept to assign the new vertex.
-     * @param timestamp  The timestamp of the vertex.
-     * @param visibility The visibility to assign to the new vertex.
+     * @param vertexId    The id to assign the new vertex.
+     * @param conceptType The concept to assign the new vertex.
+     * @param timestamp   The timestamp of the vertex.
+     * @param visibility  The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
     VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility, String conceptType);
@@ -134,7 +155,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return True if vertex exists.
      */
-    boolean doesVertexExist(String vertexId, Authorizations authorizations);
+    default boolean doesVertexExist(String vertexId, Authorizations authorizations) {
+        return getVertex(vertexId, FetchHints.NONE, authorizations) != null;
+    }
 
     /**
      * Get an element from the graph.
@@ -143,7 +166,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the element.
      * @return The element if successful. null if the element is not found or the required authorizations were not provided.
      */
-    Element getElement(ElementId elementId, Authorizations authorizations);
+    default Element getElement(ElementId elementId, Authorizations authorizations) {
+        return getElement(elementId, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Get an element from the graph.
@@ -215,7 +240,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Vertex getVertex(String vertexId, Authorizations authorizations);
+    default Vertex getVertex(String vertexId, Authorizations authorizations) {
+        return getVertex(vertexId, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Get a vertex from the graph.
@@ -225,7 +252,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Vertex getVertex(String vertexId, FetchHints fetchHints, Authorizations authorizations);
+    default Vertex getVertex(String vertexId, FetchHints fetchHints, Authorizations authorizations) {
+        return getVertex(vertexId, fetchHints, null, authorizations);
+    }
 
     /**
      * Get a vertex from the graph.
@@ -236,7 +265,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        if (null == fetchHints) {
+            return getVertex(vertexId, getDefaultFetchHints(), endTime, authorizations);
+        }
+
+        for (Vertex vertex : getVertices(fetchHints, endTime, authorizations)) {
+            if (vertex.getId().equals(vertexId)) {
+                return vertex;
+            }
+        }
+        return null;
+    }
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -245,7 +285,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations);
+    default Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations) {
+        return getVerticesWithPrefix(vertexIdPrefix, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -255,7 +297,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Authorizations authorizations) {
+        return getVerticesWithPrefix(vertexIdPrefix, fetchHints, null, authorizations);
+    }
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -266,7 +310,15 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
+        return new FilterIterable<Vertex>(vertices) {
+            @Override
+            protected boolean isIncluded(Vertex v) {
+                return v.getId().startsWith(vertexIdPrefix);
+            }
+        };
+    }
 
     /**
      * Gets vertices from the graph in the given range.
@@ -275,7 +327,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(IdRange idRange, Authorizations authorizations);
+    default Iterable<Vertex> getVerticesInRange(IdRange idRange, Authorizations authorizations) {
+        return getVerticesInRange(idRange, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets vertices from the graph in the given range.
@@ -285,7 +339,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations) {
+        return getVerticesInRange(idRange, fetchHints, null, authorizations);
+    }
 
     /**
      * Gets vertices from the graph in the given range.
@@ -296,7 +352,15 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
+        return new FilterIterable<Vertex>(vertices) {
+            @Override
+            protected boolean isIncluded(Vertex v) {
+                return idRange.isInRange(v.getId());
+            }
+        };
+    }
 
     /**
      * Gets all vertices on the graph.
@@ -304,7 +368,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Authorizations authorizations) {
+        return getVertices(getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all vertices on the graph.
@@ -313,7 +379,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(FetchHints fetchHints, Authorizations authorizations) {
+        return getVertices(fetchHints, null, authorizations);
+    }
 
     Iterable<String> getVertexIds(Authorizations authorizations);
 
@@ -334,7 +402,16 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertices.
      * @return Map of ids to exists status.
      */
-    Map<String, Boolean> doVerticesExist(Iterable<String> ids, Authorizations authorizations);
+    default Map<String, Boolean> doVerticesExist(Iterable<String> ids, Authorizations authorizations) {
+        Map<String, Boolean> results = new HashMap<>();
+        for (String id : ids) {
+            results.put(id, false);
+        }
+        for (Vertex vertex : getVertices(ids, FetchHints.NONE, authorizations)) {
+            results.put(vertex.getId(), true);
+        }
+        return results;
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -345,7 +422,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(Iterable<String> ids, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Iterable<String> ids, Authorizations authorizations) {
+        return getVertices(ids, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -357,7 +436,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations) {
+        return getVertices(ids, fetchHints, null, authorizations);
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -370,7 +451,24 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        return new LookAheadIterable<String, Vertex>() {
+            @Override
+            protected boolean isIncluded(String src, Vertex vertex) {
+                return vertex != null;
+            }
+
+            @Override
+            protected Vertex convert(String id) {
+                return getVertex(id, fetchHints, endTime, authorizations);
+            }
+
+            @Override
+            protected Iterator<String> createIterator() {
+                return Sets.newHashSet(ids).iterator();
+            }
+        };
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. This method is similar to
@@ -382,7 +480,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    List<Vertex> getVerticesInOrder(Iterable<String> ids, Authorizations authorizations);
+    default List<Vertex> getVerticesInOrder(Iterable<String> ids, Authorizations authorizations) {
+        return getVerticesInOrder(ids, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. This method is similar to
@@ -395,7 +495,16 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    List<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
+    default List<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations) {
+        final List<String> vertexIds = IterableUtils.toList(ids);
+        List<Vertex> vertices = IterableUtils.toList(getVertices(vertexIds, authorizations));
+        vertices.sort((v1, v2) -> {
+            Integer i1 = vertexIds.indexOf(v1.getId());
+            Integer i2 = vertexIds.indexOf(v2.getId());
+            return i1.compareTo(i2);
+        });
+        return vertices;
+    }
 
     /**
      * Permanently deletes a vertex from the graph.
@@ -411,7 +520,11 @@ public interface Graph {
      * @param vertexId       The vertex id to delete.
      * @param authorizations The authorizations required to delete the vertex.
      */
-    void deleteVertex(String vertexId, Authorizations authorizations);
+    default void deleteVertex(String vertexId, Authorizations authorizations) {
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to delete with id: " + vertexId);
+        deleteVertex(vertex, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -419,7 +532,9 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(Vertex vertex, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        softDeleteVertex(vertex, null, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -435,7 +550,11 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(String vertexId, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Authorizations authorizations) {
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
+        softDeleteVertex(vertex, null, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -443,7 +562,11 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
+        softDeleteVertex(vertex, timestamp, authorizations);
+    }
 
     /**
      * Adds an edge between two vertices. The id of the new vertex will be generated using an IdGenerator.
@@ -455,7 +578,9 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
      */
-    Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(outVertex, inVertex, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -468,7 +593,9 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
      */
-    Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(edgeId, outVertex, inVertex, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -480,7 +607,9 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
      */
-    Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(outVertexId, inVertexId, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -493,7 +622,9 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
      */
-    Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(edgeId, outVertexId, inVertexId, label, visibility).save(authorizations);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -505,7 +636,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilder prepareEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility);
+    default EdgeBuilder prepareEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+        return prepareEdge(getIdGenerator().nextId(), outVertex, inVertex, label, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -518,7 +651,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility);
+    default EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+        return prepareEdge(edgeId, outVertex, inVertex, label, null, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -544,7 +679,9 @@ public interface Graph {
      * @param visibility  The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilderByVertexId prepareEdge(String outVertexId, String inVertexId, String label, Visibility visibility);
+    default EdgeBuilderByVertexId prepareEdge(String outVertexId, String inVertexId, String label, Visibility visibility) {
+        return prepareEdge(getIdGenerator().nextId(), outVertexId, inVertexId, label, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -557,7 +694,9 @@ public interface Graph {
      * @param visibility  The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility);
+    default EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility) {
+        return prepareEdge(edgeId, outVertexId, inVertexId, label, null, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -580,7 +719,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return True if edge exists.
      */
-    boolean doesEdgeExist(String edgeId, Authorizations authorizations);
+    default boolean doesEdgeExist(String edgeId, Authorizations authorizations) {
+        return getEdge(edgeId, FetchHints.NONE, authorizations) != null;
+    }
 
     /**
      * Get an edge from the graph.
@@ -589,7 +730,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
-    Edge getEdge(String edgeId, Authorizations authorizations);
+    default Edge getEdge(String edgeId, Authorizations authorizations) {
+        return getEdge(edgeId, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Get an edge from the graph.
@@ -599,7 +742,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
-    Edge getEdge(String edgeId, FetchHints fetchHints, Authorizations authorizations);
+    default Edge getEdge(String edgeId, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdge(edgeId, fetchHints, null, authorizations);
+    }
 
     /**
      * Get an edge from the graph.
@@ -610,7 +755,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
-    Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        if (null == fetchHints) {
+            return getEdge(edgeId, getDefaultFetchHints(), endTime, authorizations);
+        }
+
+        for (Edge edge : getEdges(fetchHints, endTime, authorizations)) {
+            if (edge.getId().equals(edgeId)) {
+                return edge;
+            }
+        }
+        return null;
+    }
 
     /**
      * Gets all edges on the graph.
@@ -618,7 +774,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(Authorizations authorizations);
+    default Iterable<Edge> getEdges(Authorizations authorizations) {
+        return getEdges(getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges on the graph.
@@ -627,7 +785,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(FetchHints fetchHints, Authorizations authorizations) {
+        return getEdges(fetchHints, null, authorizations);
+    }
 
     /**
      * Gets all edges on the graph.
@@ -646,7 +806,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(IdRange idRange, Authorizations authorizations);
+    default Iterable<Edge> getEdgesInRange(IdRange idRange, Authorizations authorizations) {
+        return getEdgesInRange(idRange, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets edges from the graph in the given range.
@@ -656,7 +818,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdgesInRange(idRange, fetchHints, null, authorizations);
+    }
 
     /**
      * Gets edges from the graph in the given range.
@@ -667,7 +831,15 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        Iterable<Edge> edges = getEdges(fetchHints, endTime, authorizations);
+        return new FilterIterable<Edge>(edges) {
+            @Override
+            protected boolean isIncluded(Edge e) {
+                return idRange.isInRange(e.getId());
+            }
+        };
+    }
 
     /**
      * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
@@ -700,7 +872,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Maps of ids to exists status.
      */
-    Map<String, Boolean> doEdgesExist(Iterable<String> ids, Authorizations authorizations);
+    default Map<String, Boolean> doEdgesExist(Iterable<String> ids, Authorizations authorizations) {
+        return doEdgesExist(ids, null, authorizations);
+    }
 
     /**
      * Tests the existence of edges with the given authorizations.
@@ -710,7 +884,16 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Maps of ids to exists status.
      */
-    Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, Authorizations authorizations);
+    default Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, Authorizations authorizations) {
+        Map<String, Boolean> results = new HashMap<>();
+        for (String id : ids) {
+            results.put(id, false);
+        }
+        for (Edge edge : getEdges(ids, FetchHints.NONE, endTime, authorizations)) {
+            results.put(edge.getId(), true);
+        }
+        return results;
+    }
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -719,7 +902,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(Iterable<String> ids, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Iterable<String> ids, Authorizations authorizations) {
+        return getEdges(ids, getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -729,7 +914,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdges(ids, fetchHints, null, authorizations);
+    }
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -740,28 +927,69 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        return new LookAheadIterable<String, Edge>() {
+            @Override
+            protected boolean isIncluded(String src, Edge edge) {
+                return edge != null;
+            }
+
+            @Override
+            protected Edge convert(String id) {
+                return getEdge(id, fetchHints, endTime, authorizations);
+            }
+
+            @Override
+            protected Iterator<String> createIterator() {
+                return Sets.newHashSet(ids).iterator();
+            }
+        };
+    }
 
     /**
      * Use {@link #findRelatedEdgeIds(Iterable, Authorizations)}
      */
     @Deprecated
-    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations);
+    default Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations) {
+        return findRelatedEdgeIds(vertexIds, authorizations);
+    }
 
     /**
      * Use {@link #findRelatedEdgeIds(Iterable, Long, Authorizations)}
      */
     @Deprecated
-    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+    default Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        return findRelatedEdgeIds(vertexIds, endTime, authorizations);
+    }
 
     /**
      * Given a list of vertices, find all the edge ids that connect them.
      *
-     * @param vertices       The list of vertices.
-     * @param authorizations The authorizations required to load the edges.
+     * @param verticesIterable The list of vertices.
+     * @param authorizations   The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Iterable<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> vertices, Authorizations authorizations);
+    default Iterable<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> verticesIterable, Authorizations authorizations) {
+        List<String> results = new ArrayList<>();
+        List<Vertex> vertices = IterableUtils.toList(verticesIterable);
+        for (Vertex outVertex : vertices) {
+            if (outVertex == null) {
+                throw new GeException("verticesIterable cannot have null values");
+            }
+            Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
+            for (EdgeInfo edgeInfo : edgeInfos) {
+                for (Vertex inVertex : vertices) {
+                    if (edgeInfo.getVertexId() == null) { // This check is for legacy data. null EdgeInfo.vertexIds are no longer permitted
+                        continue;
+                    }
+                    if (edgeInfo.getVertexId().equals(inVertex.getId())) {
+                        results.add(edgeInfo.getEdgeId());
+                    }
+                }
+            }
+        }
+        return results;
+    }
 
     /**
      * Given a list of vertex ids, find all the edge ids that connect them.
@@ -770,7 +998,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Authorizations authorizations);
+    default Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Authorizations authorizations) {
+        return findRelatedEdgeIds(vertexIds, null, authorizations);
+    }
 
     /**
      * Given a list of vertex ids, find all the edge ids that connect them.
@@ -780,16 +1010,35 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+    default Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+                .setIncludeOutEdgeRefs(true)
+                .build();
+        return findRelatedEdgeIdsForVertices(getVertices(vertexIds, fetchHints, endTime, authorizations), authorizations);
+    }
 
     /**
      * Given a list of vertices, find all the edges that connect them.
      *
-     * @param vertices       The list of vertices.
-     * @param authorizations The authorizations required to load the edges.
+     * @param verticesIterable The list of vertices.
+     * @param authorizations   The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
-    Iterable<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> vertices, Authorizations authorizations);
+    default Iterable<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> verticesIterable, Authorizations authorizations) {
+        List<RelatedEdge> results = new ArrayList<>();
+        List<Vertex> vertices = IterableUtils.toList(verticesIterable);
+        for (Vertex outVertex : vertices) {
+            Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
+            for (EdgeInfo edgeInfo : edgeInfos) {
+                for (Vertex inVertex : vertices) {
+                    if (edgeInfo.getVertexId().equals(inVertex.getId())) {
+                        results.add(new RelatedEdgeImpl(edgeInfo.getEdgeId(), edgeInfo.getLabel(), outVertex.getId(), inVertex.getId()));
+                    }
+                }
+            }
+        }
+        return results;
+    }
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
@@ -798,7 +1047,9 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
-    Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations);
+    default Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations) {
+        return findRelatedEdgeSummary(vertexIds, null, authorizations);
+    }
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
@@ -808,7 +1059,12 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
-    Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+    default Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+                .setIncludeOutEdgeRefs(true)
+                .build();
+        return findRelatedEdgeSummaryForVertices(getVertices(vertexIds, fetchHints, endTime, authorizations), authorizations);
+    }
 
     /**
      * Permanently deletes an edge from the graph.
@@ -824,7 +1080,11 @@ public interface Graph {
      * @param edgeId         The edge id of the edge to delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void deleteEdge(String edgeId, Authorizations authorizations);
+    default void deleteEdge(String edgeId, Authorizations authorizations) {
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to delete with id: " + edgeId);
+        deleteEdge(edge, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph.
@@ -832,7 +1092,9 @@ public interface Graph {
      * @param edge           The edge to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(Edge edge, Authorizations authorizations);
+    default void softDeleteEdge(Edge edge, Authorizations authorizations) {
+        softDeleteEdge(edge, null, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph.
@@ -848,7 +1110,11 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(String edgeId, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Authorizations authorizations) {
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
+        softDeleteEdge(edge, null, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -856,7 +1122,11 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
+        softDeleteEdge(edge, timestamp, authorizations);
+    }
 
     /**
      * Creates a query builder object used to query the graph.
@@ -931,7 +1201,9 @@ public interface Graph {
      * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
     @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations);
+    default Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations) {
+        return findPaths(sourceVertexId, destVertexId, null, maxHops, authorizations);
+    }
 
     /**
      * Finds all paths between two vertices.
@@ -945,7 +1217,9 @@ public interface Graph {
      * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
     @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations);
+    default Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations) {
+        return findPaths(sourceVertexId, destVertexId, labels, maxHops, null, authorizations);
+    }
 
     /**
      * Finds all paths between two vertices.
@@ -959,7 +1233,9 @@ public interface Graph {
      * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
     @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations);
+    default Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
+        return findPaths(sourceVertexId, destVertexId, null, maxHops, progressCallback, authorizations);
+    }
 
     /**
      * Finds all paths between two vertices.
@@ -974,14 +1250,19 @@ public interface Graph {
      * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
     @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations);
+    default Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
+        FindPathOptions options = new FindPathOptions(sourceVertexId, destVertexId, maxHops);
+        options.setLabels(labels);
+        options.setProgressCallback(progressCallback);
+        return findPaths(options, authorizations);
+    }
 
     /**
      * Finds all paths between two vertices.
      *
-     * @param options   Find path options
-     * @param authorizations    The authorizations required to load all edges and vertices.
-     * @return  An Iterable of lists of paths.
+     * @param options        Find path options
+     * @param authorizations The authorizations required to load all edges and vertices.
+     * @return An Iterable of lists of paths.
      */
     Iterable<Path> findPaths(FindPathOptions options, Authorizations authorizations);
 
@@ -1018,6 +1299,7 @@ public interface Graph {
 
     /**
      * Removes metadata from graph
+     *
      * @param key
      */
     void removeMetadata(String key);
@@ -1133,7 +1415,10 @@ public interface Graph {
      * @param auths The authorizations granted.
      * @return A new authorizations object
      */
-    Authorizations createAuthorizations(Collection<String> auths);
+    default Authorizations createAuthorizations(Collection<String> auths) {
+        checkNotNull(auths, "auths cannot be null");
+        return createAuthorizations(auths.toArray(new String[0]));
+    }
 
     /**
      * Creates an authorizations object combining auths and additionalAuthorizations.
@@ -1151,7 +1436,9 @@ public interface Graph {
      * @param additionalAuthorizations additional authorizations
      * @return A new authorizations object
      */
-    Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations);
+    default Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations) {
+        return createAuthorizations(auths, additionalAuthorizations.toArray(new String[0]));
+    }
 
     /**
      * Gets the number of times a property with a given value occurs on vertices
@@ -1160,17 +1447,40 @@ public interface Graph {
      * @param authorizations The authorizations to use to find the property
      * @return The results
      */
-    Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations);
+    default Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        Map<Object, Long> countsByValue = new HashMap<>();
+        for (Vertex v : getVertices(authorizations)) {
+            for (Property p : v.getProperties()) {
+                if (propertyName.equals(p.getName())) {
+                    Value mapKey = p.getValue();
+                    if (mapKey instanceof TextValue) {
+                        mapKey = ((TextValue) mapKey).toLower();
+                    }
+                    Long currentValue = countsByValue.get(mapKey.asObjectCopy());
+                    if (currentValue == null) {
+                        countsByValue.put(mapKey.asObjectCopy(), 1L);
+                    } else {
+                        countsByValue.put(mapKey.asObjectCopy(), currentValue + 1);
+                    }
+                }
+            }
+        }
+        return countsByValue;
+    }
 
     /**
      * Gets a count of the number of vertices in the system.
      */
-    long getVertexCount(Authorizations authorizations);
+    default long getVertexCount(Authorizations authorizations) {
+        return count(getVertices(authorizations));
+    }
 
     /**
      * Gets a count of the number of edges in the system.
      */
-    long getEdgeCount(Authorizations authorizations);
+    default long getEdgeCount(Authorizations authorizations) {
+        return count(getEdges(authorizations));
+    }
 
     /**
      * Save a pre-made property definition.
@@ -1184,7 +1494,16 @@ public interface Graph {
      *
      * @param propertyName The name of the property to define.
      */
-    DefinePropertyBuilder defineProperty(String propertyName);
+    default DefinePropertyBuilder defineProperty(String propertyName) {
+        return new DefinePropertyBuilder(propertyName) {
+            @Override
+            public PropertyDefinition define() {
+                PropertyDefinition propertyDefinition = super.define();
+                savePropertyDefinition(propertyDefinition);
+                return propertyDefinition;
+            }
+        };
+    }
 
     /**
      * Determine if a property is already defined
@@ -1201,6 +1520,7 @@ public interface Graph {
 
     /**
      * Removes the property with the given name
+     *
      * @param propertyName
      */
     void removePropertyDefinition(String propertyName);
@@ -1231,7 +1551,11 @@ public interface Graph {
      * @param streamingPropertyValues list of StreamingPropertyValues to get input streams for
      * @return InputStreams in the same order as the input list
      */
-    List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues);
+    default List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
+        return streamingPropertyValues.stream()
+                .map(StreamingPropertyValue::getInputStream)
+                .collect(Collectors.toList());
+    }
 
     /**
      * Gets the specified extended data rows.
@@ -1260,7 +1584,16 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
-    ExtendedDataRow getExtendedData(ExtendedDataRowId id, Authorizations authorizations);
+    default ExtendedDataRow getExtendedData(ExtendedDataRowId id, Authorizations authorizations) {
+        ArrayList<ExtendedDataRow> rows = Lists.newArrayList(getExtendedData(Lists.newArrayList(id), authorizations));
+        if (rows.size() == 0) {
+            return null;
+        }
+        if (rows.size() == 1) {
+            return rows.get(0);
+        }
+        throw new GeException("Expected 0 or 1 rows found " + rows.size());
+    }
 
     /**
      * Gets the specified extended data rows.
@@ -1419,22 +1752,53 @@ public interface Graph {
     /**
      * Visits all elements on the graph
      */
-    void visitElements(GraphVisitor graphVisitor, Authorizations authorizations);
+    default void visitElements(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visitVertices(graphVisitor, authorizations);
+        visitEdges(graphVisitor, authorizations);
+    }
 
     /**
      * Visits all vertices on the graph
      */
-    void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations);
+    default void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visit(getVertices(authorizations), graphVisitor);
+    }
 
     /**
      * Visits all edges on the graph
      */
-    void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations);
+    default void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visit(getEdges(authorizations), graphVisitor);
+    }
 
     /**
      * Visits elements using the supplied elements and visitor
      */
-    void visit(Iterable<? extends Element> elements, GraphVisitor visitor);
+    default void visit(Iterable<? extends Element> elements, GraphVisitor visitor) {
+        for (Element element : elements) {
+            visitor.visitElement(element);
+            if (element instanceof Vertex) {
+                visitor.visitVertex((Vertex) element);
+            } else if (element instanceof Edge) {
+                visitor.visitEdge((Edge) element);
+            } else {
+                throw new GeException("Invalid element type to visit: " + element.getClass().getName());
+            }
+
+            for (Property property : element.getProperties()) {
+                visitor.visitProperty(element, property);
+            }
+
+            for (String tableName : element.getExtendedDataTableNames()) {
+                for (ExtendedDataRow extendedDataRow : element.getExtendedData(tableName)) {
+                    visitor.visitExtendedDataRow(element, tableName, extendedDataRow);
+                    for (Property property : extendedDataRow.getProperties()) {
+                        visitor.visitProperty(element, tableName, extendedDataRow, property);
+                    }
+                }
+            }
+        }
+    }
 
     void dumpGraph();
 
@@ -1443,7 +1807,9 @@ public interface Graph {
      */
     GeMetricRegistry getMetricsRegistry();
 
-    NameSubstitutionStrategy getNameSubstitutionStrategy();
+    default NameSubstitutionStrategy getNameSubstitutionStrategy() {
+        return new IdentityNameSubstitutionStrategy();
+    }
 
     void ensurePropertyDefined(String name, Value value);
 }

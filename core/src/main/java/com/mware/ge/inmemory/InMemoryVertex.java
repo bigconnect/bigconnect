@@ -38,16 +38,13 @@ package com.mware.ge.inmemory;
 
 import com.mware.ge.*;
 import com.mware.ge.inmemory.mutations.AlterConceptTypeMutation;
-import com.mware.ge.inmemory.mutations.AlterEdgeLabelMutation;
 import com.mware.ge.inmemory.util.EdgeToEdgeIdIterable;
-import com.mware.ge.mutation.ExistingElementMutation;
-import com.mware.ge.mutation.ExistingElementMutationImpl;
 import com.mware.ge.mutation.ExistingVertexMutation;
 import com.mware.ge.query.VertexQuery;
 import com.mware.ge.search.IndexHint;
-import com.mware.ge.util.*;
+import com.mware.ge.util.ConvertingIterable;
+import com.mware.ge.util.FilterIterable;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,22 +71,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     @Override
     public String getConceptType() {
         return getInMemoryTableElement().findLastMutation(AlterConceptTypeMutation.class).getNewConceptType();
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
-        return getEdges(direction, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
-        String[] labels = null;
-        return getEdgeInfos(direction, labels, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, String label, Authorizations authorizations) {
-        return getEdgeInfos(direction, new String[]{label}, authorizations);
     }
 
     @Override
@@ -155,11 +136,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdges(direction, fetchHints, null, authorizations);
-    }
-
-    @Override
     public Iterable<Edge> getEdges(final Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction);
         if (!getFetchHints().isIncludeEdgeIds()) {
@@ -193,16 +169,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, String label, Authorizations authorizations) {
-        return getEdges(direction, label, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdges(direction, labelToArrayOrNull(label), authorizations);
-    }
-
-    @Override
     public Iterable<String> getEdgeIds(Direction direction, String label, Authorizations authorizations) {
         if (!getFetchHints().isIncludeEdgeIds()) {
             throw new GeMissingFetchHintException(getFetchHints(), "includeEdgeIds");
@@ -211,46 +177,8 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(direction, labels, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction direction, final String[] labels, FetchHints fetchHints, Authorizations authorizations) {
-        return new FilterIterable<Edge>(getEdges(direction, authorizations)) {
-            @Override
-            protected boolean isIncluded(Edge edge) {
-                if (labels == null) {
-                    return true;
-                }
-                for (String label : labels) {
-                    if (label.equals(edge.getLabel())) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
-    }
-
-    @Override
     public Iterable<String> getEdgeIds(Direction direction, String[] labels, Authorizations authorizations) {
         return new EdgeToEdgeIdIterable(getEdges(direction, labels, authorizations));
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return new FilterIterable<Edge>(getEdges(direction, authorizations)) {
-            @Override
-            protected boolean isIncluded(Edge edge) {
-                return edge.getOtherVertexId(getId()).equals(otherVertex.getId());
-            }
-        };
     }
 
     @Override
@@ -259,53 +187,13 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, label, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return new FilterIterable<Edge>(getEdges(direction, label, authorizations)) {
-            @Override
-            protected boolean isIncluded(Edge edge) {
-                return edge.getOtherVertexId(getId()).equals(otherVertex.getId());
-            }
-        };
-    }
-
-    @Override
     public Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
         return new EdgeToEdgeIdIterable(getEdges(otherVertex, direction, label, authorizations));
     }
 
     @Override
-    public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, labels, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
-        return new FilterIterable<Edge>(getEdges(direction, labels, authorizations)) {
-            @Override
-            protected boolean isIncluded(Edge edge) {
-                return edge.getOtherVertexId(getId()).equals(otherVertex.getId());
-            }
-        };
-    }
-
-    @Override
     public Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations) {
         return new EdgeToEdgeIdIterable(getEdges(otherVertex, direction, labels, authorizations));
-    }
-
-    @Override
-    public int getEdgeCount(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getCountOfEdges(direction);
-    }
-
-    @Override
-    public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getEdgeLabels(direction);
     }
 
     @Override
@@ -323,65 +211,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             outEdgeCountsByLabels.put(label, c + 1);
         }
         return new EdgesSummary(outEdgeCountsByLabels, inEdgeCountsByLabels);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, Authorizations authorizations) {
-        return getVertices(direction, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, final FetchHints fetchHints, final Authorizations authorizations) {
-        return getVertices(direction, (String[]) null, fetchHints, authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
-        return getVertices(direction, label, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getVertices(direction, labelToArrayOrNull(label), fetchHints, authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String[] labels, Authorizations authorizations) {
-        return getVertices(direction, labels, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(final Direction direction, final String[] labels, final FetchHints fetchHints, final Authorizations authorizations) {
-        Iterable<String> vertexIds = getVertexIds(direction, labels, authorizations);
-        return getGraph().getVertices(vertexIds, fetchHints, authorizations);
-    }
-
-    @Override
-    public Iterable<String> getVertexIds(Direction direction, String label, Authorizations authorizations) {
-        return getVertexIds(direction, labelToArrayOrNull(label), authorizations);
-    }
-
-    @Override
-    public Iterable<String> getVertexIds(Direction direction, String[] labels, Authorizations authorizations) {
-        if (!getFetchHints().isIncludeEdgeVertexIds()) {
-            throw new GeMissingFetchHintException(getFetchHints(), "includeEdgeVertexIds");
-        }
-        return new ConvertingIterable<EdgeInfo, String>(getEdgeInfos(direction, labels, authorizations)) {
-            @Override
-            protected String convert(EdgeInfo e) {
-                return e.getVertexId();
-            }
-        };
-    }
-
-    @Override
-    public Iterable<String> getVertexIds(Direction direction, Authorizations authorizations) {
-        return getVertexIds(direction, (String[]) null, authorizations);
-    }
-
-    @Override
-    public VertexQuery query(Authorizations authorizations) {
-        return query(null, authorizations);
     }
 
     @Override
@@ -404,48 +233,5 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 return vertex;
             }
         };
-    }
-
-    private static String[] labelToArrayOrNull(String label) {
-        return label == null ? null : new String[]{label};
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, endTime, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), fetchHints, null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), fetchHints, null, authorizations);
-    }
-
-    private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
     }
 }

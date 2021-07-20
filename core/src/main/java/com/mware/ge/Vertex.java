@@ -38,6 +38,8 @@ package com.mware.ge;
 
 import com.mware.ge.mutation.ExistingVertexMutation;
 import com.mware.ge.query.VertexQuery;
+import com.mware.ge.util.ConvertingIterable;
+import com.mware.ge.util.FilterIterable;
 
 public interface Vertex extends Element, VertexElementLocation {
     /**
@@ -47,7 +49,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
+        return getEdges(direction, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges attached to this vertex.
@@ -57,7 +61,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdges(direction, fetchHints, null, authorizations);
+    }
 
     /**
      * Gets all edges attached to this vertex.
@@ -87,7 +93,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, String label, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Direction direction, String label, Authorizations authorizations) {
+        return getEdges(direction, label, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges with the given label attached to this vertex.
@@ -98,7 +106,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdges(direction, label == null ? null : new String[]{label}, authorizations);
+    }
 
     /**
      * Gets the connected edge ids.
@@ -118,7 +128,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, String[] labels, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Direction direction, String[] labels, Authorizations authorizations) {
+        return getEdges(direction, labels, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges with any of the given labels attached to this vertex.
@@ -129,7 +141,22 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        return new FilterIterable<Edge>(getEdges(direction, authorizations)) {
+            @Override
+            protected boolean isIncluded(Edge edge) {
+                if (labels == null) {
+                    return true;
+                }
+                for (String label : labels) {
+                    if (label.equals(edge.getLabel())) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+    }
 
     /**
      * Gets the connected edge ids.
@@ -149,7 +176,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, Authorizations authorizations) {
+        return getEdges(otherVertex, direction, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges between this vertex and another vertex.
@@ -160,7 +189,14 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, FetchHints fetchHints, Authorizations authorizations) {
+        return new FilterIterable<Edge>(getEdges(direction, authorizations)) {
+            @Override
+            protected boolean isIncluded(Edge edge) {
+                return edge.getOtherVertexId(getId()).equals(otherVertex.getId());
+            }
+        };
+    }
 
     /**
      * Gets the connected edge ids.
@@ -181,7 +217,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
+        return getEdges(otherVertex, direction, label, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges between this vertex and another vertex matching the given label.
@@ -193,7 +231,14 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        return new FilterIterable<Edge>(getEdges(direction, label, authorizations)) {
+            @Override
+            protected boolean isIncluded(Edge edge) {
+                return edge.getOtherVertexId(getId()).equals(otherVertex.getId());
+            }
+        };
+    }
 
     /**
      * Gets the connected edge ids.
@@ -215,7 +260,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations) {
+        return getEdges(otherVertex, direction, labels, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets all edges between this vertex and another vertex matching any of the given labels.
@@ -227,7 +274,14 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        return new FilterIterable<Edge>(getEdges(direction, labels, authorizations)) {
+            @Override
+            protected boolean isIncluded(Edge edge) {
+                return edge.getOtherVertexId(getId()).equals(otherVertex.getId());
+            }
+        };
+    }
 
     /**
      * Gets a list of edge ids between this vertex and another vertex.
@@ -247,7 +301,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return The count of edges.
      */
-    int getEdgeCount(Direction direction, Authorizations authorizations);
+    default int getEdgeCount(Direction direction, Authorizations authorizations) {
+        return getEdgesSummary(authorizations).getCountOfEdges(direction);
+    }
 
     /**
      * Gets a list of edge labels.
@@ -256,7 +312,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edge labels.
      */
-    Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations);
+    default Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
+        return getEdgesSummary(authorizations).getEdgeLabels(direction);
+    }
 
     /**
      * Gets edge summary information
@@ -273,7 +331,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of EdgeInfo.
      */
-    Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations);
+    default Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
+        return getEdgeInfos(direction, (String[]) null, authorizations);
+    }
 
     /**
      * Get a list of EdgeInfo.
@@ -283,7 +343,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of EdgeInfo.
      */
-    Iterable<EdgeInfo> getEdgeInfos(Direction direction, String label, Authorizations authorizations);
+    default Iterable<EdgeInfo> getEdgeInfos(Direction direction, String label, Authorizations authorizations) {
+        return getEdgeInfos(direction, new String[]{label}, authorizations);
+    }
 
     /**
      * Get a list of EdgeInfo.
@@ -302,7 +364,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Direction direction, Authorizations authorizations) {
+        return getVertices(direction, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex.
@@ -312,7 +376,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
+        return getVertices(direction, (String[]) null, fetchHints, authorizations);
+    }
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have the given label.
@@ -322,7 +388,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
+        return getVertices(direction, label, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have the given label.
@@ -333,7 +401,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        return getVertices(direction, label == null ? null : new String[]{label}, fetchHints, authorizations);
+    }
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have any of the given labels.
@@ -343,7 +413,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, String[] labels, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Direction direction, String[] labels, Authorizations authorizations) {
+        return getVertices(direction, labels, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have any of the given labels.
@@ -354,7 +426,10 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        Iterable<String> vertexIds = getVertexIds(direction, labels, authorizations);
+        return getGraph().getVertices(vertexIds, fetchHints, authorizations);
+    }
 
     /**
      * Gets vertex ids of connected vertices.
@@ -364,7 +439,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertex ids.
      */
-    Iterable<String> getVertexIds(Direction direction, String label, Authorizations authorizations);
+    default Iterable<String> getVertexIds(Direction direction, String label, Authorizations authorizations) {
+        return getVertexIds(direction, label == null ? null : new String[]{label}, authorizations);
+    }
 
     /**
      * Gets vertex ids of connected vertices.
@@ -374,7 +451,17 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertex ids.
      */
-    Iterable<String> getVertexIds(Direction direction, String[] labels, Authorizations authorizations);
+    default Iterable<String> getVertexIds(Direction direction, String[] labels, Authorizations authorizations) {
+        if (!getFetchHints().isIncludeEdgeVertexIds()) {
+            throw new GeMissingFetchHintException(getFetchHints(), "includeEdgeVertexIds");
+        }
+        return new ConvertingIterable<EdgeInfo, String>(getEdgeInfos(direction, labels, authorizations)) {
+            @Override
+            protected String convert(EdgeInfo e) {
+                return e.getVertexId();
+            }
+        };
+    }
 
     /**
      * Gets vertex ids of connected vertices.
@@ -383,7 +470,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertex ids.
      */
-    Iterable<String> getVertexIds(Direction direction, Authorizations authorizations);
+    default Iterable<String> getVertexIds(Direction direction, Authorizations authorizations) {
+        return getVertexIds(direction, (String[]) null, authorizations);
+    }
 
     /**
      * Creates a query to query the edges and vertices attached to this vertex.
@@ -391,7 +480,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges and vertices.
      * @return The query builder.
      */
-    VertexQuery query(Authorizations authorizations);
+    default VertexQuery query(Authorizations authorizations) {
+        return query(null, authorizations);
+    }
 
     /**
      * Creates a query to query the edges and vertices attached to this vertex.
@@ -418,7 +509,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
+    }
 
     /**
      * Gets all edge/vertex pairs attached to this vertex.
@@ -428,7 +521,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, null, authorizations);
+    }
 
     /**
      * Gets all edge/vertex pairs attached to this vertex.
@@ -439,7 +534,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, endTime, authorizations);
+    }
 
     /**
      * Gets all edge/vertex pairs with the given label attached to this vertex.
@@ -449,7 +546,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
+    }
 
     /**
      * Gets all edge/vertex pairs with the given label attached to this vertex.
@@ -460,7 +559,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), fetchHints, null, authorizations);
+    }
 
     /**
      * Gets all edge/vertex pairs with any of the given labels attached to this vertex.
@@ -470,7 +571,9 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
+    }
 
     /**
      * Gets all edge/vertex pairs with any of the given labels attached to this vertex.
@@ -481,7 +584,13 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), fetchHints, null, authorizations);
+    }
+
+    default Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
+    }
 
     @Override
     default ElementType getElementType() {

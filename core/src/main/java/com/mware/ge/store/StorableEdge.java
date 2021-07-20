@@ -129,26 +129,6 @@ public class StorableEdge extends StorableElement implements Edge {
     }
 
     @Override
-    public Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
-        return getOtherVertex(myVertexId, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
-        return getGraph().getVertex(getOtherVertexId(myVertexId), fetchHints, authorizations);
-    }
-
-    @Override
-    public EdgeVertices getVertices(Authorizations authorizations) {
-        return getVertices(getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return getGraph().getVertex(getVertexId(direction), fetchHints, authorizations);
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {

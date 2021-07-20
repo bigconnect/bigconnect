@@ -127,16 +127,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
-        return getEdges(direction, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdges(direction, fetchHints, null, authorizations);
-    }
-
-    @Override
     public Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction);
         return getGraph().getEdges(getEdgeIds(direction, authorizations), fetchHints, endTime, authorizations);
@@ -146,11 +136,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     public Iterable<String> getEdgeIds(Direction direction, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction);
         return getEdgeIdsWithOtherVertexId(null, direction, null, authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Direction direction, String label, Authorizations authorizations) {
-        return getEdges(direction, label, getGraph().getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -166,11 +151,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(direction, labels, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
     public Iterable<Edge> getEdges(Direction direction, final String[] labels, FetchHints fetchHints, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(null, direction, labels, authorizations), fetchHints, authorizations);
@@ -180,11 +160,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     public Iterable<String> getEdgeIds(final Direction direction, final String[] labels, final Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
         return getEdgeIdsWithOtherVertexId(null, direction, labels, authorizations);
-    }
-
-    @Override
-    public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, getGraph().getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -200,11 +175,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, label, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
     public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction, label);
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labelToArrayOrNull(label), authorizations), fetchHints, authorizations);
@@ -217,11 +187,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, labels, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
     public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels, authorizations), fetchHints, authorizations);
@@ -231,16 +196,6 @@ public class StorableVertex extends StorableElement implements Vertex {
     public Iterable<String> getEdgeIds(final Vertex otherVertex, final Direction direction, final String[] labels, final Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels, authorizations);
-    }
-
-    @Override
-    public int getEdgeCount(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getCountOfEdges(direction);
-    }
-
-    @Override
-    public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getEdgeLabels(direction);
     }
 
     @Override
@@ -271,11 +226,6 @@ public class StorableVertex extends StorableElement implements Vertex {
         }
 
         return new EdgesSummary(outEdgeCountsByLabels, inEdgeCountsByLabels);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, Authorizations authorizations) {
-        return getVertices(direction, getGraph().getDefaultFetchHints(), authorizations);
     }
 
     @SuppressWarnings("unused")
@@ -372,12 +322,6 @@ public class StorableVertex extends StorableElement implements Vertex {
         }
     }
 
-    @Override
-    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
-        String[] labels = null;
-        return getEdgeInfos(direction, labels, authorizations);
-    }
-
     private Iterable<com.mware.ge.EdgeInfo> storableEdgeInfosToEdgeInfos(Iterable<Map.Entry<String, StorableEdgeInfo>> edgeInfos, Direction direction) {
         return new ConvertingIterable<Map.Entry<String, StorableEdgeInfo>, com.mware.ge.EdgeInfo>(edgeInfos) {
             @Override
@@ -415,12 +359,6 @@ public class StorableVertex extends StorableElement implements Vertex {
         };
     }
 
-
-    @Override
-    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, String label, Authorizations authorizations) {
-        return getEdgeInfos(direction, new String[]{label}, authorizations);
-    }
-
     protected Iterable<EdgeInfo> filterEdgeInfosByLabel(Iterable<com.mware.ge.EdgeInfo> edgeInfos, String[] labels) {
         if (labels != null) {
             return new FilterIterable<EdgeInfo>(edgeInfos) {
@@ -444,33 +382,8 @@ public class StorableVertex extends StorableElement implements Vertex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
-        return getVertices(direction, label, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getVertices(direction, labelToArrayOrNull(label), fetchHints, authorizations);
-    }
-
-    @Override
-    public Iterable<Vertex> getVertices(Direction direction, String[] labels, Authorizations authorizations) {
-        return getVertices(direction, labels, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
     public Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, final Authorizations authorizations) {
         return getGraph().getVertices(getVertexIds(direction, labels, authorizations), fetchHints, authorizations);
-    }
-
-    @Override
-    public Iterable<String> getVertexIds(Direction direction, String label, Authorizations authorizations) {
-        return getVertexIds(direction, labelToArrayOrNull(label), authorizations);
-    }
-
-    @Override
-    public Iterable<String> getVertexIds(Direction direction, Authorizations authorizations) {
-        return getVertexIds(direction, (String[]) null, authorizations);
     }
 
     @Override
@@ -496,11 +409,6 @@ public class StorableVertex extends StorableElement implements Vertex {
             default:
                 throw new GeException("Unexpected direction: " + direction);
         }
-    }
-
-    @Override
-    public VertexQuery query(Authorizations authorizations) {
-        return query(null, authorizations);
     }
 
     @Override
@@ -554,65 +462,6 @@ public class StorableVertex extends StorableElement implements Vertex {
 
     private static String[] labelToArrayOrNull(String label) {
         return label == null ? null : new String[]{label};
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, endTime, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), fetchHints, null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), getGraph().getDefaultFetchHints(), null, authorizations);
-    }
-
-    @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), fetchHints, null, authorizations);
-    }
-
-    private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
-    }
-
-    private boolean shouldIncludeOutEdge(StorableEdgeInfo edgeInfo) {
-        Set<String> labels = getFetchHints().getEdgeLabelsOfEdgeRefsToInclude();
-        if (labels != null && labels.contains(edgeInfo.getLabel())) {
-            return true;
-        }
-        return getFetchHints().isIncludeAllEdgeRefs()
-                || getFetchHints().isIncludeEdgeLabelsAndCounts()
-                || getFetchHints().isIncludeOutEdgeRefs();
-    }
-
-    private boolean shouldIncludeInEdge(StorableEdgeInfo edgeInfo) {
-        Set<String> labels = getFetchHints().getEdgeLabelsOfEdgeRefsToInclude();
-        if (labels != null && labels.contains(edgeInfo.getLabel())) {
-            return true;
-        }
-        return getFetchHints().isIncludeAllEdgeRefs()
-                || getFetchHints().isIncludeEdgeLabelsAndCounts()
-                || getFetchHints().isIncludeInEdgeRefs();
     }
 
     @Override

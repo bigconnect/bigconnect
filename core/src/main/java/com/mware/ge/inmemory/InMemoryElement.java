@@ -42,7 +42,9 @@ import com.mware.ge.mutation.*;
 import com.mware.ge.query.ExtendedDataQueryableIterable;
 import com.mware.ge.query.QueryableIterable;
 import com.mware.ge.search.IndexHint;
+import com.mware.ge.util.StringUtil;
 import com.mware.ge.values.storable.Value;
+import org.apache.commons.lang3.StringUtils;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
     private final String id;
@@ -106,7 +108,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     private void deleteExtendedData(String tableName, String row, String columnName, String key, Visibility visibility) {
-        getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, authorizations);
+        if (StringUtils.isEmpty(columnName)) {
+            getGraph().deleteExtendedDataRow(new ExtendedDataRowId(getElementType(), getId(), tableName, row), authorizations);
+        } else {
+            getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, authorizations);
+        }
     }
 
     protected void extendedData(ExtendedDataMutation extendedData, Authorizations authorizations) {

@@ -51,6 +51,7 @@ import com.mware.ge.search.IndexHint;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.util.*;
 import com.mware.ge.values.storable.Value;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -216,16 +217,18 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 authorizations
         );
         for (ExtendedDataDeleteMutation m : elementMutation.getExtendedDataDeletes()) {
-            getSearchIndex().deleteExtendedData(
-                    InMemoryGraph.this,
-                    element,
-                    m.getTableName(),
-                    m.getRow(),
-                    m.getColumnName(),
-                    m.getKey(),
-                    m.getVisibility(),
-                    authorizations
-            );
+            if (StringUtils.isEmpty(m.getColumnName())) {
+                deleteExtendedDataRow(new ExtendedDataRowId(element.getElementType(), element.getId(), m.getTableName(), m.getRow()), authorizations);
+            } else {
+                deleteExtendedData(
+                        (InMemoryElement) element,
+                        m.getTableName(),
+                        m.getRow(),
+                        m.getColumnName(),
+                        m.getKey(),
+                        m.getVisibility(),
+                        authorizations);
+            }
         }
     }
 

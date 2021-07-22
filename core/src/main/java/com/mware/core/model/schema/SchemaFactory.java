@@ -151,10 +151,14 @@ public class SchemaFactory {
     }
 
     public void applyContributions(Configuration configuration) {
-        InjectHelper.getInjectedServices(SchemaContribution.class, configuration)
-                .stream()
-                .filter(sc -> !sc.patchApplied(this))
-                .forEach(sc -> sc.patchSchema(this));
+        try {
+            InjectHelper.getInjectedServices(SchemaContribution.class, configuration)
+                    .stream()
+                    .filter(sc -> !sc.patchApplied(this))
+                    .forEach(sc -> sc.patchSchema(this));
+        } catch (Exception ex) {
+            LOGGER.warn("Could not apply schema contributions", ex);
+        }
     }
 
     public SchemaRepository getSchemaRepository() {

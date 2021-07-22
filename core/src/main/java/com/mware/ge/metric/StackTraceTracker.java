@@ -36,12 +36,13 @@
  */
 package com.mware.ge.metric;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 public class StackTraceTracker {
-    private final Set<StackTraceItem> roots = new HashSet<>();
+    private final Set<StackTraceItem> roots = Collections.synchronizedSet(new HashSet<>());
 
     public void addStackTrace() {
         addStackTrace(Thread.currentThread().getStackTrace());

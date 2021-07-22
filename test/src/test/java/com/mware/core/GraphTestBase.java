@@ -36,11 +36,17 @@
  */
 package com.mware.core;
 
+import com.fasterxml.jackson.module.guice.ObjectMapperModule;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Module;
+import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.cache.CacheService;
 import com.mware.core.cache.InMemoryCacheService;
 import com.mware.core.config.Configuration;
 import com.mware.core.config.HashMapConfigurationLoader;
 import com.mware.core.exception.BcException;
+import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.model.file.ClassPathFileSystemRepository;
 import com.mware.core.model.file.FileSystemRepository;
 import com.mware.core.model.graph.GraphRepository;
@@ -120,9 +126,12 @@ public abstract class GraphTestBase {
     protected AuditService auditService;
     protected User user;
     protected SimpleOrmSession simpleOrmSession;
+    protected LifeSupportService lifeSupportService = new LifeSupportService();
 
     @Before
     public void before() throws Exception {
+        lifeSupportService.start();
+
         configurationMap = getConfigurationMap();
         configuration = getConfiguration();
         simpleOrmSession = getSimpleOrmSession();
@@ -148,6 +157,8 @@ public abstract class GraphTestBase {
         authorizationRepository = getAuthorizationRepository();
         privilegeRepository = getPrivilegeRepository();
         longRunningProcessRepository = getLongRunningProcessRepository();
+
+        InjectHelper.setInjector(Guice.createInjector(new TestModuleMaker().createModule(), new ObjectMapperModule()));
     }
 
     @After
@@ -574,5 +585,39 @@ public abstract class GraphTestBase {
 
     protected List<byte[]> getGraphPropertyQueueItems() {
         return getWorkQueueItems(configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME));
+    }
+
+    public LifeSupportService getLifeSupportService() {
+        return lifeSupportService;
+    }
+
+    protected class TestModuleMaker implements InjectHelper.ModuleMaker {
+        @Override
+        public Module createModule() {
+            return new AbstractModule() {
+                @Override
+                protected void configure() {
+                    bind(Graph.class).toInstance(getGraph());
+                    bind(SchemaRepository.class).toInstance(getSchemaRepository());
+                    bind(GraphAuthorizationRepository.class).toInstance(getGraphAuthorizationRepository());
+                    bind(Configuration.class).toInstance(getConfiguration());
+                    bind(WebQueueRepository.class).toInstance(getWebQueueRepository());
+                    bind(WorkQueueRepository.class).toInstance(getWorkQueueRepository());
+                    bind(VisibilityTranslator.class).toInstance(getVisibilityTranslator());
+                    bind(WorkspaceRepository.class).toInstance(getWorkspaceRepository());
+                    bind(LifeSupportService.class).toInstance(getLifeSupportService());
+                    bind(UserRepository.class).toInstance(getUserRepository());
+                    bind(LockRepository.class).toInstance(getLockRepository());
+                    bind(GraphRepository.class).toInstance(getGraphRepository());
+                    bind(TimeRepository.class).toInstance(getTimeRepository());
+                    bind(TermMentionRepository.class).toInstance(getTermMentionRepository());
+                }
+            };
+        }
+
+        @Override
+        public Configuration getConfiguration() {
+            return GraphTestBase.this.getConfiguration();
+        }
     }
 }

@@ -63,6 +63,9 @@ public abstract class StreamingPropertyValue extends StreamingPropertyValueBase 
 
     public String readToString() {
         try (InputStream in = getInputStream()) {
+            if (in.markSupported()) {
+                in.reset();
+            }
             return IOUtils.toString(in);
         } catch (IOException e) {
             throw new GeException("Could not read streaming property value into string", e);
@@ -71,6 +74,9 @@ public abstract class StreamingPropertyValue extends StreamingPropertyValueBase 
 
     public String readToString(long offset, long limit) {
         try (InputStream in = getInputStream()) {
+            if (in.markSupported()) {
+                in.reset();
+            }
             return IOUtils.toString(in, offset, limit);
         } catch (IOException e) {
             throw new GeException("Could not read streaming property value into string", e);

@@ -214,7 +214,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                         aggregation = new ChronoFieldAggregation(aggregationName, field, prop.getAggMinDocumentCount(), timeZone, chronoField);
                         break;
                     default:
-                        throw new BcException("Invalid aggregation type: " + type);
+                        throw new BcException("Invalid aggregation type: " + type +" for property: "+field);
                 }
 
                 query.addAggregation(aggregation);

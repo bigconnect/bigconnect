@@ -477,8 +477,12 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                     graphQuery.has(propertyName, geoComparePredicate, (Value) value0);
                 } else if ("<".equals(predicateString)) {
                     graphQuery.has(propertyName, Compare.LESS_THAN, (Value) value0);
+                } else if ("<=".equals(predicateString)) {
+                    graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, (Value) value0);
                 } else if (">".equals(predicateString)) {
                     graphQuery.has(propertyName, Compare.GREATER_THAN, (Value) value0);
+                } else if (">=".equals(predicateString)) {
+                    graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, (Value) value0);
                 } else if ("range".equals(predicateString)) {
                     Object value1 = jsonValueToObject(values, propertyDataType, 1);
                     if (value0 instanceof DateTimeValue && value1 instanceof DateTimeValue) {

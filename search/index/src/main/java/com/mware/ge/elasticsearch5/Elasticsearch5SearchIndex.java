@@ -109,6 +109,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.mware.ge.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
 import static com.mware.ge.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
@@ -1125,6 +1126,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 mapping.field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT);
                 mapping.field("normalizer", LOWERCASER_NORMALIZER_NAME);
             }
+        } else if (CharValue.class.isAssignableFrom(dataType) || CharArray.class.isAssignableFrom(dataType)) {
+            LOGGER.debug("Registering 'char' type for %s", propertyName);
+            mapping.field("type", "text");
+            mapping.field("index", "false");
         } else if (FloatValue.class.isAssignableFrom(dataType) || FloatArray.class.isAssignableFrom(dataType)) {
             LOGGER.debug("Registering 'float' type for %s", propertyName);
             mapping.field("type", "float");
@@ -1188,7 +1193,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    protected Object convertValueForIndexing(String propertyName, Object obj) {
+    protected Object convertValueForIndexing(Object obj) {
         if (obj == null) {
             return null;
         }
@@ -1203,11 +1208,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     String[] arr = (String[]) value.asObjectCopy();
                     return Arrays.stream(arr).parallel().toArray(String[]::new);
                 } else if (value instanceof CharArray) {
-                    return ArrayUtils.toObject((char[]) value.asObjectCopy());
+                    char[] arr = ((CharArray)value).asObjectCopy();
+                    return Arrays.stream(ArrayUtils.toObject(arr))
+                            .map(String::valueOf)
+                            .toArray(String[]::new);
                 }
-            } else if (value instanceof NumberValue)
+            } else if (value instanceof NumberValue) {
                 return ((NumberValue) value).asObjectCopy();
-            else if (value instanceof NumberArray) {
+            } else if (value instanceof NumberArray) {
                 if (value instanceof ByteArray)
                     return ArrayUtils.toObject((byte[]) value.asObjectCopy());
                 else if (value instanceof ShortArray)
@@ -1222,9 +1230,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     return ArrayUtils.toObject((double[]) value.asObjectCopy());
                 else
                     throw new IllegalArgumentException("Unknown numeric array type: " + value.getClass());
-            } else if (value instanceof BooleanValue)
+            } else if (value instanceof BooleanValue) {
                 return ((BooleanValue) value).booleanValue();
-            else if (value instanceof BooleanArray) {
+            } else if (value instanceof BooleanArray) {
                 return ArrayUtils.toObject((boolean[]) value.asObjectCopy());
             } else if (value instanceof DateValue) {
                 return ((LocalDate) value.asObjectCopy()).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
@@ -2283,7 +2291,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @SuppressWarnings("unchecked")
     protected void addPropertyValueToPropertiesMap(Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
         Object existingValue = propertiesMap.get(propertyName);
-        Object valueForIndex = convertValueForIndexing(propertyName, propertyValue);
+        Object valueForIndex = convertValueForIndexing(propertyValue);
         if (existingValue == null) {
             propertiesMap.put(propertyName, valueForIndex);
             return;

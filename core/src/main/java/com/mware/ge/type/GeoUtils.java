@@ -50,7 +50,7 @@ import java.util.List;
 
 public class GeoUtils {
     private static final GeLogger LOGGER = GeLoggerFactory.getLogger(GeoUtils.class);
-    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
+    public static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     public static double EARTH_RADIUS = 6371; // km
     public static double EARTH_CIRCUMFERENCE = 2 * Math.PI * EARTH_RADIUS;
@@ -262,7 +262,7 @@ public class GeoUtils {
         return polygon;
     }
 
-    private static LinearRing toJtsLinearRing(List<GeoPoint> geoPoints, boolean counterClockwise, boolean lenient) {
+    public static LinearRing toJtsLinearRing(List<GeoPoint> geoPoints, boolean counterClockwise, boolean lenient) {
         if (geoPoints.size() < 4) {
             throw new GeInvalidShapeException("A polygon must specify at least 4 points for each boundary and hole.");
         }

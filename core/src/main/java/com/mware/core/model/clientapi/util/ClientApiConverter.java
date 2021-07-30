@@ -40,14 +40,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
-import com.mware.ge.values.storable.DateTimeValue;
-import com.mware.ge.values.storable.TextValue;
-import com.mware.ge.values.storable.Value;
+import com.mware.ge.values.storable.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ClientApiConverter {
     public static Object toClientApiValue(Object value) {
@@ -61,6 +62,16 @@ public class ClientApiConverter {
             return toClientApiValue((TextValue) value);
         } else if (value instanceof DateTimeValue) {
             return toClientApiValue(((DateTimeValue) value).asObjectCopy().toInstant().toEpochMilli());
+        } else if (value instanceof DurationValue) {
+          return ((DurationValue)value).getAverageLengthInSeconds();
+        } else if (value instanceof GeoCircleValue) {
+          return ((GeoCircleValue)value).prettyPrint();
+        } else if (value instanceof GeoRectValue) {
+            return ((GeoRectValue)value).prettyPrint();
+        } else if (value instanceof GeoLineValue) {
+            return ((GeoLineValue) value).prettyPrint();
+        } else if (value instanceof GeoPolygonValue) {
+            return ((GeoPolygonValue)value).prettyPrint();
         } else if (value instanceof Value) {
             return ((Value) value).asObjectCopy();
         }

@@ -303,13 +303,13 @@ public class DefaultSchemaCreator {
         schemaFactory.newConceptProperty()
                 .concepts(userConcept)
                 .name(UserSchema.PASSWORD_HASH.getPropertyName())
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
                 .concepts(userConcept)
                 .name(UserSchema.PASSWORD_SALT.getPropertyName())
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -785,14 +785,14 @@ public class DefaultSchemaCreator {
                 .concepts(thingConcept)
                 .name(MediaBcSchema.AUDIO_MP3.getPropertyName())
                 .displayName("Audio MP3")
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
                 .concepts(thingConcept)
                 .name(RawObjectSchema.CACHED_IMAGE.getPropertyName())
                 .displayName("Cached Image")
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -893,14 +893,14 @@ public class DefaultSchemaCreator {
                 .concepts(thingConcept)
                 .name(BcSchema.RAW.getPropertyName())
                 .displayName("Raw Data")
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
                 .concepts(thingConcept)
                 .name(MediaBcSchema.RAW_POSTER_FRAME.getPropertyName())
                 .displayName("Raw Poster Frame")
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -966,14 +966,14 @@ public class DefaultSchemaCreator {
                 .concepts(thingConcept)
                 .name(MediaBcSchema.VIDEO_FRAME.getPropertyName())
                 .displayName("Video Frame")
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
                 .concepts(thingConcept)
                 .name(MediaBcSchema.VIDEO_PREVIEW_IMAGE.getPropertyName())
                 .displayName("Video Preview Image")
-                .type(PropertyType.BINARY)
+                .type(PropertyType.BYTE_ARRAY)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -1000,17 +1000,9 @@ public class DefaultSchemaCreator {
                 .concepts(thingConcept)
                 .name(RawObjectSchema.GEOLOCATION_PROPERTY.getPropertyName())
                 .displayName("Geolocation")
-                .type(PropertyType.GEO_LOCATION)
+                .type(PropertyType.GEO_POINT)
                 .userVisible(true)
                 .intents(SchemaConstants.INTENT_GEOLOCATION)
-                .save();
-
-        schemaFactory.newConceptProperty()
-                .concepts(thingConcept)
-                .name(RawObjectSchema.GEOSHAPE_PROPERTY.getPropertyName())
-                .displayName("Geoshape")
-                .type(PropertyType.GEO_SHAPE)
-                .userVisible(false)
                 .save();
 
         schemaFactory.newConceptProperty()

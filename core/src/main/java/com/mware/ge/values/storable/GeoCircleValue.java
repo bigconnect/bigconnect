@@ -62,4 +62,10 @@ public class GeoCircleValue extends GeoShapeValue {
     public String getTypeName() {
         return "GeoCircleValue";
     }
+
+    @Override
+    public String prettyPrint() {
+        GeoCircle circle = (GeoCircle) geoShape;
+        return String.format("CIRCLE(%f %f %f)", circle.getLatitude(), circle.getLongitude(), circle.getRadius());
+    }
 }

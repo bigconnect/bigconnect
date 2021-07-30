@@ -34,39 +34,28 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.ge.values.storable;
+package com.mware.core.model.properties.types;
 
-import com.mware.ge.type.GeoRect;
-import com.mware.ge.values.ValueMapper;
+import com.mware.ge.values.storable.FloatArray;
+import com.mware.ge.values.storable.NoValue;
+import com.mware.ge.values.storable.Value;
+import com.mware.ge.values.storable.Values;
 
-public class GeoRectValue extends GeoShapeValue {
-    GeoRectValue(GeoRect geoRect) {
-        super(geoRect);
+public class FloatArrayBcProperty extends BcProperty<float[]> {
+    public FloatArrayBcProperty(String key) {
+        super(key);
     }
 
     @Override
-    int unsafeCompareTo(Value other) {
-        return 0;
+    public Value wrap(float[] value) {
+        return Values.of(value);
     }
 
     @Override
-    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
-    }
-
-    @Override
-    public <T> T map(ValueMapper<T> mapper) {
-        return null;
-    }
-
-    @Override
-    public String getTypeName() {
-        return "GeoRectValue";
-    }
-
-    @Override
-    public String prettyPrint() {
-        GeoRect circle = (GeoRect) geoShape;
-        return String.format("RECT((%f %f) (%f %f))", circle.getNorthWest().getLatitude(), circle.getNorthWest().getLongitude(),
-                circle.getSouthEast().getLatitude(), circle.getSouthEast().getLongitude());
+    public float[] unwrap(Value value) {
+        if (value == null || value instanceof NoValue)
+            return null;
+        else
+            return ((FloatArray) value).asObjectCopy();
     }
 }

@@ -6,11 +6,11 @@
     <parent>
         <groupId>io.bigconnect</groupId>
         <artifactId>root</artifactId>
-        <version>4.2.1</version>
+        <version>4.2.2</version>
     </parent>
 
     <artifactId>cypher-parent</artifactId>
-    <version>4.2.1</version>
+    <version>4.2.2</version>
     <packaging>pom</packaging>
     <name>BigConnect: Cypher 3.5 support</name>
 

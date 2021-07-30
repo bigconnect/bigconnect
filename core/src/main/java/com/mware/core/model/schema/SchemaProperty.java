@@ -38,51 +38,40 @@ package com.mware.core.model.schema;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.mware.core.model.properties.types.*;
-import com.mware.core.user.User;
-import com.mware.core.model.clientapi.dto.SandboxStatus;
-import com.mware.ge.type.GeoShape;
-import com.mware.ge.values.storable.*;
-import org.joda.time.DateTime;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import com.mware.ge.Authorizations;
-import com.mware.ge.type.GeoCircle;
-import com.mware.ge.type.GeoHash;
-import com.mware.ge.type.GeoPoint;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.clientapi.dto.ClientApiSchema;
 import com.mware.core.model.clientapi.dto.PropertyType;
+import com.mware.core.model.clientapi.dto.SandboxStatus;
+import com.mware.core.model.properties.types.*;
+import com.mware.core.user.User;
+import com.mware.ge.Authorizations;
+import com.mware.ge.type.*;
+import com.mware.ge.values.TemporalParseException;
+import com.mware.ge.values.storable.*;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.io.WKTReader;
 
-import java.math.BigDecimal;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.ZoneId;
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.stream.Collectors;
 
 public abstract class SchemaProperty {
-    public static final DateTimeFormatter DATE_FORMAT;
-    public static final DateTimeFormatter DATE_TIME_FORMAT;
-    public static final DateTimeFormatter DATE_TIME_WITH_SECONDS_FORMAT;
-    public static final Pattern GEO_LOCATION_FORMAT = Pattern.compile("POINT\\((.*?),(.*?)\\)", Pattern.CASE_INSENSITIVE);
-    public static final Pattern GEO_LOCATION_ALTERNATE_FORMAT = Pattern.compile("(.*?),(.*)", Pattern.CASE_INSENSITIVE);
+    public static final Pattern GEO_LOCATION_ALTERNATE_FORMAT = Pattern.compile("([0-9\\.]*)\\s*,\\s*([0-9\\.]*)", Pattern.CASE_INSENSITIVE);
+    public static final Pattern GEO_CIRCLE_FORMAT = Pattern.compile("CIRCLE\\s*\\(\\s*([0-9\\.]*)\\s*([0-9\\.]*)\\s*([0-9\\.]*)\\s*\\)", Pattern.CASE_INSENSITIVE);
+    public static final Pattern GEO_RECT_FORMAT = Pattern.compile("RECT\\s*\\(\\s*\\(\\s*([0-9\\.]*)\\s*([0-9\\.]*)\\s*\\)\\s*\\(\\s*([0-9\\.]*)\\s*([0-9\\.]*)\\s*\\)\\s*\\)", Pattern.CASE_INSENSITIVE);
 
-    static {
-        DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
-        DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm z").withZone(ZoneOffset.UTC);
-        DATE_TIME_WITH_SECONDS_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneOffset.UTC);
-    }
     public abstract String getId();
 
     public abstract SandboxStatus getSandboxStatus();
@@ -233,67 +222,114 @@ public abstract class SchemaProperty {
         }
     }
 
-    public Object convert(Object value) throws ParseException {
-        if (value == null) {
-            return null;
-        }
-
+    public Value convertString(String valueStr) {
         PropertyType dataType = getDataType();
-        switch (dataType) {
-            case DATE:
-                if (value instanceof Date) {
-                    return value;
-                }
-                break;
-            case GEO_LOCATION:
-                if (value instanceof GeoPoint) {
-                    return value;
-                }
-                break;
-            case GEO_SHAPE:
-                if (value instanceof GeoShape) {
-                    return value;
-                }
-                break;
-            case CURRENCY:
-                if (value instanceof BigDecimal) {
-                    return value;
-                }
-                break;
-            case DOUBLE:
-                if (value instanceof Double) {
-                    return value;
-                }
-                break;
-            case INTEGER:
-                if (value instanceof Integer) {
-                    return value;
-                }
-                break;
-            case BOOLEAN:
-                if (value instanceof Boolean) {
-                    return value;
-                }
-                break;
-        }
-        return convertString(value.toString());
-    }
+        char ARRAY_SEPARATOR = '|';
 
-    public Value convertString(String valueStr) throws ParseException {
-        PropertyType dataType = getDataType();
         switch (dataType) {
-            case DATE:
-                return parseDateTime(valueStr);
-            case GEO_LOCATION:
-                return parseGeoLocation(valueStr);
-            case CURRENCY:
-                return Values.floatValue(Float.parseFloat(valueStr));
-            case DOUBLE:
-                return Values.doubleValue(Double.parseDouble(valueStr));
-            case INTEGER:
-                return Values.intValue(Integer.parseInt(valueStr));
             case BOOLEAN:
                 return Values.booleanValue(Boolean.parseBoolean(valueStr));
+            case BOOLEAN_ARRAY:
+                Boolean[] boolArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Boolean::parseBoolean)
+                        .toArray(Boolean[]::new);
+                return Values.booleanArray(ArrayUtils.toPrimitive(boolArr, false));
+            case BYTE:
+                return Values.byteValue(Byte.parseByte(valueStr));
+            case BYTE_ARRAY:
+                Byte[] byteArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Byte::parseByte)
+                        .toArray(Byte[]::new);
+                return Values.byteArray(ArrayUtils.toPrimitive(byteArr, (byte) 0));
+            case CHAR:
+                return Values.charValue(valueStr.charAt(0));
+            case CHAR_ARRAY:
+                Character[] charArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(s -> s.charAt(0))
+                        .toArray(Character[]::new);
+                return Values.charArray(ArrayUtils.toPrimitive(charArr, '\0'));
+            case DATE:
+                return parseDateTime(valueStr);
+            case DATE_ARRAY:
+                ZonedDateTime[] dateArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(SchemaProperty::parseDateTime)
+                        .map(DateTimeValue::asObjectCopy)
+                        .toArray(ZonedDateTime[]::new);
+                return Values.dateTimeArray(dateArr);
+            case STRING:
+                return Values.stringValue(valueStr);
+            case STRING_ARRAY:
+                String[] strArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .toArray(String[]::new);
+                return Values.stringArray(strArr);
+            case DOUBLE:
+                return Values.doubleValue(Double.parseDouble(valueStr));
+            case DOUBLE_ARRAY:
+                Double[] dblArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Double::parseDouble)
+                        .toArray(Double[]::new);
+                return Values.doubleArray(ArrayUtils.toPrimitive(dblArr, 0));
+            case DURATION:
+                try {
+                    return DurationValue.parse(valueStr);
+                } catch (Exception ex) {
+                    return DurationValue.duration(Duration.ofSeconds(Long.parseLong(valueStr)));
+                }
+            case DURATION_ARRAY:
+                DurationValue[] durArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(DurationValue::parse)
+                        .toArray(DurationValue[]::new);
+                return Values.durationArray(durArr);
+            case FLOAT:
+                return Values.floatValue(Float.parseFloat(valueStr));
+            case FLOAT_ARRAY:
+                Float[] floatArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Float::parseFloat)
+                        .toArray(Float[]::new);
+                return Values.floatArray(ArrayUtils.toPrimitive(floatArr, (float) 0));
+            case GEO_CIRCLE:
+                return parseGeoCircle(valueStr);
+            case GEO_LINE:
+                return parseGeoLine(valueStr);
+            case GEO_RECT:
+                return parseGeoRect(valueStr);
+            case GEO_POLYGON:
+                return parseGeoPolygon(valueStr);
+            case GEO_POINT:
+            case GEO_LOCATION:
+                return parseGeoLocation(valueStr);
+            case INTEGER:
+                return Values.intValue(Integer.parseInt(valueStr));
+            case INTEGER_ARRAY:
+                Integer[] intArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Integer::parseInt)
+                        .toArray(Integer[]::new);
+                return Values.intArray(ArrayUtils.toPrimitive(intArr,  0));
+            case SHORT:
+                return Values.shortValue(Short.parseShort(valueStr));
+            case SHORT_ARRAY:
+                Short[] shortArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Short::parseShort)
+                        .toArray(Short[]::new);
+                return Values.shortArray(ArrayUtils.toPrimitive(shortArr,  (short) 0));
+            case LONG:
+                return Values.longValue(Long.parseLong(valueStr));
+            case LONG_ARRAY:
+                Long[] longArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(Long::parseLong)
+                        .toArray(Long[]::new);
+                return Values.longArray(ArrayUtils.toPrimitive(longArr, 0L));
         }
         return Values.stringValue(valueStr);
     }
@@ -304,6 +340,7 @@ public abstract class SchemaProperty {
                 String valueStr = values.getString(index);
                 return parseDateTime(valueStr);
             }
+            case GEO_POINT:
             case GEO_LOCATION:
                 if (values.get(index) instanceof String) {
                     String valueStr = values.getString(index);
@@ -314,12 +351,20 @@ public abstract class SchemaProperty {
                         values.getDouble(index + 1),
                         values.getDouble(index + 2)
                 ));
-            case CURRENCY:
+            case FLOAT:
                 return Values.floatValue(Float.parseFloat(values.getString(index)));
             case INTEGER:
                 return Values.intValue(values.getInt(index));
             case DOUBLE:
                 return Values.doubleValue(values.getDouble(index));
+            case LONG:
+                return Values.longValue(values.getLong(index));
+            case BYTE:
+                return Values.byteValue((byte) values.getInt(index));
+            case CHAR:
+                return Values.charValue((char) values.getInt(index));
+            case SHORT:
+                return Values.shortValue((short) values.getInt(index));
             case BOOLEAN:
                 Object result = values.get(index);
                 if ("T".equals(result) || "1".equals(result)) {
@@ -333,6 +378,61 @@ public abstract class SchemaProperty {
         return Values.stringValue(values.getString(index));
     }
 
+    protected static GeoRectValue parseGeoRect(String valueStr) {
+        Matcher match = GEO_RECT_FORMAT.matcher(valueStr);
+        if (match.find()) {
+            double p1x = Double.parseDouble(match.group(1).trim());
+            double p1y = Double.parseDouble(match.group(2).trim());
+            double p2x = Double.parseDouble(match.group(3).trim());
+            double p2y = Double.parseDouble(match.group(4).trim());
+            return Values.geoRectValue(new GeoPoint(p1x, p1y), new GeoPoint(p2x, p2y));
+        }
+        throw new BcException("Could not parse GeoRect: " + valueStr);
+    }
+
+    protected static GeoPolygonValue parseGeoPolygon(String valueStr) {
+        try {
+            Polygon polygon = (Polygon) new WKTReader().read(valueStr);
+            List<GeoPoint> boundary = Arrays.stream(polygon.getExteriorRing().getCoordinates())
+                    .map(c -> new GeoPoint(c.x, c.y))
+                    .collect(Collectors.toList());
+            Collections.reverse(boundary);
+
+            List<List<GeoPoint>> interiorRings = new ArrayList<>();
+            for (int i=0; i<polygon.getNumInteriorRing(); i++) {
+                interiorRings.add(Arrays.stream(polygon.getInteriorRingN(i).getCoordinates())
+                        .map(c -> new GeoPoint(c.x, c.y))
+                        .collect(Collectors.toList()));
+            }
+            return Values.geoPolygonValue(new GeoPolygon(boundary, interiorRings));
+        } catch (org.locationtech.jts.io.ParseException e) {
+            throw new BcException("Could not parse GeoLine: " + valueStr+": "+e.getMessage());
+        }
+    }
+
+    protected static GeoLineValue parseGeoLine(String valueStr) {
+        try {
+            LineString line = (LineString) new WKTReader().read(valueStr);
+            GeoPoint[] geoPoints = Arrays.stream(line.getCoordinates())
+                    .map(c -> new GeoPoint(c.x, c.y))
+                    .toArray(GeoPoint[]::new);
+            return Values.geoLineValue(new GeoLine(geoPoints));
+        } catch (org.locationtech.jts.io.ParseException e) {
+            throw new BcException("Could not parse GeoLine: " + valueStr+": "+e.getMessage());
+        }
+    }
+
+    protected static GeoCircleValue parseGeoCircle(String valueStr) {
+        Matcher match = GEO_CIRCLE_FORMAT.matcher(valueStr);
+        if (match.find()) {
+            double latitude = Double.parseDouble(match.group(1).trim());
+            double longitude = Double.parseDouble(match.group(2).trim());
+            double radius = Double.parseDouble(match.group(3).trim());
+            return Values.geoCircleValue(latitude, longitude, radius);
+        }
+        throw new BcException("Could not parse GeoCircle: " + valueStr);
+    }
+
     protected static GeoPointValue parseGeoLocation(String valueStr) {
         try {
             JSONObject json = new JSONObject(valueStr);
@@ -342,68 +442,93 @@ public abstract class SchemaProperty {
             double altitude = (altitudeString == null || altitudeString.length() == 0) ? 0.0d : Double.parseDouble(altitudeString);
             return Values.geoPointValue(new GeoPoint(latitude, longitude, altitude));
         } catch (Exception ex) {
-            Matcher match = GEO_LOCATION_FORMAT.matcher(valueStr);
-            if (match.find()) {
-                double latitude = Double.parseDouble(match.group(1).trim());
-                double longitude = Double.parseDouble(match.group(2).trim());
-                return Values.geoPointValue(latitude, longitude);
+            try {
+                Point point = (Point) new WKTReader().read(valueStr);
+                return Values.geoPointValue(point.getX(), point.getY());
+            } catch (org.locationtech.jts.io.ParseException e) {
+                Matcher match = GEO_LOCATION_ALTERNATE_FORMAT.matcher(valueStr);
+                if (match.find()) {
+                    double latitude = Double.parseDouble(match.group(1).trim());
+                    double longitude = Double.parseDouble(match.group(2).trim());
+                    return Values.geoPointValue(latitude, longitude);
+                }
             }
-            match = GEO_LOCATION_ALTERNATE_FORMAT.matcher(valueStr);
-            if (match.find()) {
-                double latitude = Double.parseDouble(match.group(1).trim());
-                double longitude = Double.parseDouble(match.group(2).trim());
-                return Values.geoPointValue(latitude, longitude);
-            }
-            throw new BcException("Could not parse location: " + valueStr);
         }
+
+        throw new BcException("Could not parse GeoLocation: " + valueStr);
     }
 
     public boolean hasDependentPropertyNames() {
         return getDependentPropertyNames() != null && getDependentPropertyNames().size() > 0;
     }
 
-    private static DateTimeValue parseDateTime(String valueStr) throws ParseException {
-        ZonedDateTime date;
-
+    private static DateTimeValue parseDateTime(String valueStr) {
         try {
-            date = ZonedDateTime.parse(valueStr, DATE_TIME_WITH_SECONDS_FORMAT);
-        } catch (DateTimeParseException ex1) {
-            try {
-                date = ZonedDateTime.parse(valueStr, DATE_TIME_FORMAT);
-            } catch (DateTimeParseException ex2) {
-                try {
-                    date = ZonedDateTime.parse(valueStr, DATE_FORMAT);
-                } catch (DateTimeParseException ex3) {
-                    return DateTimeValue.ofEpochMillis(Values.longValue(Long.parseLong(valueStr)));
-                }
-            }
+            return DateTimeValue.parse(valueStr, () -> ZoneOffset.UTC);
+        } catch (TemporalParseException ex) {
+            return DateTimeValue.ofEpochMillis(Values.longValue(Long.parseLong(valueStr)));
         }
-
-
-        return (DateTimeValue) Values.of(date);
     }
 
     public BcProperty geBcProperty() {
         switch (getDataType()) {
-            case IMAGE:
-            case BINARY:
-                return new StreamingBcProperty(getName());
             case BOOLEAN:
                 return new BooleanBcProperty(getName());
+            case BOOLEAN_ARRAY:
+                return new BooleanArrayBcProperty(getName());
+            case BYTE:
+                return new ByteBcProperty(getName());
+            case BYTE_ARRAY:
+                return new ByteArrayBcProperty(getName());
+            case CHAR:
+                return new CharBcProperty(getName());
+            case CHAR_ARRAY:
+                return new CharArrayBcProperty(getName());
+            case DATE_ARRAY:
+                return new DateArrayBcProperty(getName());
             case DATE:
                 return new DateBcProperty(getName());
-            case CURRENCY:
+            case STRING:
+                return new StringBcProperty(getName());
+            case STRING_ARRAY:
+                return new StringArrayBcProperty(getName());
             case DOUBLE:
                 return new DoubleBcProperty(getName());
-            case GEO_LOCATION:
-                return new GeoPointBcProperty(getName());
-            case GEO_SHAPE:
-                return new GeoShapeBcProperty(getName());
+            case DOUBLE_ARRAY:
+                return new DoubleArrayBcProperty(getName());
+            case FLOAT:
+                return new FloatBcProperty(getName());
+            case FLOAT_ARRAY:
+                return new FloatArrayBcProperty(getName());
             case INTEGER:
                 return new IntegerBcProperty(getName());
-            case STRING:
-            case DIRECTORY_ENTITY:
-                return new StringBcProperty(getName());
+            case INTEGER_ARRAY:
+                return new IntegerArrayBcProperty(getName());
+            case LONG:
+                return new LongBcProperty(getName());
+            case LONG_ARRAY:
+                return new LongArrayBcProperty(getName());
+            case DURATION:
+                return new DurationBcProperty(getName());
+            case DURATION_ARRAY:
+                return new DurationArrayBcProperty(getName());
+            case GEO_CIRCLE:
+                return new GeoCircleBcProperty(getName());
+            case GEO_LINE:
+                return new GeoLineBcProperty(getName());
+            case GEO_RECT:
+                return new GeoRectBcProperty(getName());
+            case GEO_LOCATION:
+            case GEO_POINT:
+                return new GeoPointBcProperty(getName());
+            case GEO_POLYGON:
+                return new GeoPolygonBcProperty(getName());
+            case STREAMING:
+                return new StreamingBcProperty(getName());
+            case SHORT:
+                return new ShortBcProperty(getName());
+            case SHORT_ARRAY:
+                return new ShortArrayBcProperty(getName());
             default:
                 throw new BcException("Could not get " + BcProperty.class.getName() + " for data type " + getDataType());
         }

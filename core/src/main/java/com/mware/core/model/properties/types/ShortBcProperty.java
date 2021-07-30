@@ -34,39 +34,42 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.ge.values.storable;
+package com.mware.core.model.properties.types;
 
-import com.mware.ge.type.GeoRect;
-import com.mware.ge.values.ValueMapper;
+import com.mware.ge.Element;
+import com.mware.ge.values.storable.*;
 
-public class GeoRectValue extends GeoShapeValue {
-    GeoRectValue(GeoRect geoRect) {
-        super(geoRect);
+public class ShortBcProperty extends BcProperty<Short> {
+    public ShortBcProperty(String propertyName) {
+        super(propertyName);
     }
 
     @Override
-    int unsafeCompareTo(Value other) {
-        return 0;
+    public Value wrap(Short value) {
+        return Values.of(value);
     }
 
     @Override
-    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+    public Short unwrap(Value value) {
+        if (value == null || value instanceof NoValue)
+            return null;
+        else
+            return ((ShortValue)value).asObjectCopy();
     }
 
-    @Override
-    public <T> T map(ValueMapper<T> mapper) {
-        return null;
+    public Short getPropertyValue(Element element, String propertyKey, Short defaultValue) {
+        Short nullable = getPropertyValue(element, propertyKey);
+        if (nullable == null) {
+            return defaultValue;
+        }
+        return nullable;
     }
 
-    @Override
-    public String getTypeName() {
-        return "GeoRectValue";
-    }
-
-    @Override
-    public String prettyPrint() {
-        GeoRect circle = (GeoRect) geoShape;
-        return String.format("RECT((%f %f) (%f %f))", circle.getNorthWest().getLatitude(), circle.getNorthWest().getLongitude(),
-                circle.getSouthEast().getLatitude(), circle.getSouthEast().getLongitude());
+    public Short getOnlyPropertyValue(Element element, Short defaultValue) {
+        Short nullable = getOnlyPropertyValue(element);
+        if (nullable == null) {
+            return defaultValue;
+        }
+        return nullable;
     }
 }

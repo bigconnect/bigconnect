@@ -38,7 +38,15 @@ package com.mware.ge.values.storable;
 
 import com.mware.ge.type.GeoLine;
 import com.mware.ge.type.GeoPolygon;
+import com.mware.ge.type.GeoRect;
+import com.mware.ge.type.GeoUtils;
 import com.mware.ge.values.ValueMapper;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.io.WKTWriter;
+
+import static com.mware.ge.type.GeoUtils.GEOMETRY_FACTORY;
 
 public class GeoLineValue extends GeoShapeValue {
     GeoLineValue(GeoLine geoLine) {
@@ -62,5 +70,15 @@ public class GeoLineValue extends GeoShapeValue {
     @Override
     public String getTypeName() {
         return "GeoLineValue";
+    }
+
+    @Override
+    public String prettyPrint() {
+        GeoLine circle = (GeoLine) geoShape;
+        Coordinate[] shellCoordinates = circle.getGeoPoints().stream()
+                .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                .toArray(Coordinate[]::new);
+        LineString lineString = GEOMETRY_FACTORY.createLineString(shellCoordinates);
+        return new WKTWriter().write(lineString);
     }
 }

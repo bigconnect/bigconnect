@@ -204,7 +204,7 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
         return compareTo((DurationValue) otherValue);
     }
 
-    private long getAverageLengthInSeconds() {
+    public long getAverageLengthInSeconds() {
         return calcAverageLengthInSeconds(this.months, this.days, this.seconds);
     }
 

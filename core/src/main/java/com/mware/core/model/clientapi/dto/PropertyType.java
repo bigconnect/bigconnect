@@ -43,27 +43,79 @@ import java.math.BigDecimal;
 import java.util.Date;
 
 public enum PropertyType {
-    DATE("date"),
-    STRING("string"),
-    GEO_LOCATION("geoLocation"),
-    GEO_SHAPE("geoshape"),
-    IMAGE("image"),
-    BINARY("binary"),
-    CURRENCY("currency"),
-    DOUBLE("double"),
+    BOOLEAN_ARRAY("booleanArray"),
     BOOLEAN("boolean"),
+    BYTE_ARRAY("byteArray"),
+    BYTE("byte"),
+    CHAR_ARRAY("charArray"),
+    CHAR("char"),
+    DATE_ARRAY("dateArray"),
+    DATE("date"),
+    STRING_ARRAY("stringArray"),
+    STRING("string"),
+    DOUBLE_ARRAY("doubleArray"),
+    DOUBLE("double"),
+    DURATION_ARRAY("durationArray"),
+    DURATION("duration"),
+    FLOAT_ARRAY("floatArray"),
+    FLOAT("float"),
+    GEO_CIRCLE("geocircle"),
+    GEO_LINE("geoline"),
+    GEO_LOCATION("geoLocation"),
+    GEO_POINT("geoLocation"),
+    GEO_POLYGON("geopolygon"),
+    GEO_RECT("georect"),
+    INTEGER_ARRAY("integerArray"),
     INTEGER("integer"),
-    DIRECTORY_ENTITY("directory/entity"),
-    EXTENDED_DATA_TABLE("extendedDataTable"),
-    UNKNOWN("unknown");
-
-    public static final String GE_TYPE_GEO_POINT = "com.mware.ge.type.GeoPoint";
-    public static final String GE_TYPE_GEO_SHAPE = "com.mware.ge.type.GeoShape";
+    SHORT_ARRAY("shortArray"),
+    SHORT("short"),
+    LONG_ARRAY("longArray"),
+    LONG("long"),
+    STREAMING("spv"),
+    EXTENDED_DATA_TABLE("extendedDataTable");
 
     private final String text;
 
     PropertyType(String text) {
         this.text = text;
+    }
+
+    public static Class<? extends Value> getTypeClass(PropertyType propertyType) {
+        switch (propertyType) {
+            case BOOLEAN_ARRAY: return BooleanArray.class;
+            case BOOLEAN: return BooleanValue.class;
+            case BYTE_ARRAY: return ByteArray.class;
+            case BYTE: return ByteValue.class;
+            case CHAR_ARRAY: return CharArray.class;
+            case CHAR: return CharValue.class;
+            case DATE_ARRAY: return DateTimeArray.class;
+            case DATE: return DateTimeValue.class;
+            case STRING: return StringValue.class;
+            case EXTENDED_DATA_TABLE:
+            case STRING_ARRAY:
+                return StringArray.class;
+            case DOUBLE_ARRAY: return DoubleArray.class;
+            case DOUBLE: return DoubleValue.class;
+            case FLOAT_ARRAY: return FloatArray.class;
+            case FLOAT: return FloatValue.class;
+            case INTEGER: return IntValue.class;
+            case INTEGER_ARRAY: return IntArray.class;
+            case LONG: return LongValue.class;
+            case LONG_ARRAY: return LongArray.class;
+            case DURATION_ARRAY: return DurationArray.class;
+            case DURATION: return DurationValue.class;
+            case SHORT: return ShortValue.class;
+            case SHORT_ARRAY: return ShortArray.class;
+            case GEO_LOCATION:
+            case GEO_POINT:
+                return GeoPointValue.class;
+            case GEO_RECT: return GeoRectValue.class;
+            case GEO_CIRCLE: return GeoCircleValue.class;
+            case GEO_LINE: return GeoLineValue.class;
+            case GEO_POLYGON: return GeoPolygonValue.class;
+            case STREAMING: return StreamingPropertyValue.class;
+            default: throw new RuntimeException("Unhandled property type: " + propertyType);
+        }
     }
 
     @Override
@@ -87,36 +139,5 @@ public enum PropertyType {
             }
         }
         return defaultValue;
-    }
-
-    public static Class<? extends Value> getTypeClass(PropertyType propertyType) {
-        switch (propertyType) {
-            case DATE:
-                return DateTimeValue.class;
-            case STRING:
-            case DIRECTORY_ENTITY:
-                return StringValue.class;
-            case GEO_LOCATION:
-                return GeoPointValue.class;
-            case GEO_SHAPE:
-                return GeoShapeValue.class;
-            case EXTENDED_DATA_TABLE:
-                return StringArray.class;
-            case IMAGE:
-            case BINARY:
-                return ByteValue.class;
-            case CURRENCY:
-                return FloatValue.class;
-            case BOOLEAN:
-                return BooleanValue.class;
-            case DOUBLE:
-                return DoubleValue.class;
-            case INTEGER:
-                return LongValue.class;
-            case UNKNOWN:
-                return TextValue.class;
-            default:
-                throw new RuntimeException("Unhandled property type: " + propertyType);
-        }
     }
 }

@@ -37,7 +37,10 @@
 package com.mware.ge.values.storable;
 
 import com.mware.ge.type.GeoPolygon;
+import com.mware.ge.type.GeoUtils;
 import com.mware.ge.values.ValueMapper;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKTWriter;
 
 public class GeoPolygonValue extends GeoShapeValue {
     GeoPolygonValue(GeoPolygon geoPolygon) {
@@ -61,5 +64,12 @@ public class GeoPolygonValue extends GeoShapeValue {
     @Override
     public String getTypeName() {
         return "GeoPolygonValue";
+    }
+
+    @Override
+    public String prettyPrint() {
+        GeoPolygon circle = (GeoPolygon) geoShape;
+        Geometry geometry = GeoUtils.toJtsPolygon(circle.getOuterBoundary(), circle.getHoles(), true);
+        return new WKTWriter().write(geometry);
     }
 }

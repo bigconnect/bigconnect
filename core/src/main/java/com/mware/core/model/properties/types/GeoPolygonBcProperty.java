@@ -34,39 +34,36 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.ge.values.storable;
+package com.mware.core.model.properties.types;
 
+import com.mware.ge.Element;
+import com.mware.ge.type.GeoPolygon;
 import com.mware.ge.type.GeoRect;
-import com.mware.ge.values.ValueMapper;
+import com.mware.ge.values.storable.*;
 
-public class GeoRectValue extends GeoShapeValue {
-    GeoRectValue(GeoRect geoRect) {
-        super(geoRect);
+public class GeoPolygonBcProperty extends BcProperty<GeoPolygon> {
+    public GeoPolygonBcProperty(String propertyName) {
+        super(propertyName);
     }
 
     @Override
-    int unsafeCompareTo(Value other) {
-        return 0;
+    public Value wrap(GeoPolygon value) {
+        return Values.geoPolygonValue(value);
     }
 
     @Override
-    public <E extends Exception> void writeTo(ValueWriter<E> writer) throws E {
+    public GeoPolygon unwrap(Value value) {
+        if (value == null || value instanceof NoValue)
+            return null;
+        else
+            return (GeoPolygon) ((GeoPolygonValue)value).asObjectCopy();
     }
 
-    @Override
-    public <T> T map(ValueMapper<T> mapper) {
-        return null;
-    }
-
-    @Override
-    public String getTypeName() {
-        return "GeoRectValue";
-    }
-
-    @Override
-    public String prettyPrint() {
-        GeoRect circle = (GeoRect) geoShape;
-        return String.format("RECT((%f %f) (%f %f))", circle.getNorthWest().getLatitude(), circle.getNorthWest().getLongitude(),
-                circle.getSouthEast().getLatitude(), circle.getSouthEast().getLongitude());
+    public GeoPolygon getPropertyValue(Element element, String propertyKey, GeoPolygon defaultValue) {
+        GeoPolygon nullable = getPropertyValue(element, propertyKey);
+        if (nullable == null) {
+            return defaultValue;
+        }
+        return nullable;
     }
 }

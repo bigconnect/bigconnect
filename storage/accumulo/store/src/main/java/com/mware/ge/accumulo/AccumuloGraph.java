@@ -678,7 +678,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
         };
     }
 
-    protected ScannerBase createVertexScanner(
+    public ScannerBase createVertexScanner(
             FetchHints fetchHints,
             Integer maxVersions,
             Long startTime,
@@ -689,7 +689,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
         return createElementScanner(fetchHints, ElementType.VERTEX, maxVersions, startTime, endTime, Lists.newArrayList(range), authorizations);
     }
 
-    protected ScannerBase createEdgeScanner(
+    public ScannerBase createEdgeScanner(
             FetchHints fetchHints,
             Integer maxVersions,
             Long startTime,
@@ -1523,7 +1523,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
         };
     }
 
-    private Edge createEdgeFromEdgeIteratorValue(Key key, Value value, FetchHints fetchHints, Authorizations authorizations) {
+    public static Edge createEdgeFromEdgeIteratorValue(StorableGraph graph, Key key, Value value, FetchHints fetchHints, Authorizations authorizations) {
         try {
             String edgeId;
             Visibility vertexVisibility;
@@ -1545,14 +1545,14 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
                     }
                 });
                 List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
-                properties = DataInputStreamUtils.decodeProperties(this, in, metadataEntries, fetchHints);
+                properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
                 ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
                 String inVertexId = DataInputStreamUtils.decodeString(in);
                 String outVertexId = DataInputStreamUtils.decodeString(in);
-                String label = getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
+                String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
 
                 return new StorableEdge(
-                        this,
+                        graph,
                         edgeId,
                         outVertexId,
                         inVertexId,
@@ -1646,7 +1646,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
 
             @Override
             protected Edge convert(Map.Entry<Key, Value> row) {
-                return createEdgeFromEdgeIteratorValue(row.getKey(), row.getValue(), fetchHints, authorizations);
+                return createEdgeFromEdgeIteratorValue(AccumuloGraph.this, row.getKey(), row.getValue(), fetchHints, authorizations);
             }
 
             @Override
@@ -1695,7 +1695,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
 
             @Override
             protected Edge convert(Map.Entry<Key, Value> next) {
-                return createEdgeFromEdgeIteratorValue(next.getKey(), next.getValue(), fetchHints, authorizations);
+                return createEdgeFromEdgeIteratorValue(AccumuloGraph.this, next.getKey(), next.getValue(), fetchHints, authorizations);
             }
 
             @Override

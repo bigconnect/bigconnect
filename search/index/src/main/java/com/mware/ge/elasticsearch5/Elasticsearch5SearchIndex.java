@@ -232,7 +232,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private static TransportClient createTransportClient(ElasticsearchSearchIndexConfiguration config) {
+    public static TransportClient createTransportClient(ElasticsearchSearchIndexConfiguration config) {
         Settings settings = tryReadSettingsFromFile(config);
         if (settings == null) {
             Settings.Builder settingsBuilder = Settings.builder();

@@ -57,7 +57,10 @@ import com.mware.core.user.SystemUser;
 import com.mware.core.user.User;
 import com.mware.ge.*;
 import com.mware.ge.mutation.ExistingElementMutation;
+import com.mware.ge.query.Compare;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -129,9 +132,10 @@ public class GeUserRepository extends UserRepository {
     @Override
     public User findByUsername(String username) {
         username = formatUsername(username);
-        Iterable<Vertex> vertices = graph.query(authorizations)
-                .has(UserSchema.USERNAME.getPropertyName(), Values.stringValue(username))
-                .hasConceptType(userConceptId)
+        GeQueryBuilder qb = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.hasConceptType(userConceptId))
+                .and(GeQueryBuilders.hasFilter(UserSchema.USERNAME.getPropertyName(), Compare.EQUAL, Values.stringValue(username)));
+        Iterable<Vertex> vertices = graph.query(qb, authorizations)
                 .vertices();
         Vertex userVertex = singleOrDefault(vertices, null);
         if (userVertex == null) {
@@ -143,11 +147,15 @@ public class GeUserRepository extends UserRepository {
 
     @Override
     public Iterable<User> find(int skip, int limit) {
-        try (QueryResultsIterable<Vertex> userVertices = graph.query(authorizations)
-                .hasConceptType(userConceptId)
-                .skip(skip)
-                .limit(limit)
-                .vertices()) {
+        try (QueryResultsIterable<Vertex> userVertices =
+                     graph.query(
+                                     GeQueryBuilders.hasConceptType(userConceptId)
+                                             .skip(skip)
+                                             .limit(limit),
+                                     authorizations
+                             )
+                             .vertices()
+        ) {
             return new ConvertingIterable<Vertex, User>(userVertices) {
                 @Override
                 protected User convert(Vertex vertex) {
@@ -161,11 +169,13 @@ public class GeUserRepository extends UserRepository {
 
     @Override
     public Iterable<User> findByStatus(int skip, int limit, UserStatus status) {
-        try (QueryResultsIterable<Vertex> userVertices = graph.query(authorizations)
-                .hasConceptType(userConceptId)
-                .has(UserSchema.STATUS.getPropertyName(), Values.stringValue(status.toString()))
+        GeQueryBuilder qb = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.hasConceptType(userConceptId))
+                .and(GeQueryBuilders.hasFilter(UserSchema.STATUS.getPropertyName(), Compare.EQUAL, Values.stringValue(status.toString())))
                 .skip(skip)
-                .limit(limit)
+                .limit(limit);
+
+        try (QueryResultsIterable<Vertex> userVertices = graph.query(qb, authorizations)
                 .vertices()) {
             return new ConvertingIterable<Vertex, User>(userVertices) {
                 @Override
@@ -385,10 +395,10 @@ public class GeUserRepository extends UserRepository {
 
     @Override
     public User findByPasswordResetToken(String token) {
-        try (QueryResultsIterable<Vertex> userVertices = graph.query(authorizations)
-                .has(UserSchema.PASSWORD_RESET_TOKEN.getPropertyName(), Values.stringValue(token))
-                .hasConceptType(userConceptId)
-                .vertices()) {
+        GeQueryBuilder qb = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.hasConceptType(userConceptId))
+                .and(GeQueryBuilders.hasFilter(UserSchema.PASSWORD_RESET_TOKEN.getPropertyName(), Compare.EQUAL, Values.stringValue(token)));
+        try (QueryResultsIterable<Vertex> userVertices = graph.query(qb, authorizations).vertices()) {
             Vertex user = singleOrDefault(userVertices, null);
             return createFromVertex(user);
         } catch (Exception e) {
@@ -430,7 +440,7 @@ public class GeUserRepository extends UserRepository {
         if (user.getCustomProperties().get(propertyName) == null || !value.equals(user.getCustomProperties().get(propertyName))) {
             Vertex userVertex = findByIdUserVertex(user.getUserId());
             userVertex.setProperty(propertyName, value, VISIBILITY.getVisibility(), authorizations);
-            if (user instanceof ProxyUser){
+            if (user instanceof ProxyUser) {
                 User proxiedUser = ((ProxyUser) user).getProxiedUser();
                 if (proxiedUser instanceof GeUser) {
                     user = proxiedUser;

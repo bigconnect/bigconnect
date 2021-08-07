@@ -42,6 +42,7 @@ import com.mware.ge.mutation.ExistingVertexMutation;
 import com.mware.ge.mutation.PropertyDeleteMutation;
 import com.mware.ge.mutation.PropertySoftDeleteMutation;
 import com.mware.ge.query.VertexQuery;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.store.util.GetVertexIdsIterable;
 import com.mware.ge.store.util.SoftDeleteEdgeInfo;
 import com.mware.ge.util.ConvertingIterable;
@@ -412,8 +413,8 @@ public class StorableVertex extends StorableElement implements Vertex {
     }
 
     @Override
-    public VertexQuery query(String queryString, Authorizations authorizations) {
-        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
+    public VertexQuery query(GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryBuilder, authorizations);
     }
 
     protected void addOutEdge(Edge edge) {

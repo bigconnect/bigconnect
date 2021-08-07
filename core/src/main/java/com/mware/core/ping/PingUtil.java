@@ -42,7 +42,6 @@ import com.google.inject.Singleton;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
-import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workQueue.Priority;
@@ -59,13 +58,14 @@ import com.mware.ge.mutation.ElementMutation;
 import com.mware.ge.query.*;
 import com.mware.ge.query.aggregations.StatisticsAggregation;
 import com.mware.ge.query.aggregations.StatisticsResult;
+import com.mware.ge.query.builder.GeQueryBuilders;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.values.storable.Values;
 import org.json.JSONObject;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.List;
 
 @Singleton
@@ -87,7 +87,7 @@ public class PingUtil {
     }
 
     public String search(Graph graph, Authorizations authorizations) {
-        Query query = graph.query(authorizations).limit(1);
+        Query query = graph.query(GeQueryBuilders.searchAll().limit(1), authorizations);
         List<Vertex> vertices = Lists.newArrayList(query.vertices());
         if (vertices.size() == 0) {
             throw new BcException("query returned no vertices");
@@ -163,10 +163,11 @@ public class PingUtil {
 
     public JSONObject getAverages(int minutes, Graph graph, Authorizations authorizations) {
         ZonedDateTime minutesAgo = ZonedDateTime.now().minusMinutes(60);
-        Query q = graph.query(authorizations)
-                .hasConceptType(PingSchema.CONCEPT_NAME_PING)
-                .has(PingSchema.CREATE_DATE.getPropertyName(), Compare.GREATER_THAN, Values.temporalValue(minutesAgo))
+        GeQueryBuilder queryBuilder = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.hasConceptType(PingSchema.CONCEPT_NAME_PING))
+                .and(GeQueryBuilders.hasFilter(PingSchema.CREATE_DATE.getPropertyName(), Compare.GREATER_THAN, Values.temporalValue(minutesAgo)))
                 .limit(0);
+        Query q = graph.query(queryBuilder, authorizations);
         q.addAggregation(new StatisticsAggregation(PingSchema.SEARCH_TIME_MS.getPropertyName(), PingSchema.SEARCH_TIME_MS.getPropertyName()));
         q.addAggregation(new StatisticsAggregation(PingSchema.RETRIEVAL_TIME_MS.getPropertyName(), PingSchema.RETRIEVAL_TIME_MS.getPropertyName()));
         q.addAggregation(new StatisticsAggregation(PingSchema.GRAPH_PROPERTY_WORKER_WAIT_TIME_MS.getPropertyName(), PingSchema.GRAPH_PROPERTY_WORKER_WAIT_TIME_MS.getPropertyName()));

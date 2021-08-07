@@ -48,15 +48,15 @@ import java.util.List;
 import static com.mware.ge.util.IterableUtils.toList;
 
 public class SortContainersComparator<T> implements Comparator<T> {
-    private final List<QueryBase.SortContainer> sortContainers;
+    private final Iterable<Query.SortContainer> sortContainers;
 
-    public SortContainersComparator(List<QueryBase.SortContainer> sortContainers) {
+    public SortContainersComparator(Iterable<Query.SortContainer> sortContainers) {
         this.sortContainers = sortContainers;
     }
 
     @Override
     public int compare(T elem1, T elem2) {
-        for (QueryBase.SortContainer sortContainer : sortContainers) {
+        for (Query.SortContainer sortContainer : sortContainers) {
             int result = compare(sortContainer, elem1, elem2);
             if (result != 0) {
                 return result;
@@ -65,7 +65,7 @@ public class SortContainersComparator<T> implements Comparator<T> {
         return 0;
     }
 
-    private int compare(QueryBase.SortContainer sortContainer, T geObject1, T geObject2) {
+    private int compare(Query.SortContainer sortContainer, T geObject1, T geObject2) {
         if (geObject1 instanceof GeObject && geObject2 instanceof GeObject) {
             GeObject elem1 = (GeObject) geObject1;
             GeObject elem2 = (GeObject) geObject2;

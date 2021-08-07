@@ -39,10 +39,8 @@ package com.mware.ge;
 import com.mware.ge.id.IdGenerator;
 import com.mware.ge.mutation.ElementMutation;
 import com.mware.ge.mutation.ExistingElementMutation;
-import com.mware.ge.mutation.ExtendedDataMutation;
-import com.mware.ge.query.GraphQuery;
-import com.mware.ge.query.MultiVertexQuery;
-import com.mware.ge.query.SimilarToGraphQuery;
+import com.mware.ge.query.Query;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.search.IndexHint;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.search.SearchIndexWithVertexPropertyCountByValue;
@@ -114,33 +112,8 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     @Override
-    public GraphQuery query(Authorizations authorizations) {
-        return getSearchIndex().queryGraph(this, null, authorizations);
-    }
-
-    @Override
-    public GraphQuery query(String queryString, Authorizations authorizations) {
-        return getSearchIndex().queryGraph(this, queryString, authorizations);
-    }
-
-    @Override
-    public MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations) {
-        return getSearchIndex().queryGraph(this, vertexIds, queryString, authorizations);
-    }
-
-    @Override
-    public MultiVertexQuery query(String[] vertexIds, Authorizations authorizations) {
-        return getSearchIndex().queryGraph(this, vertexIds, null, authorizations);
-    }
-
-    @Override
-    public boolean isQuerySimilarToTextSupported() {
-        return getSearchIndex().isQuerySimilarToTextSupported();
-    }
-
-    @Override
-    public SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
-        return getSearchIndex().querySimilarTo(this, fields, text, authorizations);
+    public Query query(GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, queryBuilder, authorizations);
     }
 
     public IdGenerator getIdGenerator() {
@@ -310,5 +283,10 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
 
     public GraphRestore getRestoreTool() {
         return new GraphRestore(getBackupDir());
+    }
+
+    @Override
+    public boolean isQuerySimilarToTextSupported() {
+        return getSearchIndex().isQuerySimilarToTextSupported();
     }
 }

@@ -73,10 +73,9 @@ public class ElasticsearchFieldValueScoringStrategy
     public QueryBuilder updateElasticsearchQuery(
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query,
-            QueryParameters queryParameters
+            QueryBuilder query
     ) {
-        List<String> fieldNames = getFieldNames(graph, searchIndex, queryParameters, getField());
+        List<String> fieldNames = getFieldNames(graph, searchIndex, query, getField());
         if (fieldNames == null) {
             return query;
         }

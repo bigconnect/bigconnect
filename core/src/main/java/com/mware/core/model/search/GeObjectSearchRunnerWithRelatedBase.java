@@ -45,8 +45,7 @@ import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.*;
-import com.mware.ge.query.EmptyResultsGraphQuery;
-import com.mware.ge.query.Query;
+import com.mware.ge.query.builder.BoolQueryBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -58,6 +57,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.mware.ge.query.builder.GeQueryBuilders.hasExtendedData;
+import static com.mware.ge.query.builder.GeQueryBuilders.hasIds;
 
 public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearchRunnerBase {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(GeObjectSearchRunnerWithRelatedBase.class);
@@ -71,17 +72,17 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
     }
 
     @Override
-    protected Query getQuery(SearchOptions searchOptions, Authorizations authorizations) {
+    protected BoolQueryBuilder getQuery(SearchOptions searchOptions, Authorizations authorizations) {
         JSONArray filterJson = getFilterJson(searchOptions, searchOptions.getWorkspaceId());
 
-        String queryStringParam = searchOptions.getOptionalParameter("q", String.class);
+        BoolQueryBuilder queryBuilder = searchOptions.getOptionalParameter("q", BoolQueryBuilder.class);
         String[] relatedToVertexIdsParam = searchOptions.getOptionalParameter("relatedToVertexIds[]", String[].class);
         String elementExtendedDataParam = searchOptions.getOptionalParameter("elementExtendedData", String.class);
 
         List<String> relatedToVertexIds = ImmutableList.of();
         ElementExtendedData elementExtendedData = null;
         if (relatedToVertexIdsParam == null && elementExtendedDataParam == null) {
-            queryStringParam = searchOptions.getRequiredParameter("q", String.class);
+            queryBuilder = searchOptions.getRequiredParameter("q", BoolQueryBuilder.class);
         } else if (elementExtendedDataParam != null) {
             elementExtendedData = ElementExtendedData.fromJsonString(elementExtendedDataParam);
         } else {
@@ -91,17 +92,15 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
                     "search %s (relatedToVertexIds: %s, elementExtendedData: %s)\n%s",
-                    queryStringParam,
+                    queryBuilder,
                     Joiner.on(",").join(relatedToVertexIds),
                     elementExtendedData,
                     filterJson.toString(2)
             );
         }
 
-        Query graphQuery = getGraph().query(queryStringParam, authorizations);
-
         if (elementExtendedData != null) {
-            graphQuery = graphQuery.hasExtendedData(elementExtendedData.elementType, elementExtendedData.elementId, elementExtendedData.tableName);
+            queryBuilder.and(hasExtendedData(elementExtendedData.elementType, elementExtendedData.elementId, elementExtendedData.tableName));
         } else if (!relatedToVertexIds.isEmpty()) {
             String[] edgeLabels = getEdgeLabels(searchOptions);
             Set<String> allRelatedIds = relatedToVertexIds.stream()
@@ -116,13 +115,13 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
                     })
                     .collect(Collectors.toSet());
             if (allRelatedIds.isEmpty()) {
-                graphQuery = new EmptyResultsGraphQuery();
+                return null;
             } else {
-                graphQuery = graphQuery.hasId(allRelatedIds);
+                queryBuilder.and(hasIds(allRelatedIds.toArray(new String[0])));
             }
         }
 
-        return graphQuery;
+        return queryBuilder;
     }
 
     private String[] getEdgeLabels(SearchOptions searchOptions) {

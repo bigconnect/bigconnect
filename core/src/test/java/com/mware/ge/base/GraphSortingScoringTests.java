@@ -44,6 +44,7 @@ import com.mware.ge.query.Compare;
 import com.mware.ge.query.IterableWithScores;
 import com.mware.ge.query.QueryResultsIterable;
 import com.mware.ge.query.SortDirection;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.scoring.FieldValueScoringStrategy;
 import com.mware.ge.scoring.HammingDistanceScoringStrategy;
 import com.mware.ge.scoring.ScoringStrategy;
@@ -60,6 +61,7 @@ import org.junit.runners.JUnit4;
 import java.util.List;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.*;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.GeAssert.addGraphEvent;
 import static com.mware.ge.util.IterableUtils.count;
@@ -119,9 +121,10 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
-                .scoringStrategy(getHammingDistanceScoringStrategy("prop1", "0000000000000000"))
-                .vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(
+                searchAll()
+                        .scoringStrategy(getHammingDistanceScoringStrategy("prop1", "0000000000000000")), AUTHORIZATIONS_A
+        ).vertices();
         assumeTrue("IterableWithScores", vertices instanceof IterableWithScores);
         IterableWithScores<Vertex> scores = (IterableWithScores<Vertex>) vertices;
         List<Vertex> verticesList = toList(vertices);
@@ -166,13 +169,11 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
-                .sort(getLengthOfStringSortingStrategy("prop1"), SortDirection.ASCENDING)
+        QueryResultsIterable<Vertex> vertices = getGraph().query(searchAll().sort(getLengthOfStringSortingStrategy("prop1"), SortDirection.ASCENDING), AUTHORIZATIONS_A)
                 .vertices();
         assertVertexIds(vertices, "v3", "v2", "v4", "v1", "v6", "v5");
 
-        vertices = getGraph().query(AUTHORIZATIONS_A)
-                .sort(getLengthOfStringSortingStrategy("prop1"), SortDirection.DESCENDING)
+        vertices = getGraph().query(searchAll().sort(getLengthOfStringSortingStrategy("prop1"), SortDirection.DESCENDING), AUTHORIZATIONS_A)
                 .vertices();
         assertVertexIds(vertices, "v3", "v1", "v6", "v4", "v2", "v5");
     }
@@ -191,18 +192,14 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
-                .scoringStrategy(getFieldValueScoringStrategy("prop1"))
-                .minScore(2)
+        QueryResultsIterable<Vertex> vertices = getGraph().query(searchAll().scoringStrategy(getFieldValueScoringStrategy("prop1")).minScore(2), AUTHORIZATIONS_A)
                 .vertices();
         assumeTrue("IterableWithScores", vertices instanceof IterableWithScores);
         assertEquals(2, Lists.newArrayList(vertices).size());
         IterableWithScores<Vertex> scores = (IterableWithScores<Vertex>) vertices;
         assertEquals(2, scores.getScore("v2"), 0.001);
         assertEquals(3, scores.getScore("v3"), 0.001);
-        vertices = getGraph().query(AUTHORIZATIONS_A)
-                .scoringStrategy(getFieldValueScoringStrategy("prop1"))
-                .minScore(4)
+        vertices = getGraph().query(searchAll().scoringStrategy(getFieldValueScoringStrategy("prop1")).minScore(4), AUTHORIZATIONS_A)
                 .vertices();
         assertEquals(0, Lists.newArrayList(vertices).size());
     }
@@ -236,18 +233,15 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
         getGraph().prepareEdge("e3", "v1", "v2", LABEL_LABEL3, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        List<Vertex> vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(agePropertyName, SortDirection.ASCENDING)
+        List<Vertex> vertices = toList(getGraph().query(searchAll().sort(agePropertyName, SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertVertexIds(vertices, "v2", "v3", "v4", "v1");
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(agePropertyName, SortDirection.DESCENDING)
+        vertices = toList(getGraph().query(searchAll().sort(agePropertyName, SortDirection.DESCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertVertexIds(vertices, "v4", "v3", "v2", "v1");
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.ASCENDING)
+        vertices = toList(getGraph().query(searchAll().sort(namePropertyName, SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertEquals(4, count(vertices));
         assertEquals("v2", vertices.get(0).getId());
@@ -255,8 +249,7 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
         assertTrue(vertices.get(2).getId().equals("v3") || vertices.get(2).getId().equals("v4"));
         assertTrue(vertices.get(3).getId().equals("v3") || vertices.get(3).getId().equals("v4"));
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.DESCENDING)
+        vertices = toList(getGraph().query(searchAll().sort(namePropertyName, SortDirection.DESCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertEquals(4, count(vertices));
         assertTrue(vertices.get(0).getId().equals("v3") || vertices.get(0).getId().equals("v4"));
@@ -264,52 +257,55 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
         assertEquals("v1", vertices.get(2).getId());
         assertEquals("v2", vertices.get(3).getId());
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.ASCENDING)
-                .sort(agePropertyName, SortDirection.ASCENDING)
-                .vertices());
+        vertices = toList(getGraph().query(
+                searchAll()
+                        .sort(namePropertyName, SortDirection.ASCENDING)
+                        .sort(agePropertyName, SortDirection.ASCENDING),
+                AUTHORIZATIONS_A_AND_B
+        ).vertices());
         assertVertexIds(vertices, "v2", "v1", "v3", "v4");
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.ASCENDING)
-                .sort(agePropertyName, SortDirection.DESCENDING)
-                .vertices());
+        vertices = toList(getGraph().query(
+                searchAll()
+                        .sort(namePropertyName, SortDirection.ASCENDING)
+                        .sort(agePropertyName, SortDirection.DESCENDING),
+                AUTHORIZATIONS_A_AND_B
+        ).vertices());
         assertVertexIds(vertices, "v2", "v1", "v4", "v3");
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+        vertices = toList(getGraph().query(searchAll().sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertVertexIds(vertices, "v1", "v2", "v3", "v4");
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
+        vertices = toList(getGraph().query(searchAll().sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertVertexIds(vertices, "v4", "v3", "v2", "v1");
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort("otherfield", SortDirection.ASCENDING)
+        vertices = toList(getGraph().query(searchAll().sort("otherfield", SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertEquals(4, count(vertices));
 
-        List<Edge> edges = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
+        List<Edge> edges = toList(getGraph().query(searchAll().sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B)
                 .edges());
         assertEdgeIds(edges, "e2", "e1", "e3");
 
-        edges = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
+        edges = toList(getGraph().query(searchAll().sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING), AUTHORIZATIONS_A_AND_B)
                 .edges());
         assertEdgeIds(edges, "e3", "e1", "e2");
 
-        edges = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.OUT_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .edges());
+        edges = toList(getGraph().query(
+                searchAll()
+                        .sort(Edge.OUT_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                        .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING),
+                AUTHORIZATIONS_A_AND_B
+        ).edges());
         assertEdgeIds(edges, "e1", "e2", "e3");
-        edges = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.IN_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .edges());
+        edges = toList(getGraph().query(
+                searchAll()
+                        .sort(Edge.IN_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                        .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING),
+                AUTHORIZATIONS_A_AND_B
+        ).edges());
         assertEdgeIds(edges, "e1", "e2", "e3");
 
         getGraph().prepareVertex("v5", VISIBILITY_A, CONCEPT_TYPE_THING)
@@ -321,8 +317,7 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .sort(genderPropertyName, SortDirection.ASCENDING)
+        vertices = toList(getGraph().query(searchAll().sort(genderPropertyName, SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B)
                 .vertices());
         assertEquals(6, count(vertices));
         assertEquals("v5", vertices.get(0).getId());
@@ -345,8 +340,7 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        QueryResultsIterable<Vertex> vertices
-                = getGraph().query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(searchAll().sort("age", SortDirection.ASCENDING), AUTHORIZATIONS_A).vertices();
         assertEquals(2, count(vertices));
     }
 
@@ -370,15 +364,18 @@ public abstract class GraphSortingScoringTests implements GraphTestSetup {
         getGraph().flush();
 
         QueryResultsIterable<Vertex> vertices
-                = getGraph().query(AUTHORIZATIONS_A_AND_B).sort("name", SortDirection.ASCENDING).vertices();
+                = getGraph().query(searchAll().sort("name", SortDirection.ASCENDING), AUTHORIZATIONS_A_AND_B).vertices();
         assertVertexIds(vertices, "v2", "v1", "v3");
 
         vertices = getGraph().query("3", AUTHORIZATIONS_A_AND_B).vertices();
         assertVertexIds(vertices, "v3");
 
-        vertices = getGraph().query("*", AUTHORIZATIONS_A_AND_B)
-                .has("name", Compare.EQUAL, stringValue("3-1"))
-                .vertices();
+        vertices = getGraph().query(
+                boolQuery()
+                        .and(searchAll())
+                        .and(hasFilter("name", Compare.EQUAL, stringValue("3-1"))),
+                AUTHORIZATIONS_A_AND_B
+        ).vertices();
         assertVertexIds(vertices, "v3");
     }
 

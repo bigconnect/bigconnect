@@ -37,68 +37,86 @@
 package com.mware.ge.query;
 
 import com.mware.ge.*;
+import com.mware.ge.collection.Iterables;
 import com.mware.ge.query.aggregations.Aggregation;
-import com.mware.ge.util.FilterIterable;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.JoinIterable;
 
-import java.util.List;
-
 public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
-    public DefaultVertexQuery(Graph graph, Vertex sourceVertex, String queryString, Authorizations authorizations) {
-        super(graph, sourceVertex, queryString, authorizations);
+    public DefaultVertexQuery(Graph graph, Vertex sourceVertex, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        super(graph, sourceVertex, queryBuilder, authorizations);
     }
 
     @Override
     public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
         Iterable<Vertex> vertices = allVertices(fetchHints);
-        return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), vertices, true, true, true, getAggregations());
+        return new DefaultGraphQueryIterableWithAggregations<>(
+                getBuilder(),
+                vertices,
+                true,
+                true,
+                true,
+                getAggregations(),
+                getAuthorizations()
+        );
     }
 
     private Iterable<Vertex> allVertices(FetchHints fetchHints) {
-        List<String> edgeLabels = getParameters().getEdgeLabels();
-        String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
-                ? null
-                : edgeLabels.toArray(new String[edgeLabels.size()]);
-        Iterable<Vertex> results = getSourceVertex().getVertices(
-                getDirection(),
-                edgeLabelsArray,
-                fetchHints,
-                getParameters().getAuthorizations()
-        );
+        Iterable<Vertex> results = getSourceVertex().getVertices(getDirection(), fetchHints, getAuthorizations());
+        results = Iterables.filter(results, v -> getBuilder().matches(v, getAuthorizations()));
+
         if (getOtherVertexId() != null) {
-            results = new FilterIterable<Vertex>(results) {
-                @Override
-                protected boolean isIncluded(Vertex otherVertex) {
-                    return otherVertex.getId().equals(getOtherVertexId());
-                }
-            };
+            return Iterables.filter(results, v -> v.getId().equals(getOtherVertexId()));
         }
-        if (getParameters().getIds() != null) {
-            results = new FilterIterable<Vertex>(results) {
-                @Override
-                protected boolean isIncluded(Vertex otherVertex) {
-                    return getParameters().getIds().contains(otherVertex.getId());
-                }
-            };
-        }
+
+
+//        List<String> edgeLabels = getBuilder().getEdgeLabels();
+//        String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
+//                ? null
+//                : edgeLabels.toArray(new String[edgeLabels.size()]);
+//        Iterable<Vertex> results = getSourceVertex().getVertices(
+//                getDirection(),
+//                edgeLabelsArray,
+//                fetchHints,
+//                getAuthorizations()
+//        );
+//        if (getOtherVertexId() != null) {
+//            results = new FilterIterable<Vertex>(results) {
+//                @Override
+//                protected boolean isIncluded(Vertex otherVertex) {
+//                    return otherVertex.getId().equals(getOtherVertexId());
+//                }
+//            };
+//        }
+//        if (getParameters().getIds() != null) {
+//            results = new FilterIterable<Vertex>(results) {
+//                @Override
+//                protected boolean isIncluded(Vertex otherVertex) {
+//                    return getParameters().getIds().contains(otherVertex.getId());
+//                }
+//            };
+//        }
         return results;
     }
 
     @Override
     public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
         Iterable<Edge> edges = allEdges(fetchHints);
-        return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), edges, true, true, true, getAggregations());
+        return new DefaultGraphQueryIterableWithAggregations<>(
+                getBuilder(),
+                edges,
+                true,
+                true,
+                true,
+                getAggregations(),
+                getAuthorizations()
+        );
     }
 
     private Iterable<Edge> allEdges(FetchHints fetchHints) {
-        Iterable<Edge> results = getSourceVertex().getEdges(getDirection(), fetchHints, getParameters().getAuthorizations());
+        Iterable<Edge> results = getSourceVertex().getEdges(getDirection(), fetchHints, getAuthorizations());
         if (getOtherVertexId() != null) {
-            results = new FilterIterable<Edge>(results) {
-                @Override
-                protected boolean isIncluded(Edge edge) {
-                    return edge.getOtherVertexId(getSourceVertex().getId()).equals(getOtherVertexId());
-                }
-            };
+            results = Iterables.filter(results, edge -> edge.getOtherVertexId(getSourceVertex().getId()).equals(getOtherVertexId()));
         }
         return results;
     }

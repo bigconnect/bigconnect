@@ -47,41 +47,34 @@ public enum Compare implements Predicate {
     EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL, STARTS_WITH, ENDS_WITH, RANGE;
 
     @Override
-    public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
-        boolean foundProperties = false;
+    public boolean evaluate(final Iterable<Property> properties, final Object second) {
         for (Property property : properties) {
-            foundProperties = true;
-            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
-            if (evaluate(property, second, propertyDefinition)) {
+            if (evaluate(property, second)) {
                 return true;
             }
-        }
-
-        if (!foundProperties && this.equals(NOT_EQUAL)) {
-            return true;
         }
 
         return false;
     }
 
     @Override
-    public void validate(PropertyDefinition propertyDefinition) {
+    public void validate() {
     }
 
     @Override
-    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
+    public boolean evaluate(Object first, Object second) {
         Compare comparePredicate = this;
-        return evaluate(first, comparePredicate, second, propertyDefinition);
+        return evaluate(first, comparePredicate, second);
     }
 
-    private boolean evaluate(Property property, Object second, PropertyDefinition propertyDefinition) {
+    private boolean evaluate(Property property, Object second) {
         Object first = property.getValue();
         Compare comparePredicate = this;
 
-        return evaluate(first, comparePredicate, second, propertyDefinition);
+        return evaluate(first, comparePredicate, second);
     }
 
-    static boolean evaluate(Object first, Compare comparePredicate, Object second, PropertyDefinition propertyDefinition) {
+    static boolean evaluate(Object first, Compare comparePredicate, Object second) {
         if (first instanceof ElementType) {
             first = ((ElementType) first).name();
         }
@@ -93,9 +86,6 @@ public enum Compare implements Predicate {
             case EQUAL:
                 if (null == first) {
                     return second == null;
-                }
-                if (propertyDefinition != null && propertyDefinition.getTextIndexHints().size() > 0 && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    return false;
                 }
                 return ObjectUtils.compare(first, second) == 0;
             case NOT_EQUAL:
@@ -130,9 +120,6 @@ public enum Compare implements Predicate {
                 if (null == first) {
                     return second == null;
                 }
-                if (propertyDefinition != null && propertyDefinition.getTextIndexHints().size() > 0 && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    return false;
-                }
                 return ((TextValue)first).startsWith((TextValue) second);
             case ENDS_WITH:
                 if (!(second instanceof TextValue)) {
@@ -140,9 +127,6 @@ public enum Compare implements Predicate {
                 }
                 if (null == first) {
                     return second == null;
-                }
-                if (propertyDefinition != null && propertyDefinition.getTextIndexHints().size() > 0 && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    return false;
                 }
                 return ((TextValue)first).endsWith((TextValue) second);
             case RANGE:

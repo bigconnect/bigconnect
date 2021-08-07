@@ -49,6 +49,7 @@ import com.mware.ge.elasticsearch5.utils.InfiniteScrollIterable;
 import com.mware.ge.elasticsearch5.utils.PagingIterable;
 import com.mware.ge.query.*;
 import com.mware.ge.query.aggregations.*;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.scoring.ScoringStrategy;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.sorting.SortingStrategy;
@@ -94,9 +95,6 @@ import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortMode;
 import org.elasticsearch.search.sort.SortOrder;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
@@ -105,7 +103,6 @@ import org.locationtech.spatial4j.shape.Point;
 
 import java.io.IOException;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -135,38 +132,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private final TimeValue scrollKeepAlive;
     private final int termAggregationShardSize;
     private final int maxQueryStringTerms;
-    private final String queryString;
+    private GeQueryBuilder queryBuilder;
 
     public ElasticsearchSearchQueryBase(
             Client client,
             Graph graph,
-            String queryString,
+            GeQueryBuilder queryBuilder,
             Options options,
             Authorizations authorizations
     ) {
-        super(graph, queryString, authorizations);
+        super(graph, queryBuilder, authorizations);
         this.client = client;
-        this.queryString = queryString;
-        this.pageSize = options.pageSize;
-        this.indexSelectionStrategy = options.indexSelectionStrategy;
-        this.scrollKeepAlive = options.scrollKeepAlive;
-        this.pagingLimit = options.pagingLimit;
-        this.analyzer = options.analyzer;
-        this.termAggregationShardSize = options.termAggregationShardSize;
-        this.maxQueryStringTerms = options.maxQueryStringTerms;
-    }
-
-    public ElasticsearchSearchQueryBase(
-            Client client,
-            Graph graph,
-            String[] similarToFields,
-            String similarToText,
-            Options options,
-            Authorizations authorizations
-    ) {
-        super(graph, similarToFields, similarToText, authorizations);
-        this.client = client;
-        this.queryString = null;
+        this.queryBuilder = queryBuilder;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
         this.scrollKeepAlive = options.scrollKeepAlive;
@@ -223,7 +200,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         List<QueryBuilder> filters = getFilters(elementType, fetchHints);
-        QueryBuilder query = createQuery(getParameters());
+        QueryBuilder query = createQuery();
 
         QueryBuilder filterBuilder = getFilterBuilder(filters, fetchHints);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
@@ -256,8 +233,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME
             );
         }
-        if (getParameters().getMinScore() != null) {
-            searchRequestBuilder.setMinScore(getParameters().getMinScore().floatValue());
+        if (queryBuilder.getMinScore() != null) {
+            searchRequestBuilder.setMinScore(queryBuilder.getMinScore().floatValue());
         }
         if (includeAggregations) {
             List<AggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
@@ -283,9 +260,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             return QueryBuilders.matchAllQuery();
         }
 
-        queryString = getSearchIndex().getQueryStringTransformer().transform(queryString, getParameters().getAuthorizations());
+        queryString = getSearchIndex().getQueryStringTransformer().transform(queryString, getAuthorizations());
 
-        Collection<String> fields = getSearchIndex().getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+        Collection<String> fields = getSearchIndex().getQueryablePropertyNames(getGraph(), getAuthorizations());
         QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
         for (String field : fields) {
             qs = qs.field(getSearchIndex().replaceFieldnameDots(field));
@@ -312,264 +289,56 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         BoolQueryBuilder hasContainerQueryBuilder = new BoolQueryBuilder();
-
-        if (getLogicalQuery() != null) {
-            JSONArray logicalOperations;
-            try {
-                String _logicalQuery = getLogicalQuery();
-                if (_logicalQuery == null || _logicalQuery.isEmpty()) {
-                    _logicalQuery = "[]";
-                }
-                logicalOperations = new JSONArray(_logicalQuery);
-            } catch (JSONException ex) {
-                throw new RuntimeException(ex);
-            }
-
-            //Build queryBuilders
-            List<QueryBuilder> queryBuilders = new ArrayList<>();
-            for (int i = 0; i < getParameters().getHasContainers().size(); i++) {
-                HasContainer has = getParameters().getHasContainers().get(i);
-                QueryBuilder queryBuilder;
-                if (has instanceof HasValueContainer) {
-                    queryBuilder = getFiltersForHasValueContainer((HasValueContainer) has);
-                } else if (has instanceof HasPropertyContainer) {
-                    queryBuilder = getFilterForHasPropertyContainer((HasPropertyContainer) has);
-                } else if (has instanceof HasNotPropertyContainer) {
-                    queryBuilder = getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has);
-                } else {
-                    throw new GeException("Unexpected type " + has.getClass().getName());
-                }
-                queryBuilders.add(queryBuilder);
-            }
-
-
-            if (logicalOperations.length() > 0) {
-                BoolQueryBuilder level0BoolQuery = new BoolQueryBuilder();
-                BoolQueryBuilder level1BoolQuery;
-                BoolQueryBuilder level2BoolQuery;
-                int counter = 0;
-                for (int i = 0; i < logicalOperations.length(); i++) {
-                    JSONObject level0Object = (JSONObject) logicalOperations.get(i);
-                    if (level0Object.has("children") && !level0Object.isNull("children")) {
-                        level1BoolQuery = new BoolQueryBuilder();
-                        JSONArray level1GroupArray = (JSONArray) level0Object.get("children");
-                        for (int j = 0; j < level1GroupArray.length(); j++) {
-                            JSONObject level1Object = (JSONObject) level1GroupArray.get(j);
-                            String operatorLevel1 = "";
-                            if (level1Object.has("operator") && !level1Object.isNull("operator")) {
-                                operatorLevel1 = level1Object.get("operator").toString();
-                            }
-
-                            //No operator, try to get from next or should clause
-                            if (operatorLevel1.equals("")) {
-                                if ((j + 1) < level1GroupArray.length()) {
-                                    JSONObject operatorObject = (JSONObject) level1GroupArray.get(j + 1);
-                                    if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
-                                        operatorLevel1 = operatorObject.get("operator").toString();
-                                    }
-                                }
-                            }
-
-                            // Level2 Group
-                            if (level1Object.has("children") && !level1Object.isNull("children")) {
-                                level2BoolQuery = new BoolQueryBuilder();
-                                JSONArray level2GroupArray = (JSONArray) level1Object.get("children");
-                                for (int k = 0; k < level2GroupArray.length(); k++) {
-                                    JSONObject level2Object = (JSONObject) level2GroupArray.get(k);
-                                    String operatorLevel2 = "";
-                                    if (level2Object.has("operator") && !level2Object.isNull("operator")) {
-                                        operatorLevel2 = level2Object.get("operator").toString();
-                                    }
-
-                                    //No operator, try to get from next or should clause
-                                    if (operatorLevel2.equals("")) {
-                                        if ((k + 1) < level2GroupArray.length()) {
-                                            JSONObject operatorObject = (JSONObject) level2GroupArray.get(k + 1);
-                                            if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
-                                                operatorLevel2 = operatorObject.get("operator").toString();
-                                            }
-                                        }
-                                    }
-
-                                    if (operatorLevel2.equalsIgnoreCase("and")) {
-                                        level2BoolQuery.must(queryBuilders.get(level2Object.getInt("id")));
-                                        counter++;
-                                    } else if (operatorLevel2.equalsIgnoreCase("or")) {
-                                        level2BoolQuery.should(queryBuilders.get(level2Object.getInt("id")));
-                                        counter++;
-                                    } else if (operatorLevel2.equalsIgnoreCase("not")) {
-                                        level2BoolQuery.mustNot(queryBuilders.get(level2Object.getInt("id")));
-                                        counter++;
-                                    } else {
-                                        level2BoolQuery.should(queryBuilders.get(level2Object.getInt("id")));
-                                        counter++;
-                                    }
-                                }
-                                if (operatorLevel1.equalsIgnoreCase("and")) {
-                                    level1BoolQuery.must(level2BoolQuery);
-                                } else if (operatorLevel1.equalsIgnoreCase("or")) {
-                                    level1BoolQuery.should(level2BoolQuery);
-                                } else if (operatorLevel1.equalsIgnoreCase("not")) {
-                                    level1BoolQuery.mustNot(level2BoolQuery);
-                                } else {
-                                    level1BoolQuery.should(level2BoolQuery);
-                                }
-
-                            } else {
-                                if (operatorLevel1.equalsIgnoreCase("and")) {
-                                    level1BoolQuery.must(queryBuilders.get(level1Object.getInt("id")));
-                                    counter++;
-                                } else if (operatorLevel1.equalsIgnoreCase("or")) {
-                                    level1BoolQuery.should(queryBuilders.get(level1Object.getInt("id")));
-                                    counter++;
-                                } else if (operatorLevel1.equalsIgnoreCase("not")) {
-                                    level1BoolQuery.mustNot(queryBuilders.get(level1Object.getInt("id")));
-                                    counter++;
-                                } else {
-                                    level1BoolQuery.should(queryBuilders.get(level1Object.getInt("id")));
-                                    counter++;
-                                }
-                            }
-                        }
-                        //Add group operation
-                        String operatorLevel0Group = "";
-                        if (level0Object.has("operator")) {
-                            operatorLevel0Group = level0Object.get("operator").toString();
-                        }
-                        //No operator, try to get from next or should clause
-                        if (operatorLevel0Group.equals("")) {
-                            if ((i + 1) < logicalOperations.length()) {
-                                JSONObject operatorObject = (JSONObject) logicalOperations.get(i + 1);
-                                if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
-                                    operatorLevel0Group = operatorObject.get("operator").toString();
-                                }
-                            }
-                        }
-
-
-                        if (operatorLevel0Group.equalsIgnoreCase("and")) {
-                            level0BoolQuery.must(level1BoolQuery);
-                        } else if (operatorLevel0Group.equalsIgnoreCase("or")) {
-                            level0BoolQuery.should(level1BoolQuery);
-                        } else if (operatorLevel0Group.equalsIgnoreCase("not")) {
-                            level0BoolQuery.mustNot(level1BoolQuery);
-                        } else {
-                            level0BoolQuery.should(level1BoolQuery);
-                        }
-
-                    } else {
-                        String operatorLevel0 = "";
-                        if (level0Object.has("operator") && !level0Object.isNull("operator")) {
-                            operatorLevel0 = level0Object.get("operator").toString();
-                        }
-
-                        //No operator, try to get from next or should clause
-                        if (operatorLevel0.equals("")) {
-                            if ((i + 1) < logicalOperations.length()) {
-                                JSONObject operatorObject = (JSONObject) logicalOperations.get(i + 1);
-                                if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
-                                    String nextOp = operatorObject.get("operator").toString();
-                                    // if we are first operator in the chain, we can't take not from next op, just use and
-                                    if (i == 0 && nextOp.equalsIgnoreCase("not")) {
-                                        operatorLevel0 = "and";
-                                    } else {
-                                        operatorLevel0 = nextOp;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (operatorLevel0.equalsIgnoreCase("and")) {
-                            level0BoolQuery.must(queryBuilders.get(level0Object.getInt("id")));
-                            counter++;
-                        } else if (operatorLevel0.equalsIgnoreCase("or")) {
-                            level0BoolQuery.should(queryBuilders.get(level0Object.getInt("id")));
-                            counter++;
-                        } else if (operatorLevel0.equalsIgnoreCase("not")) {
-                            level0BoolQuery.mustNot(queryBuilders.get(level0Object.getInt("id")));
-                            counter++;
-                        } else {
-                            level0BoolQuery.should(queryBuilders.get(level0Object.getInt("id")));
-                            counter++;
-                        }
+        for (HasContainer has : getParameters().getHasContainers()) {
+            if (has instanceof HasValueContainer) {
+                if (!(((HasValueContainer) has).value instanceof NoValue)) {
+                    switch (has.conjunction) {
+                        case AND:
+                            hasContainerQueryBuilder.must(getFiltersForHasValueContainer((HasValueContainer) has));
+                            break;
+                        case OR:
+                            hasContainerQueryBuilder.should(getFiltersForHasValueContainer((HasValueContainer) has));
+                            break;
                     }
                 }
-
-                if (queryBuilders.size() > 0) {
-                    filters.add(level0BoolQuery);
-                    //Add remaining filters
-                    if (counter < queryBuilders.size()) {
-                        for (int i = counter; i < queryBuilders.size(); i++) {
-                            BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
-                            boolQueryBuilder.must(queryBuilders.get(i));
-                            filters.add(boolQueryBuilder);
-                        }
-                    }
-
+            } else if (has instanceof HasPropertyContainer) {
+                switch (has.conjunction) {
+                    case AND:
+                        hasContainerQueryBuilder.must(getFilterForHasPropertyContainer((HasPropertyContainer) has));
+                        break;
+                    case OR:
+                        hasContainerQueryBuilder.should(getFilterForHasPropertyContainer((HasPropertyContainer) has));
+                        break;
                 }
-
+            } else if (has instanceof HasNotPropertyContainer) {
+                switch (has.conjunction) {
+                    case AND:
+                        hasContainerQueryBuilder.must(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
+                        break;
+                    case OR:
+                        hasContainerQueryBuilder.should(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
+                        break;
+                }
+            } else if (has instanceof HasExtendedData) {
+                switch (has.conjunction) {
+                    case AND:
+                        hasContainerQueryBuilder.must(getFilterForHasExtendedData((HasExtendedData) has));
+                        break;
+                    case OR:
+                        hasContainerQueryBuilder.should(getFilterForHasExtendedData((HasExtendedData) has));
+                        break;
+                }
+            } else if (has instanceof HasAuthorizationContainer) {
+                switch (has.conjunction) {
+                    case AND:
+                        hasContainerQueryBuilder.must(getFilterForHasAuthorizationContainer((HasAuthorizationContainer) has));
+                        break;
+                    case OR:
+                        hasContainerQueryBuilder.should(getFilterForHasAuthorizationContainer((HasAuthorizationContainer) has));
+                        break;
+                }
             } else {
-                if (queryBuilders.size() > 0) {
-                    for (int i = 0; i < queryBuilders.size(); i++) {
-                        BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
-                        boolQueryBuilder.must(queryBuilders.get(i));
-                        filters.add(boolQueryBuilder);
-                    }
-                }
-            }
-        } else {
-
-            for (HasContainer has : getParameters().getHasContainers()) {
-                if (has instanceof HasValueContainer) {
-                    if (!(((HasValueContainer) has).value instanceof NoValue)) {
-                        switch (has.conjunction) {
-                            case AND:
-                                hasContainerQueryBuilder.must(getFiltersForHasValueContainer((HasValueContainer) has));
-                                break;
-                            case OR:
-                                hasContainerQueryBuilder.should(getFiltersForHasValueContainer((HasValueContainer) has));
-                                break;
-                        }
-                    }
-                } else if (has instanceof HasPropertyContainer) {
-                    switch (has.conjunction) {
-                        case AND:
-                            hasContainerQueryBuilder.must(getFilterForHasPropertyContainer((HasPropertyContainer) has));
-                            break;
-                        case OR:
-                            hasContainerQueryBuilder.should(getFilterForHasPropertyContainer((HasPropertyContainer) has));
-                            break;
-                    }
-                } else if (has instanceof HasNotPropertyContainer) {
-                    switch (has.conjunction) {
-                        case AND:
-                            hasContainerQueryBuilder.must(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
-                            break;
-                        case OR:
-                            hasContainerQueryBuilder.should(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
-                            break;
-                    }
-                } else if (has instanceof HasExtendedData) {
-                    switch (has.conjunction) {
-                        case AND:
-                            hasContainerQueryBuilder.must(getFilterForHasExtendedData((HasExtendedData) has));
-                            break;
-                        case OR:
-                            hasContainerQueryBuilder.should(getFilterForHasExtendedData((HasExtendedData) has));
-                            break;
-                    }
-                } else if (has instanceof HasAuthorizationContainer) {
-                    switch (has.conjunction) {
-                        case AND:
-                            hasContainerQueryBuilder.must(getFilterForHasAuthorizationContainer((HasAuthorizationContainer) has));
-                            break;
-                        case OR:
-                            hasContainerQueryBuilder.should(getFilterForHasAuthorizationContainer((HasAuthorizationContainer) has));
-                            break;
-                    }
-                } else {
-                    throw new GeException("Unexpected type " + has.getClass().getName());
-                }
+                throw new GeException("Unexpected type " + has.getClass().getName());
             }
         }
 
@@ -592,7 +361,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
         ) {
             Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
-            Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getAuthorizations());
+            Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getAuthorizations());
             TermsQueryBuilder extendedDataVisibilitiesTerms = QueryBuilders.termsQuery(EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME, queryableVisibilities);
 
             if (elementTypes == null
@@ -618,7 +387,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
-        Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
+        Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getAuthorizations());
         BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
         for (String field : fields) {
             atLeastOneFieldExistsFilter.should(new ExistsQueryBuilder(field));
@@ -630,7 +399,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected void applySort(SearchRequestBuilder q) {
         AtomicBoolean sortedById = new AtomicBoolean(false);
-        for (SortContainer sortContainer : getParameters().getSortContainers()) {
+        for (SortContainer sortContainer : getBuilder().getSortContainers()) {
             if (sortContainer instanceof PropertySortContainer) {
                 applySortProperty(q, (PropertySortContainer) sortContainer, sortedById);
             } else if (sortContainer instanceof SortingStrategySortContainer) {
@@ -658,7 +427,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 getGraph(),
                 getSearchIndex(),
                 q,
-                getParameters(),
+                this,
                 sortContainer.direction
         );
     }
@@ -802,7 +571,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryResultsIterable<? extends GeObject> searchScroll(EnumSet<GeObjectType> objectTypes, FetchHints fetchHints) {
-        return new QueryInfiniteScrollIterable<GeObject>(objectTypes, fetchHints, getParameters().getLimit()) {
+        return new QueryInfiniteScrollIterable<GeObject>(objectTypes, fetchHints, getBuilder().getLimit()) {
             @Override
             protected ElasticsearchGraphQueryIterable<GeObject> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToGeObjectIterable(searchResponse, fetchHints);
@@ -832,7 +601,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryResultsIterable<? extends GeObject> searchPaged(EnumSet<GeObjectType> objectTypes, FetchHints fetchHints) {
-        return new PagingIterable<GeObject>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
+        return new PagingIterable<GeObject>(getSkip(), getLimit(), pageSize) {
             @Override
             protected ElasticsearchGraphQueryIterable<GeObject> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 SearchResponse response;
@@ -865,10 +634,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         // since ES doesn't support security we will rely on the graph to provide edge filtering
         // and rely on the DefaultGraphQueryIterable to provide property filtering
-        QueryParameters filterParameters = getParameters().clone();
-        filterParameters.setSkip(0); // ES already did a skip
+        GeQueryBuilder filterParameters = getBuilder().clone();
+        filterParameters.skip(0); // ES already did a skip
         List<Iterable<? extends GeObject>> items = new ArrayList<>();
-        Authorizations authorizations = filterParameters.getAuthorizations();
+        Authorizations authorizations = getAuthorizations();
         if (ids.getVertexIds().size() > 0) {
             if (fetchHints.equals(FetchHints.NONE)) {
                 items.add(getElasticsearchVertices(hits, fetchHints, authorizations));
@@ -904,7 +673,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryInfiniteScrollIterable<SearchHit> searchScrollHits(EnumSet<GeObjectType> objectTypes, FetchHints fetchHints) {
-        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes, fetchHints, getParameters().getLimit()) {
+        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes, fetchHints, getBuilder().getLimit()) {
             @Override
             protected ElasticsearchGraphQueryIterable<SearchHit> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToSearchHitsIterable(searchResponse);
@@ -918,7 +687,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private PagingIterable<SearchHit> searchPagedHits(EnumSet<GeObjectType> objectTypes, FetchHints fetchHints) {
-        return new PagingIterable<SearchHit>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
+        return new PagingIterable<SearchHit>(getBuilder().getSkip(), getBuilder().getLimit(), pageSize) {
             @Override
             protected ElasticsearchGraphQueryIterable<SearchHit> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 SearchResponse response;
@@ -939,7 +708,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private ElasticsearchGraphQueryIterable<SearchHit> searchResponseToSearchHitsIterable(SearchResponse response) {
         SearchHits hits = response.getHits();
-        QueryParameters filterParameters = getParameters().clone();
+        GeQueryBuilder filterParameters = getBuilder().clone();
         Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.getHits());
         return createIterable(response, filterParameters, hitsIterable, response.getTook().getMillis(), hits);
     }
@@ -1024,12 +793,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private <T> EmptyElasticsearchGraphQueryIterable<T> createEmptyIterable() {
-        return new EmptyElasticsearchGraphQueryIterable<>(ElasticsearchSearchQueryBase.this, getParameters());
+        return new EmptyElasticsearchGraphQueryIterable<>(ElasticsearchSearchQueryBase.this);
     }
 
     protected <T> ElasticsearchGraphQueryIterable<T> createIterable(
             SearchResponse response,
-            QueryParameters filterParameters,
+            GeQueryBuilder filterParameters,
             Iterable<T> geObjects,
             long searchTimeInMillis,
             SearchHits hits
@@ -1137,7 +906,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForHasAuthorizationContainer(HasAuthorizationContainer hasAuthorization) {
         PropertyNameVisibilitiesStore visibilitiesStore = getSearchIndex().getPropertyNameVisibilitiesStore();
-        Authorizations auths = getParameters().getAuthorizations();
+        Authorizations auths = getAuthorizations();
         Graph graph = getGraph();
 
         Set<String> hashes = stream(hasAuthorization.getAuthorizations())
@@ -1670,7 +1439,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected String[] getPropertyNames(String propertyName) {
-        return getSearchIndex().getPropertyNames(getGraph(), propertyName, getParameters().getAuthorizations());
+        return getSearchIndex().getPropertyNames(getGraph(), propertyName, getAuthorizations());
     }
 
     public Elasticsearch5SearchIndex getSearchIndex() {
@@ -1721,7 +1490,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
     }
 
-    protected QueryBuilder createQuery(QueryParameters queryParameters) {
+    protected QueryBuilder createQuery() {
         QueryBuilder query;
         if (queryParameters instanceof QueryStringQueryParameters) {
             query = createQueryStringQuery((QueryStringQueryParameters) queryParameters);
@@ -1731,7 +1500,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             throw new GeException("Query parameters not supported of type: " + queryParameters.getClass().getName());
         }
 
-        ScoringStrategy scoringStrategy = queryParameters.getScoringStrategy();
+        ScoringStrategy scoringStrategy = getBuilder().getScoringStrategy();
         if (scoringStrategy != null) {
             if (!(scoringStrategy instanceof ElasticsearchScoringStrategy)) {
                 throw new GeException("scoring strategies must implement " + ElasticsearchScoringStrategy.class.getName() + " to work with Elasticsearch");
@@ -1739,8 +1508,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             query = ((ElasticsearchScoringStrategy) scoringStrategy).updateElasticsearchQuery(
                     getGraph(),
                     getSearchIndex(),
-                    query,
-                    queryParameters
+                    this
             );
         }
         return query;
@@ -2347,7 +2115,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private boolean shouldUseScrollApi() {
-        return getParameters().getSkip() == 0 && (getParameters().getLimit() == null || getParameters().getLimit() > pagingLimit);
+        return getBuilder().getSkip() == 0 && (getBuilder().getLimit() == null || getBuilder().getLimit() > pagingLimit);
     }
 
     protected IndexSelectionStrategy getIndexSelectionStrategy() {
@@ -2371,7 +2139,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "parameters=" + getParameters() +
+                "parameters=" + getBuilder() +
                 ", pageSize=" + pageSize +
                 '}';
     }

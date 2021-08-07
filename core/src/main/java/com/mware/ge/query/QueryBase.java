@@ -39,53 +39,32 @@ package com.mware.ge.query;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.mware.ge.*;
 import com.mware.ge.query.aggregations.Aggregation;
 import com.mware.ge.query.aggregations.AggregationResult;
-import com.mware.ge.scoring.ScoringStrategy;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.sorting.SortingStrategy;
-import com.mware.ge.type.GeoShape;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.util.SelectManyIterable;
 import com.mware.ge.util.StreamUtils;
 import com.mware.ge.values.storable.GeoShapeValue;
 import com.mware.ge.values.storable.TemporalValue;
 import com.mware.ge.values.storable.Value;
-import org.apache.poi.ss.formula.functions.T;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class QueryBase implements Query, SimilarToGraphQuery {
+public abstract class QueryBase implements Query {
     private final Graph graph;
-    private final QueryParameters parameters;
-    private String logicalQuery;
+    private final GeQueryBuilder queryBuilder;
+    private final Authorizations authorizations;
     private List<Aggregation> aggregations = new ArrayList<>();
 
-    protected QueryBase(Graph graph, String queryString, String logicalQuery, Authorizations authorizations) {
+    protected QueryBase(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations) {
         this.graph = graph;
-        this.parameters = new QueryStringQueryParameters(queryString, authorizations);
-        this.logicalQuery = logicalQuery;
-    }
-
-    protected QueryBase(Graph graph, String queryString, Authorizations authorizations) {
-        this.graph = graph;
-        this.parameters = new QueryStringQueryParameters(queryString, authorizations);
-    }
-
-    protected QueryBase(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
-        this.graph = graph;
-        this.parameters = new SimilarToTextQueryParameters(similarToFields, similarToText, authorizations);
-    }
-
-    public String getLogicalQuery() {
-        return this.logicalQuery;
-    }
-
-    public void setLogicalQuery(String logicalQuery) {
-        this.logicalQuery = logicalQuery;
+        this.queryBuilder = queryBuilder;
+        this.authorizations = authorizations;
     }
 
     @Override
@@ -231,112 +210,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                 };
             }
         };
-        return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), allExtendedData, true, true, true, getAggregations());
-    }
-
-    @Override
-    public Query hasId(String... ids) {
-        getParameters().addIds(Arrays.asList(ids));
-        return this;
-    }
-
-    @Override
-    public Query hasId(Iterable<String> ids) {
-        getParameters().addIds(IterableUtils.toList(ids));
-        return this;
-    }
-
-    @Override
-    public Query hasConceptType(String... conceptTypes) {
-        for (String conceptType : conceptTypes) {
-            getParameters().addConceptType(conceptType);
-        }
-        return this;
-    }
-
-    @Override
-    public Query hasConceptType(Collection<String> conceptTypes) {
-        for (String conceptType : conceptTypes) {
-            getParameters().addConceptType(conceptType);
-        }
-        return this;
-    }
-
-    @Override
-    public Query hasEdgeLabel(String... edgeLabels) {
-        for (String edgeLabel : edgeLabels) {
-            getParameters().addEdgeLabel(edgeLabel);
-        }
-        return this;
-    }
-
-    @Override
-    public Query hasEdgeLabel(Collection<String> edgeLabels) {
-        for (String edgeLabel : edgeLabels) {
-            getParameters().addEdgeLabel(edgeLabel);
-        }
-        return this;
-    }
-
-    public Query hasInVertexTypes(String... vertexTypes) {
-        for (String vertexType : vertexTypes) {
-            getParameters().addInVertexType(vertexType);
-        }
-        return this;
-    }
-
-    public Query hasOutVertexTypes(String... vertexTypes) {
-        for (String vertexType : vertexTypes) {
-            getParameters().addOutVertexType(vertexType);
-        }
-        return this;
-    }
-
-    @Override
-    public Query hasAuthorization(String... authorizations) {
-        getParameters().addHasContainer(new HasAuthorizationContainer(Conjunction.AND, Arrays.asList(authorizations)));
-        return this;
-    }
-    @Override
-    public Query hasAuthorization(Iterable<String> authorizations) {
-        getParameters().addHasContainer(new HasAuthorizationContainer(Conjunction.AND, authorizations));
-        return this;
-    }
-
-    @Override
-    public Query hasExtendedData(ElementType elementType, String elementId) {
-        return hasExtendedData(elementType, elementId, null);
-    }
-
-    @Override
-    public Query hasExtendedData(String tableName) {
-        return hasExtendedData(null, null, tableName);
-    }
-
-    @Override
-    public Query hasExtendedData(ElementType elementType, String elementId, String tableName) {
-        hasExtendedData(Lists.newArrayList(new HasExtendedDataFilter(elementType, elementId, tableName)));
-        return this;
-    }
-
-    @Override
-    public Query hasExtendedData(Iterable<HasExtendedDataFilter> filters) {
-        getParameters().addHasContainer(new HasExtendedData(Conjunction.AND, ImmutableList.copyOf(filters)));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label, FetchHints fetchHints) {
-        hasEdgeLabel(label);
-        return edges(fetchHints);
-    }
-
-    @Override
-    @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label) {
-        hasEdgeLabel(label);
-        return edges();
+        return new DefaultGraphQueryIterableWithAggregations<>(queryBuilder, allExtendedData, true, true, true, getAggregations(), getAuthorizations());
     }
 
     @Override
@@ -361,142 +235,16 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         return new DefaultGraphQueryIdIterable<>(elements(fetchHints));
     }
 
-    @Override
-    public <T extends Value> Query range(String propertyName, T startValue, T endValue) {
-        return range(propertyName, startValue, true, endValue, true);
-    }
-
-    @Override
-    public <T extends Value> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue) {
-        if (startValue != null) {
-            this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, propertyName, inclusiveStartValue ? Compare.GREATER_THAN_EQUAL : Compare.GREATER_THAN, startValue, getGraph().getPropertyDefinitions()));
-        }
-        if (endValue != null) {
-            this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, propertyName, inclusiveEndValue ? Compare.LESS_THAN_EQUAL : Compare.LESS_THAN, endValue, getGraph().getPropertyDefinitions()));
-        }
-        return this;
-    }
-
-    @Override
-    public Query sort(String propertyName, SortDirection direction) {
-        this.parameters.addSortContainer(new PropertySortContainer(propertyName, direction));
-        return this;
-    }
-
-    @Override
-    public Query sort(SortingStrategy sortingStrategy, SortDirection direction) {
-        this.parameters.addSortContainer(new SortingStrategySortContainer(sortingStrategy, direction));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query has(String propertyName, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, propertyName, Compare.EQUAL, value, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query hasNot(String propertyName, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, propertyName, Contains.NOT_IN, value, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query has(String propertyName, Predicate predicate, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, propertyName, predicate, value, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query has(String propertyName, Predicate predicate, Conjunction conjunction, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(conjunction, propertyName, predicate, value, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value, K extends Value> Query has(Class<T> dataType, Predicate predicate, K value) {
-        this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, dataType, predicate, value, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query has(Class<T> dataType) {
-        this.parameters.addHasContainer(new HasPropertyContainer(Conjunction.AND, dataType, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query hasNot(Class<T> dataType) {
-        this.parameters.addHasContainer(new HasNotPropertyContainer(Conjunction.AND, dataType, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public <T extends Value> Query has(Iterable<String> propertyNames, Predicate predicate, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(Conjunction.AND, propertyNames, predicate, value, getGraph().getPropertyDefinitions()));
-        return this;
-    }
-
-    @Override
-    public Query has(String propertyName) {
-        this.parameters.addHasContainer(new HasPropertyContainer(Conjunction.AND, propertyName));
-        return this;
-    }
-
-    @Override
-    public <T> Query has(Iterable<String> propertyNames) {
-        this.parameters.addHasContainer(new HasPropertyContainer(Conjunction.AND, propertyNames));
-        return this;
-    }
-
-    @Override
-    public Query hasNot(String propertyName) {
-        this.parameters.addHasContainer(new HasNotPropertyContainer(Conjunction.AND, propertyName));
-        return this;
-    }
-
-    @Override
-    public <T> Query hasNot(Iterable<String> propertyNames) {
-        this.parameters.addHasContainer(new HasNotPropertyContainer(Conjunction.AND, propertyNames));
-        return this;
-    }
-
-    @Override
-    public Query skip(int count) {
-        this.parameters.setSkip(count);
-        return this;
-    }
-
-    @Override
-    public Query limit(Integer count) {
-        this.parameters.setLimit(count);
-        return this;
-    }
-
-    @Override
-    public Query limit(Long count) {
-        this.parameters.setLimit(count);
-        return this;
-    }
-
-    @Override
-    public Query minScore(double score) {
-        this.parameters.setMinScore(score);
-        return this;
-    }
-
-    @Override
-    public Query scoringStrategy(ScoringStrategy scoringStrategy) {
-        this.parameters.setScoringStrategy(scoringStrategy);
-        return this;
-    }
-
     public Graph getGraph() {
         return graph;
     }
 
-    public QueryParameters getParameters() {
-        return parameters;
+    public GeQueryBuilder getBuilder() {
+        return queryBuilder;
+    }
+
+    public Authorizations getAuthorizations() {
+        return authorizations;
     }
 
     public static abstract class HasContainer {
@@ -520,9 +268,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
             return dataType.isAssignableFrom(propertyDefinition.getDataType()) || (propertyIsDate && dataTypeIsDate);
         }
-    }
-
-    public interface SortContainer {
     }
 
     public static class PropertySortContainer implements SortContainer {
@@ -668,7 +413,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public boolean isMatch(GeObject geObject) {
             for (String key : this.keys) {
-                if (this.predicate.evaluate(geObject.getProperties(key), this.value, this.propertyDefinitions)) {
+                if (this.predicate.evaluate(geObject.getProperties(key), this.value)) {
                     return true;
                 }
             }
@@ -815,51 +560,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public SimilarToGraphQuery minTermFrequency(int minTermFrequency) {
-        if (!(parameters instanceof SimilarToQueryParameters)) {
-            throw new GeException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
-        }
-        ((SimilarToQueryParameters) this.parameters).setMinTermFrequency(minTermFrequency);
-        return this;
-    }
-
-    @Override
-    public SimilarToGraphQuery maxQueryTerms(int maxQueryTerms) {
-        if (!(parameters instanceof SimilarToQueryParameters)) {
-            throw new GeException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
-        }
-        ((SimilarToQueryParameters) this.parameters).setMaxQueryTerms(maxQueryTerms);
-        return this;
-    }
-
-    @Override
-    public SimilarToGraphQuery minDocFrequency(int minDocFrequency) {
-        if (!(parameters instanceof SimilarToQueryParameters)) {
-            throw new GeException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
-        }
-        ((SimilarToQueryParameters) this.parameters).setMinDocFrequency(minDocFrequency);
-        return this;
-    }
-
-    @Override
-    public SimilarToGraphQuery maxDocFrequency(int maxDocFrequency) {
-        if (!(parameters instanceof SimilarToQueryParameters)) {
-            throw new GeException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
-        }
-        ((SimilarToQueryParameters) this.parameters).setMaxDocFrequency(maxDocFrequency);
-        return this;
-    }
-
-    @Override
-    public SimilarToGraphQuery boost(float boost) {
-        if (!(parameters instanceof SimilarToQueryParameters)) {
-            throw new GeException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
-        }
-        ((SimilarToQueryParameters) this.parameters).setBoost(boost);
-        return this;
-    }
-
-    @Override
     public boolean isAggregationSupported(Aggregation aggregation) {
         return false;
     }
@@ -898,7 +598,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "parameters=" + getParameters() +
+                "queryBuilder=" + getBuilder() +
                 '}';
     }
 }

@@ -37,16 +37,15 @@
 package com.mware.ge.query;
 
 import com.mware.ge.*;
-
-import java.util.EnumSet;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 public abstract class VertexQueryBase extends QueryBase implements VertexQuery {
     private final Vertex sourceVertex;
     private String otherVertexId;
     private Direction direction = Direction.BOTH;
 
-    protected VertexQueryBase(Graph graph, Vertex sourceVertex, String queryString, Authorizations authorizations) {
-        super(graph, queryString, authorizations);
+    protected VertexQueryBase(Graph graph, Vertex sourceVertex, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        super(graph, queryBuilder, authorizations);
         this.sourceVertex = sourceVertex;
     }
 

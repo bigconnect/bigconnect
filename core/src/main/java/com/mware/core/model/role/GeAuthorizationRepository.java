@@ -57,7 +57,10 @@ import com.mware.core.user.User;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.*;
+import com.mware.ge.query.Compare;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.values.storable.Values;
 
@@ -139,8 +142,7 @@ public class GeAuthorizationRepository extends AuthorizationRepositoryBase {
 
     @Override
     public Iterable<Role> getAllRoles() {
-        try (QueryResultsIterable<Vertex> roleVertices = getGraph().query(authorizations)
-                .hasConceptType(roleConceptId)
+        try (QueryResultsIterable<Vertex> roleVertices = getGraph().query(GeQueryBuilders.hasConceptType(roleConceptId), authorizations)
                 .vertices()) {
             return new ConvertingIterable<Vertex, Role>(roleVertices) {
                 @Override
@@ -161,9 +163,10 @@ public class GeAuthorizationRepository extends AuthorizationRepositoryBase {
     @Override
     public Role findByName(String roleName) {
         roleName = formatRole(roleName);
-        Iterable<Vertex> vertices = getGraph().query(authorizations)
-                .has(RoleSchema.ROLE_NAME.getPropertyName(), Values.stringValue(roleName))
-                .hasConceptType(roleConceptId)
+        GeQueryBuilder qb = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.hasConceptType(roleConceptId))
+                .and(GeQueryBuilders.hasFilter(RoleSchema.ROLE_NAME.getPropertyName(), Compare.EQUAL, Values.stringValue(roleName)));
+        Iterable<Vertex> vertices = getGraph().query(qb, authorizations)
                 .vertices();
         Vertex roleVertex = singleOrDefault(vertices, null);
         if (roleVertex == null) {

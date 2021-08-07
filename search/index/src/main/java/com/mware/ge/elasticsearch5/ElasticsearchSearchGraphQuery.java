@@ -36,6 +36,7 @@
  */
 package com.mware.ge.elasticsearch5;
 
+import com.mware.ge.query.builder.GeQueryBuilder;
 import org.elasticsearch.client.Client;
 import com.mware.ge.Authorizations;
 import com.mware.ge.Graph;
@@ -45,21 +46,10 @@ public class ElasticsearchSearchGraphQuery extends ElasticsearchSearchQueryBase 
     public ElasticsearchSearchGraphQuery(
             Client client,
             Graph graph,
-            String queryString,
+            GeQueryBuilder queryBuilder,
             Options options,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
-    }
-
-    public ElasticsearchSearchGraphQuery(
-            Client client,
-            Graph graph,
-            String[] similarToFields,
-            String similarToText,
-            Options options,
-            Authorizations authorizations
-    ) {
-        super(client, graph, similarToFields, similarToText, options, authorizations);
+        super(client, graph, queryBuilder, options, authorizations);
     }
 }

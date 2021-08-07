@@ -38,6 +38,7 @@ package com.mware.ge.query;
 
 import com.google.common.base.Joiner;
 import com.mware.ge.Authorizations;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.scoring.ScoringStrategy;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
@@ -52,12 +53,11 @@ public abstract class QueryParameters implements Serializable {
     private static final long serialVersionUID = 2L;
 
     private static final GeLogger LOGGER = GeLoggerFactory.getLogger(QueryParameters.class);
-    public static final int DEFAULT_SKIP = 0;
 
     private Double minScore = null;
     private final Authorizations authorizations;
     private Long limit = null;
-    private long skip = DEFAULT_SKIP;
+    private long skip = GeQueryBuilder.DEFAULT_SKIP;
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
     private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
     private final List<String> edgeLabels = new ArrayList<>();

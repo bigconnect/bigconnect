@@ -45,7 +45,7 @@ import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.Authorizations;
 import com.mware.ge.GeObjectType;
 import com.mware.ge.Graph;
-import com.mware.ge.query.Query;
+import com.mware.ge.query.builder.BoolQueryBuilder;
 import org.json.JSONArray;
 
 import java.util.EnumSet;
@@ -75,14 +75,10 @@ public class ElementSearchRunner extends GeObjectSearchRunnerWithRelatedBase {
     }
 
     @Override
-    protected Query getQuery(SearchOptions searchOptions, Authorizations authorizations) {
+    protected BoolQueryBuilder getQuery(SearchOptions searchOptions, Authorizations authorizations) {
         JSONArray filterJson = getFilterJson(searchOptions, searchOptions.getWorkspaceId());
-        String queryString = searchOptions.getRequiredParameter("q", String.class);
-        LOGGER.debug("search %s\n%s", queryString, filterJson.toString(2));
-        return query(queryString, authorizations);
-    }
-
-    private Query query(String query, Authorizations authorizations) {
-        return getGraph().query(query, authorizations);
+        BoolQueryBuilder queryBuilder = searchOptions.getRequiredParameter("q", BoolQueryBuilder.class);
+        LOGGER.debug("search %s\n%s", queryBuilder, filterJson.toString(2));
+        return queryBuilder;
     }
 }

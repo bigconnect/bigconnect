@@ -40,6 +40,7 @@ import com.mware.ge.ElementType;
 import com.mware.ge.ExtendedDataRow;
 import com.mware.ge.query.aggregations.*;
 import com.mware.ge.query.aggregations.Percentile;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -74,13 +75,13 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
     public ElasticsearchGraphQueryIterable(
             ElasticsearchSearchQueryBase query,
             SearchResponse searchResponse,
-            QueryParameters parameters,
+            GeQueryBuilder parameters,
             Iterable<T> iterable,
             long totalHits,
             long searchTimeInNanoSeconds,
             SearchHits hits
     ) {
-        super(parameters, iterable, false, false, false);
+        super(query, iterable, false, false, false);
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {

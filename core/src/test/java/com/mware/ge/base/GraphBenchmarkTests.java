@@ -40,6 +40,7 @@ import com.mware.ge.*;
 import com.mware.ge.event.GraphEvent;
 import com.mware.ge.event.GraphEventListener;
 import com.mware.ge.mutation.ElementMutation;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
 import com.mware.ge.values.storable.TextValue;
@@ -393,7 +394,10 @@ public abstract class GraphBenchmarkTests implements GraphTestSetup {
         getGraph().flush();
         ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex().enableBulkIngest(false);
 
-        assertEquals(vertexCount + 1, getGraph().query(AUTHORIZATIONS_ALL).limit(0L).vertices().getTotalHits());
+        assertEquals(vertexCount + 1, getGraph().query(GeQueryBuilders.searchAll().limit(0L), AUTHORIZATIONS_ALL)
+                .vertices()
+                .getTotalHits()
+        );
         double endTime = System.currentTimeMillis();
         LOGGER.info("add vertices in %.3fs", (endTime - startTime) / 1000);
     }

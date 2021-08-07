@@ -42,7 +42,7 @@ import com.mware.core.model.properties.types.BcProperty;
 import com.mware.core.security.BcVisibility;
 import com.mware.core.user.User;
 import com.mware.ge.Authorizations;
-import com.mware.ge.query.Query;
+import com.mware.ge.query.builder.BoolQueryBuilder;
 import org.json.JSONArray;
 import org.json.JSONException;
 
@@ -339,25 +339,25 @@ public interface SchemaRepository {
     }
     SchemaProperty getDependentPropertyParent(String propertyName, String namespace);
 
-    default void addConceptTypeFilterToQuery(Query query, String conceptName, boolean includeChildNodes) {
+    default void addConceptTypeFilterToQuery(BoolQueryBuilder query, String conceptName, boolean includeChildNodes) {
         addConceptTypeFilterToQuery(query, conceptName, includeChildNodes, PUBLIC);
     }
-    void addConceptTypeFilterToQuery(Query query, String conceptName, boolean includeChildNodes, String namespace);
+    void addConceptTypeFilterToQuery(BoolQueryBuilder query, String conceptName, boolean includeChildNodes, String namespace);
 
-    default void addConceptTypeFilterToQuery(Query query, Collection<ElementTypeFilter> filters) {
+    default void addConceptTypeFilterToQuery(BoolQueryBuilder query, Collection<ElementTypeFilter> filters) {
         addConceptTypeFilterToQuery(query, filters, PUBLIC);
     }
-    void addConceptTypeFilterToQuery(Query query, Collection<ElementTypeFilter> filters, String namespace);
+    void addConceptTypeFilterToQuery(BoolQueryBuilder query, Collection<ElementTypeFilter> filters, String namespace);
 
-    default void addEdgeLabelFilterToQuery(Query query, String edgeLabel, boolean includeChildNodes) {
+    default void addEdgeLabelFilterToQuery(BoolQueryBuilder query, String edgeLabel, boolean includeChildNodes) {
         addEdgeLabelFilterToQuery(query, edgeLabel, includeChildNodes, PUBLIC);
     }
-    void addEdgeLabelFilterToQuery(Query query, String edgeLabel, boolean includeChildNodes, String namespace);
+    void addEdgeLabelFilterToQuery(BoolQueryBuilder query, String edgeLabel, boolean includeChildNodes, String namespace);
 
-    default void addEdgeLabelFilterToQuery(Query query, Collection<ElementTypeFilter> filters) {
+    default void addEdgeLabelFilterToQuery(BoolQueryBuilder query, Collection<ElementTypeFilter> filters) {
         addEdgeLabelFilterToQuery(query, filters, PUBLIC);
     }
-    void addEdgeLabelFilterToQuery(Query query, Collection<ElementTypeFilter> filters, String namespace);
+    void addEdgeLabelFilterToQuery(BoolQueryBuilder query, Collection<ElementTypeFilter> filters, String namespace);
 
     default void updatePropertyDependentNames(SchemaProperty property, Collection<String> dependentPropertyNames) {
         updatePropertyDependentNames(property, dependentPropertyNames, null, PUBLIC);

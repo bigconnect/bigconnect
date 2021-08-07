@@ -54,14 +54,13 @@ public enum TextPredicate implements Predicate {
     CONTAINS, DOES_NOT_CONTAIN;
 
     @Override
-    public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(final Iterable<Property> properties, final Object second) {
         if (IterableUtils.count(properties) == 0 && this == DOES_NOT_CONTAIN) {
             return true;
         }
 
         for (Property property : properties) {
-            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
-            if (evaluate(property.getValue(), second, propertyDefinition)) {
+            if (evaluate(property.getValue(), second)) {
                 return true;
             }
         }
@@ -69,7 +68,7 @@ public enum TextPredicate implements Predicate {
     }
 
     @Override
-    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
+    public boolean evaluate(Object first, Object second) {
         if (!canEvaulate(first) || !canEvaulate(second)) {
             throw new GeException("Text predicates are only valid for string or GeoPoint fields");
         }
@@ -79,14 +78,8 @@ public enum TextPredicate implements Predicate {
 
         switch (this) {
             case CONTAINS:
-                if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                    return false;
-                }
                 return firstString.contains(secondString);
             case DOES_NOT_CONTAIN:
-                if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                    return true;
-                }
                 String[] tokenizedString = firstString.split("\\W+");
                 return !Arrays.asList(tokenizedString).contains(secondString);
             default:
@@ -95,11 +88,7 @@ public enum TextPredicate implements Predicate {
     }
 
     @Override
-    public void validate(PropertyDefinition propertyDefinition) {
-        Set<TextIndexHint> textIndexHints = propertyDefinition.getTextIndexHints();
-        if (textIndexHints == null || !textIndexHints.contains(TextIndexHint.FULL_TEXT)) {
-            throw new GeException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not full text indexed.");
-        }
+    public void validate() {
     }
 
     private String valueToString(Object val) {

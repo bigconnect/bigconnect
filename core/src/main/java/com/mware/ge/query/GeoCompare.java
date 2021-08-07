@@ -63,7 +63,7 @@ public enum GeoCompare implements Predicate {
     }
 
     @Override
-    public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(Iterable<Property> properties, Object second) {
         switch (this) {
             case WITHIN:
                 AtomicBoolean hasProperty = new AtomicBoolean(false);
@@ -82,20 +82,8 @@ public enum GeoCompare implements Predicate {
     }
 
     @Override
-    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
-        return evaluate(first, second);
-    }
-
-    @Override
-    public void validate(PropertyDefinition propertyDefinition) {
-        if (!GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
-            throw new GeNotSupportedException("GeoCompare predicates are not allowed for properties of type " + propertyDefinition.getDataType().getName());
-        }
-    }
-
-
-    private boolean evaluate(Object testValue, Object second) {
-        GeoShape g1 = ((GeoShapeValue) testValue).asObjectCopy();
+    public boolean evaluate(Object first, Object second) {
+        GeoShape g1 = ((GeoShapeValue) first).asObjectCopy();
         GeoShape g2 = ((GeoShapeValue) second).asObjectCopy();
         switch (this) {
             case WITHIN:
@@ -107,5 +95,9 @@ public enum GeoCompare implements Predicate {
             default:
                 throw new IllegalArgumentException("Invalid compare: " + this);
         }
+    }
+
+    @Override
+    public void validate() {
     }
 }

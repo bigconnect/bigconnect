@@ -40,7 +40,9 @@ import com.google.common.collect.Lists;
 import com.mware.ge.*;
 import com.mware.ge.event.GraphEvent;
 import com.mware.ge.event.GraphEventListener;
+import com.mware.ge.query.Compare;
 import com.mware.ge.query.TextPredicate;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.IOUtils;
 import com.mware.ge.util.LargeStringInputStream;
 import com.mware.ge.values.storable.StreamingPropertyValue;
@@ -61,6 +63,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.hasFilter;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.IterableUtils.count;
 import static com.mware.ge.values.storable.Values.stringValue;
@@ -349,15 +352,10 @@ public abstract class GraphSpvTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        assertEquals(1, count(getGraph().query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, stringValue("Test")).vertices()));
-        assertEquals(1, count(getGraph().query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, stringValue("Test")).vertices()));
-        assertEquals("un-indexed property shouldn't match partials", 0, count(getGraph().query(AUTHORIZATIONS_A).has("none", stringValue("Test")).vertices()));
-        try {
-            getGraph().query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, stringValue("Test"));
-            fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
-        } catch (GeException ve) {
-            assertEquals("Check your TextIndexHint settings. Property none is not full text indexed.", ve.getMessage());
-        }
+        assertEquals(1, count(getGraph().query(hasFilter("both", TextPredicate.CONTAINS, stringValue("Test")), AUTHORIZATIONS_A).vertices()));
+        assertEquals(1, count(getGraph().query(hasFilter("fullText", TextPredicate.CONTAINS, stringValue("Test")), AUTHORIZATIONS_A).vertices()));
+        assertEquals("un-indexed property shouldn't match partials", 0, count(getGraph().query(hasFilter("none", Compare.EQUAL, stringValue("Test")), AUTHORIZATIONS_A).vertices()));
+        assertEquals(1, count(getGraph().query(hasFilter("none", TextPredicate.CONTAINS, stringValue("Test")), AUTHORIZATIONS_A).vertices()));
     }
 
     @Test
@@ -374,7 +372,7 @@ public abstract class GraphSpvTests implements GraphTestSetup {
 
         Assert.assertEquals(
                 1,
-                count(getGraph().query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, stringValue("Test")).vertices())
+                count(getGraph().query(hasFilter("fullText", TextPredicate.CONTAINS, stringValue("Test")), AUTHORIZATIONS_A).vertices())
         );
 
         getGraph().getVertex("v1", AUTHORIZATIONS_A)
@@ -384,7 +382,7 @@ public abstract class GraphSpvTests implements GraphTestSetup {
         getGraph().flush();
         Assert.assertEquals(
                 1,
-                count(getGraph().query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, stringValue("111")).vertices())
+                count(getGraph().query(hasFilter("fullText", TextPredicate.CONTAINS, stringValue("111")), AUTHORIZATIONS_A).vertices())
         );
 
         Vertex v = getGraph().getVertex("v1", AUTHORIZATIONS_A);
@@ -394,7 +392,7 @@ public abstract class GraphSpvTests implements GraphTestSetup {
         getGraph().flush();
         Assert.assertEquals(
                 1,
-                count(getGraph().query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, stringValue("mutation")).vertices())
+                count(getGraph().query(hasFilter("fullText", TextPredicate.CONTAINS, stringValue("mutation")), AUTHORIZATIONS_A).vertices())
         );
     }
 

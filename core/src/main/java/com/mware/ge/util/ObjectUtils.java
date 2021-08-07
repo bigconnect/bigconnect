@@ -36,11 +36,9 @@
  */
 package com.mware.ge.util;
 
-import com.mware.ge.type.GeoShape;
 import com.mware.ge.values.AnyValues;
 import com.mware.ge.values.storable.*;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -116,6 +114,10 @@ public class ObjectUtils {
                 return 1;
             }
         }
+
+        if (first instanceof EdgeVertexIds && second instanceof String)
+            return ((EdgeVertexIds)first).compareTo((String) second);
+
         if (first instanceof Comparable) {
             return ((Comparable) first).compareTo(second);
         }

@@ -41,6 +41,7 @@ import com.mware.ge.inmemory.mutations.AlterConceptTypeMutation;
 import com.mware.ge.inmemory.util.EdgeToEdgeIdIterable;
 import com.mware.ge.mutation.ExistingVertexMutation;
 import com.mware.ge.query.VertexQuery;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.search.IndexHint;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.util.FilterIterable;
@@ -214,8 +215,8 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public VertexQuery query(String queryString, Authorizations authorizations) {
-        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
+    public VertexQuery query(GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryBuilder, authorizations);
     }
 
     @Override

@@ -37,6 +37,7 @@
 package com.mware.ge.query;
 
 import com.mware.ge.*;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 import java.util.Iterator;
 
@@ -66,23 +67,18 @@ public class ExtendedDataQueryableIterable implements QueryableIterable<Extended
     }
 
     @Override
-    public Query query(Authorizations authorizations) {
-        return query(null, authorizations);
-    }
-
-    @Override
-    public Query query(String queryString, Authorizations authorizations) {
+    public Query query(GeQueryBuilder queryBuilder, Authorizations authorizations) {
         if (getGraph() instanceof GraphWithSearchIndex) {
             GraphWithSearchIndex graphWithSearchIndex = (GraphWithSearchIndex) getGraph();
             return graphWithSearchIndex.getSearchIndex().queryExtendedData(
                     getGraph(),
                     getElement(),
                     getTableName(),
-                    queryString,
+                    queryBuilder,
                     authorizations
             );
         }
-        return new DefaultExtendedDataQuery(getGraph(), getElement(), getTableName(), queryString, authorizations);
+        return new DefaultExtendedDataQuery(getGraph(), getElement(), getTableName(), queryBuilder, authorizations);
     }
 
     @SuppressWarnings("unchecked")

@@ -49,7 +49,10 @@ import com.mware.core.security.BcVisibility;
 import com.mware.core.trace.Traced;
 import com.mware.ge.*;
 import com.mware.ge.mutation.ExistingElementMutation;
+import com.mware.ge.query.Compare;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.values.storable.Values;
 
@@ -73,7 +76,8 @@ public class GeRegexRepository implements RegexRepository {
     @Inject
     public GeRegexRepository(
             GraphAuthorizationRepository graphAuthorizationRepository,
-            Graph graph) {
+            Graph graph
+    ) {
         this.graph = graph;
         graphAuthorizationRepository.addAuthorizationToGraph(VISIBILITY_STRING);
         Set<String> authorizationsSet = new HashSet<>();
@@ -86,8 +90,7 @@ public class GeRegexRepository implements RegexRepository {
 
     @Override
     public Iterable<Regex> getAllRegexes() {
-        try (QueryResultsIterable<Vertex> vertices = graph.query(authorizations)
-                .hasConceptType(RegexSchema.REGEX_CONCEPT_NAME)
+        try (QueryResultsIterable<Vertex> vertices = graph.query(GeQueryBuilders.hasConceptType(RegexSchema.REGEX_CONCEPT_NAME), authorizations)
                 .vertices()) {
             return new ConvertingIterable<Vertex, Regex>(vertices) {
                 @Override
@@ -107,9 +110,10 @@ public class GeRegexRepository implements RegexRepository {
 
     @Override
     public Regex findByName(String rgxName) {
-        Iterable<Vertex> vertices = graph.query(authorizations)
-                .has(RegexSchema.REGEX_NAME.getPropertyName(), Values.stringValue(rgxName))
-                .hasConceptType(RegexSchema.REGEX_CONCEPT_NAME)
+        GeQueryBuilder qb = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.hasConceptType(RegexSchema.REGEX_CONCEPT_NAME))
+                .and(GeQueryBuilders.hasFilter(RegexSchema.REGEX_NAME.getPropertyName(), Compare.EQUAL, Values.stringValue(rgxName)));
+        Iterable<Vertex> vertices = graph.query(qb, authorizations)
                 .vertices();
         Vertex vertex = singleOrDefault(vertices, null);
         if (vertex == null) {

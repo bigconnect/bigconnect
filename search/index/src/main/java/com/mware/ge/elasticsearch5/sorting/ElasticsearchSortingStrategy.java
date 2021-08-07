@@ -38,7 +38,7 @@ package com.mware.ge.elasticsearch5.sorting;
 
 import com.mware.ge.Graph;
 import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
-import com.mware.ge.query.QueryParameters;
+import com.mware.ge.query.Query;
 import com.mware.ge.query.SortDirection;
 import com.mware.ge.sorting.SortingStrategy;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -48,7 +48,7 @@ public interface ElasticsearchSortingStrategy extends SortingStrategy {
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
             SearchRequestBuilder q,
-            QueryParameters parameters,
+            Query parameters,
             SortDirection direction
     );
 }

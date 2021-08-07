@@ -38,13 +38,10 @@ package com.mware.ge.query;
 
 import com.mware.ge.Authorizations;
 import com.mware.ge.Graph;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 public abstract class GraphQueryBase extends QueryBase implements GraphQuery {
-    protected GraphQueryBase(Graph graph, String queryString, Authorizations authorizations) {
-        super(graph, queryString, authorizations);
-    }
-
-    protected GraphQueryBase(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
-        super(graph, similarToFields, similarToText, authorizations);
+    protected GraphQueryBase(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        super(graph, queryBuilder, authorizations);
     }
 }

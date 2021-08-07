@@ -38,15 +38,9 @@ package com.mware.ge.query;
 
 import com.mware.ge.Authorizations;
 import com.mware.ge.GeObject;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 public interface QueryableIterable<T extends GeObject> extends Iterable<T> {
-    /**
-     * Creates a query for this iterable.
-     *
-     * @param authorizations The authorizations used to find the edges and vertices.
-     * @return The query builder.
-     */
-    Query query(Authorizations authorizations);
     /**
      * Creates a query for this iterable.
      *
@@ -54,5 +48,5 @@ public interface QueryableIterable<T extends GeObject> extends Iterable<T> {
      * @param authorizations The authorizations used to find the edges and vertices.
      * @return The query builder.
      */
-    Query query(String queryString, Authorizations authorizations);
+    Query query(GeQueryBuilder queryBuilder, Authorizations authorizations);
 }

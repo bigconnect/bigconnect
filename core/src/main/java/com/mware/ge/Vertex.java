@@ -38,6 +38,8 @@ package com.mware.ge;
 
 import com.mware.ge.mutation.ExistingVertexMutation;
 import com.mware.ge.query.VertexQuery;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.util.FilterIterable;
 
@@ -481,7 +483,7 @@ public interface Vertex extends Element, VertexElementLocation {
      * @return The query builder.
      */
     default VertexQuery query(Authorizations authorizations) {
-        return query(null, authorizations);
+        return query(GeQueryBuilders.searchAll(), authorizations);
     }
 
     /**
@@ -491,7 +493,18 @@ public interface Vertex extends Element, VertexElementLocation {
      * @param authorizations The authorizations used to find the edges and vertices.
      * @return The query builder.
      */
-    VertexQuery query(String queryString, Authorizations authorizations);
+    default VertexQuery query(String queryString, Authorizations authorizations) {
+        return query(GeQueryBuilders.search(queryString), authorizations);
+    }
+
+    /**
+     * Creates a query to query the edges and vertices attached to this vertex.
+     *
+     * @param queryString    The string to search for.
+     * @param authorizations The authorizations used to find the edges and vertices.
+     * @return The query builder.
+     */
+    VertexQuery query(GeQueryBuilder queryBuilder, Authorizations authorizations);
 
     /**
      * Prepares a mutation to allow changing multiple property values at the same time. This method is similar to

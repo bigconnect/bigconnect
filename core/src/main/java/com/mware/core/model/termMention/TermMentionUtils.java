@@ -43,7 +43,9 @@ import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.user.User;
 import com.mware.ge.*;
 import com.mware.ge.mutation.ElementMutation;
+import com.mware.ge.query.Compare;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.StreamUtils;
 import com.mware.ge.values.storable.Values;
 
@@ -150,9 +152,11 @@ public class TermMentionUtils {
     }
 
     private Vertex findExistingVertexWithTitle(String title, Authorizations authorizations) {
-        QueryResultsIterable<Vertex> existingVerticesIterable = this.graph.query(authorizations)
-                .has(BcSchema.TITLE.getPropertyName(), Values.stringValue(title))
-                .vertices();
+        QueryResultsIterable<Vertex> existingVerticesIterable =
+                this.graph.query(
+                        GeQueryBuilders.hasFilter(BcSchema.TITLE.getPropertyName(), Compare.EQUAL, Values.stringValue(title)),
+                        authorizations
+                ).vertices();
         Iterator<Vertex> existingVertices = existingVerticesIterable.iterator();
 
         if (existingVertices.hasNext()) {

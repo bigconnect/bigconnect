@@ -51,6 +51,7 @@ import com.mware.ge.metric.GeMetricRegistry;
 import com.mware.ge.mutation.*;
 import com.mware.ge.property.PropertyDescriptor;
 import com.mware.ge.query.*;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.search.SearchIndexWithVertexPropertyCountByValue;
 import com.mware.ge.type.*;
@@ -99,7 +100,6 @@ import java.net.UnknownHostException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -109,7 +109,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.mware.ge.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
 import static com.mware.ge.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
@@ -1624,66 +1623,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
-    public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
+    public GraphQuery queryGraph(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations) {
         return new ElasticsearchSearchGraphQuery(
                 getClient(),
                 graph,
-                queryString,
-                new ElasticsearchSearchQueryBase.Options()
-                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
-                        .setPageSize(getConfig().getQueryPageSize())
-                        .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
-                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
-                authorizations
-        );
-    }
-
-    @Override
-    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
-        return new ElasticsearchSearchVertexQuery(
-                getClient(),
-                graph,
-                vertex,
-                queryString,
-                new ElasticsearchSearchVertexQuery.Options()
-                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
-                        .setPageSize(getConfig().getQueryPageSize())
-                        .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
-                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
-                authorizations
-        );
-    }
-
-    @Override
-    public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
-        return new ElasticsearchSearchExtendedDataQuery(
-                getClient(),
-                graph,
-                element.getId(),
-                tableName,
-                queryString,
-                new ElasticsearchSearchExtendedDataQuery.Options()
-                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
-                        .setPageSize(getConfig().getQueryPageSize())
-                        .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
-                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
-                authorizations
-        );
-    }
-
-    @Override
-    public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
-        return new ElasticsearchSearchGraphQuery(
-                getClient(),
-                graph,
-                similarToFields,
-                similarToText,
+                queryBuilder,
                 new ElasticsearchSearchQueryBase.Options()
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
@@ -2039,23 +1983,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    @Override
-    public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new ElasticsearchSearchMultiVertexQuery(
-                getClient(),
-                graph,
-                vertexIds,
-                queryString,
-                new ElasticsearchSearchQueryBase.Options()
-                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
-                        .setPageSize(getConfig().getQueryPageSize())
-                        .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
-                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
-                authorizations
-        );
-    }
+
 
     @Override
     public boolean isQuerySimilarToTextSupported() {

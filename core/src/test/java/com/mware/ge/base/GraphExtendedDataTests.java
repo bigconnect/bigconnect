@@ -46,6 +46,8 @@ import com.mware.ge.mutation.ElementMutation;
 import com.mware.ge.query.*;
 import com.mware.ge.query.aggregations.TermsAggregation;
 import com.mware.ge.query.aggregations.TermsResult;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.values.storable.DateTimeValue;
@@ -64,6 +66,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.*;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.GeAssert.assertRowIdsAnyOrder;
 import static com.mware.ge.util.IterableUtils.count;
@@ -124,8 +127,7 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         QueryResultsIterable<ExtendedDataRow> rows = getGraph().query(AUTHORIZATIONS_A).extendedDataRows();
         assertResultsCount(2, 2, rows);
 
-        rows = getGraph().query(AUTHORIZATIONS_A)
-                .has("name", stringValue("value1"))
+        rows = getGraph().query(hasFilter("name", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertResultsCount(1, 1, rows);
 
@@ -277,28 +279,23 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
                 .extendedDataRows();
         assertRowIdsAnyOrder(rows, "row1", "row2", "row3", "row4", "row5", "row6", "row7");
 
-        rows = getGraph().query(AUTHORIZATIONS_A)
-                .has(ExtendedDataRow.ROW_ID, stringValue("row1"))
+        rows = getGraph().query(hasFilter(ExtendedDataRow.ROW_ID, Compare.EQUAL, stringValue("row1")), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertRowIdsAnyOrder(rows, "row1");
 
-        rows = getGraph().query(AUTHORIZATIONS_A)
-                .has(ExtendedDataRow.ELEMENT_TYPE, stringValue(ElementType.VERTEX.name()))
+        rows = getGraph().query(hasFilter(ExtendedDataRow.ELEMENT_TYPE, Compare.EQUAL, stringValue(ElementType.VERTEX.name())), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertRowIdsAnyOrder(rows, "row1", "row2", "row3", "row4", "row5", "row6");
 
-        rows = getGraph().query(AUTHORIZATIONS_A)
-                .has(ExtendedDataRow.ELEMENT_TYPE, stringValue("VERTEX"))
+        rows = getGraph().query(hasFilter(ExtendedDataRow.ELEMENT_TYPE, Compare.EQUAL, stringValue("VERTEX")), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertRowIdsAnyOrder(rows, "row1", "row2", "row3", "row4", "row5", "row6");
 
-        rows = getGraph().query(AUTHORIZATIONS_A)
-                .has(ExtendedDataRow.ELEMENT_ID, stringValue("v1"))
+        rows = getGraph().query(hasFilter(ExtendedDataRow.ELEMENT_ID, Compare.EQUAL, stringValue("v1")), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertRowIdsAnyOrder(rows, "row1", "row2", "row3");
 
-        rows = getGraph().query(AUTHORIZATIONS_A)
-                .has(ExtendedDataRow.TABLE_NAME, stringValue("table1"))
+        rows = getGraph().query(hasFilter(ExtendedDataRow.TABLE_NAME, Compare.EQUAL, stringValue("table1")), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertRowIdsAnyOrder(rows, "row1", "row2", "row4", "row5", "row7");
     }
@@ -510,15 +507,15 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         getGraph().flush();
 
         // Should not come back when finding vertices
-        QueryResultsIterable<Vertex> queryResults = getGraph().query(AUTHORIZATIONS_A)
-                .has(dateColumnName, date1)
-                .sort(dateColumnName, SortDirection.ASCENDING)
+        GeQueryBuilder qb = hasFilter(dateColumnName, Compare.EQUAL, date1)
+                .sort(dateColumnName, SortDirection.ASCENDING);
+        QueryResultsIterable<Vertex> queryResults = getGraph().query(qb, AUTHORIZATIONS_A)
                 .vertices();
         assertEquals(0, queryResults.getTotalHits());
 
-        QueryResultsIterable<? extends GeObject> searchResults = getGraph().query(AUTHORIZATIONS_A)
-                .has(dateColumnName, date1)
-                .sort(dateColumnName, SortDirection.ASCENDING)
+        qb = hasFilter(dateColumnName, Compare.EQUAL, date1)
+                .sort(dateColumnName, SortDirection.ASCENDING);
+        QueryResultsIterable<? extends GeObject> searchResults = getGraph().query(qb, AUTHORIZATIONS_A)
                 .search();
         assertEquals(1, searchResults.getTotalHits());
         List<? extends GeObject> searchResultsList = toList(searchResults);
@@ -534,16 +531,20 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResultsList);
 
-        searchResults = getGraph().query("value", AUTHORIZATIONS_A)
-                .hasExtendedData(ElementType.VERTEX, "v1", tableName)
+        qb = boolQuery()
+                .and(search("value"))
+                .and(hasExtendedData(ElementType.VERTEX, "v1", tableName));
+        searchResults = getGraph().query(qb, AUTHORIZATIONS_A)
                 .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResultsList);
 
-        searchResults = getGraph().query("value", AUTHORIZATIONS_A)
-                .hasExtendedData(tableName)
+        qb = boolQuery()
+                .and(search("value"))
+                .and(hasExtendedData(tableName));
+        searchResults = getGraph().query(qb, AUTHORIZATIONS_A)
                 .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
@@ -574,31 +575,36 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         );
         assertRowIdsAnyOrder(Lists.newArrayList("row3", "row4", "row5", "row6"), searchResultsList);
 
-        QueryResultsIterable<ExtendedDataRow> rows = getGraph().query(AUTHORIZATIONS_A).hasId("v1").extendedDataRows();
+        QueryResultsIterable<ExtendedDataRow> rows = getGraph().query(hasIds("v1"), AUTHORIZATIONS_A).extendedDataRows();
         assertResultsCount(2, 2, rows);
 
-        rows = getGraph().query(AUTHORIZATIONS_A).hasId("v1", "v2").extendedDataRows();
+        rows = getGraph().query(hasIds("v1", "v2"), AUTHORIZATIONS_A).extendedDataRows();
         assertResultsCount(4, 4, rows);
 
+        GeQueryBuilder qb = searchAll()
+                .sort(ExtendedDataRow.TABLE_NAME, SortDirection.ASCENDING)
+                .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING);
+
         searchResultsList = toList(
-                v1.query(AUTHORIZATIONS_A)
-                        .sort(ExtendedDataRow.TABLE_NAME, SortDirection.ASCENDING)
-                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                v1.query(qb, AUTHORIZATIONS_A)
                         .extendedDataRows()
         );
         assertRowIds(Lists.newArrayList("row5", "row6", "row3", "row4"), searchResultsList);
 
+        qb = searchAll()
+                .sort(ExtendedDataRow.ELEMENT_ID, SortDirection.ASCENDING)
+                .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING);
         searchResultsList = toList(
-                getGraph().query(AUTHORIZATIONS_A)
-                        .sort(ExtendedDataRow.ELEMENT_ID, SortDirection.ASCENDING)
-                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                getGraph().query(qb, AUTHORIZATIONS_A)
                         .extendedDataRows()
         );
         assertRowIds(Lists.newArrayList("row5", "row6", "row1", "row2", "row3", "row4"), searchResultsList);
+
+        qb = searchAll()
+                .sort(ExtendedDataRow.ELEMENT_TYPE, SortDirection.ASCENDING)
+                .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING);
         searchResultsList = toList(
-                getGraph().query(AUTHORIZATIONS_A)
-                        .sort(ExtendedDataRow.ELEMENT_TYPE, SortDirection.ASCENDING)
-                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                getGraph().query(qb, AUTHORIZATIONS_A)
                         .extendedDataRows()
         );
         assertRowIds(Lists.newArrayList("row5", "row6", "row1", "row2", "row3", "row4"), searchResultsList);
@@ -619,8 +625,7 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
                 .addExtendedData("table1", "row6", "name", stringValue("value 2"), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         getGraph().flush();
-        Query q = getGraph().query(AUTHORIZATIONS_A)
-                .limit(0L);
+        Query q = getGraph().query(searchAll().limit(0L), AUTHORIZATIONS_A);
         TermsAggregation agg = new TermsAggregation("agg", ExtendedDataRow.TABLE_NAME);
         assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
         q.addAggregation(agg);
@@ -629,18 +634,16 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         assertEquals(2, aggResult.size());
         assertEquals(4L, (long) aggResult.get("table1"));
         assertEquals(2L, (long) aggResult.get("table2"));
-        q = getGraph().query(AUTHORIZATIONS_A)
-                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ELEMENT_ID))
-                .limit(0L);
+        q = getGraph().query(searchAll().limit(0L), AUTHORIZATIONS_A)
+                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ELEMENT_ID));
         rows = q.extendedDataRows();
         aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
         assertEquals(3, aggResult.size());
         assertEquals(2L, (long) aggResult.get("v1"));
         assertEquals(2L, (long) aggResult.get("v2"));
         assertEquals(2L, (long) aggResult.get("e1"));
-        q = getGraph().query(AUTHORIZATIONS_A)
-                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ROW_ID))
-                .limit(0L);
+        q = getGraph().query(searchAll().limit(0L), AUTHORIZATIONS_A)
+                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ROW_ID));
         rows = q.extendedDataRows();
         aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
         assertEquals(6, aggResult.size());
@@ -650,9 +653,8 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         assertEquals(1L, (long) aggResult.get("row4"));
         assertEquals(1L, (long) aggResult.get("row5"));
         assertEquals(1L, (long) aggResult.get("row6"));
-        q = getGraph().query(AUTHORIZATIONS_A)
-                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ELEMENT_TYPE))
-                .limit(0L);
+        q = getGraph().query(searchAll().limit(0L), AUTHORIZATIONS_A)
+                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ELEMENT_TYPE));
         rows = q.extendedDataRows();
         aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
         assertEquals(2, aggResult.size());
@@ -677,17 +679,19 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         getGraph().flush();
 
         Edge e1 = getGraph().getEdge("e1", AUTHORIZATIONS_A);
+        GeQueryBuilder qb = boolQuery()
+                .and(searchAll())
+                .and(hasExtendedData(ElementType.EDGE, e1.getId(), "table1"));
         List<ExtendedDataRow> searchResultsList = toList(
-                getGraph().query("*", AUTHORIZATIONS_A)
-                        .hasExtendedData(ElementType.EDGE, e1.getId(), "table1")
+                getGraph().query(qb, AUTHORIZATIONS_A)
                         .extendedDataRows()
         );
         assertRowIdsAnyOrder(Lists.newArrayList("row5", "row6"), searchResultsList);
 
-        QueryResultsIterable<ExtendedDataRow> rows = getGraph().query(AUTHORIZATIONS_A).hasId("e1").extendedDataRows();
+        QueryResultsIterable<ExtendedDataRow> rows = getGraph().query(hasIds("e1"), AUTHORIZATIONS_A).extendedDataRows();
         assertResultsCount(2, 2, rows);
 
-        rows = getGraph().query(AUTHORIZATIONS_A).hasId("v1", "e1").extendedDataRows();
+        rows = getGraph().query(hasIds("v1", "e1"), AUTHORIZATIONS_A).extendedDataRows();
         assertResultsCount(4, 4, rows);
     }
 
@@ -762,8 +766,7 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         getGraph().createAuthorizations(AUTHORIZATIONS_A_AND_B_AND_C);
         getGraph().flush();
 
-        QueryResultsIterable<ExtendedDataRow> results = getGraph().query(AUTHORIZATIONS_A)
-                .hasExtendedData(ElementType.VERTEX, "v1")
+        QueryResultsIterable<ExtendedDataRow> results = getGraph().query(hasExtendedData(ElementType.VERTEX, "v1"), AUTHORIZATIONS_A)
                 .extendedDataRows();
         assertResultsCount(0, 0, results);
 
@@ -785,19 +788,19 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         searchResults = getGraph().query("red", AUTHORIZATIONS_A_AND_B).search();
         assertResultsCount(1, 1, searchResults);
 
-        searchResults = getGraph().query(AUTHORIZATIONS_A).hasExtendedData(ElementType.VERTEX, "v1").search();
+        searchResults = getGraph().query(hasExtendedData(ElementType.VERTEX, "v1"), AUTHORIZATIONS_A).search();
         assertResultsCount(0, 0, searchResults);
 
-        results = getGraph().query(AUTHORIZATIONS_B).hasExtendedData(ElementType.VERTEX, "v1").extendedDataRows();
+        results = getGraph().query(hasExtendedData(ElementType.VERTEX, "v1"), AUTHORIZATIONS_B).extendedDataRows();
         assertResultsCount(0, 0, results);
 
-        searchResults = getGraph().query(AUTHORIZATIONS_B).hasExtendedData(ElementType.VERTEX, "v1").search();
+        searchResults = getGraph().query(hasExtendedData(ElementType.VERTEX, "v1"), AUTHORIZATIONS_B).search();
         assertResultsCount(0, 0, searchResults);
 
-        results = getGraph().query(AUTHORIZATIONS_A_AND_B).hasExtendedData(ElementType.VERTEX, "v1").extendedDataRows();
+        results = getGraph().query(hasExtendedData(ElementType.VERTEX, "v1"), AUTHORIZATIONS_A_AND_B).extendedDataRows();
         assertResultsCount(2, 2, results);
 
-        searchResults = getGraph().query(AUTHORIZATIONS_A_AND_B).hasExtendedData(ElementType.VERTEX, "v1").search();
+        searchResults = getGraph().query(hasExtendedData(ElementType.VERTEX, "v1"), AUTHORIZATIONS_A_AND_B).search();
         assertResultsCount(2, 2, searchResults);
 
         results = getGraph().query(AUTHORIZATIONS_A).extendedDataRows();
@@ -922,13 +925,11 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         getGraph().flush();
 
         // Should not come back when finding edges
-        QueryResultsIterable<Edge> queryResults = getGraph().query(AUTHORIZATIONS_A)
-                .has("date", date1)
+        QueryResultsIterable<Edge> queryResults = getGraph().query(hasFilter("date", Compare.EQUAL, date1), AUTHORIZATIONS_A)
                 .edges();
         assertEquals(0, queryResults.getTotalHits());
 
-        QueryResultsIterable<? extends GeObject> searchResults = getGraph().query(AUTHORIZATIONS_A)
-                .has("date", date1)
+        QueryResultsIterable<? extends GeObject> searchResults = getGraph().query(hasFilter("date", Compare.EQUAL, date1), AUTHORIZATIONS_A)
                 .search();
         assertEquals(1, searchResults.getTotalHits());
         List<? extends GeObject> searchResultsList = toList(searchResults);
@@ -937,8 +938,7 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         assertEquals("e1", searchResult.getId().getElementId());
         assertEquals("row1", searchResult.getId().getRowId());
 
-        searchResults = getGraph().query(AUTHORIZATIONS_A)
-                .has("name", stringValue("value 1"))
+        searchResults = getGraph().query(hasFilter("name", Compare.EQUAL, stringValue("value 1")), AUTHORIZATIONS_A)
                 .search();
         assertEquals(1, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
@@ -946,8 +946,7 @@ public abstract class GraphExtendedDataTests implements GraphTestSetup {
         searchResult = (ExtendedDataRow) searchResultsList.get(0);
         assertEquals("e1", searchResult.getId().getElementId());
         assertEquals("row1", searchResult.getId().getRowId());
-        searchResults = getGraph().query(AUTHORIZATIONS_A)
-                .has("name", TextPredicate.CONTAINS, stringValue("value"))
+        searchResults = getGraph().query(hasFilter("name", TextPredicate.CONTAINS, stringValue("value")), AUTHORIZATIONS_A)
                 .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);

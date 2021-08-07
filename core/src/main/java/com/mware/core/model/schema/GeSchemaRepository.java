@@ -55,7 +55,6 @@ import com.mware.core.model.graph.GraphUpdateContext;
 import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.properties.SchemaProperties;
 import com.mware.core.model.properties.WorkspaceSchema;
-import com.mware.core.model.properties.types.BcPropertyBase;
 import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workspace.WorkspaceRepository;
@@ -70,6 +69,7 @@ import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.query.Compare;
 import com.mware.ge.query.Contains;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.CloseableUtils;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.util.IterableUtils;
@@ -87,6 +87,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.mware.ge.query.builder.GeQueryBuilders.*;
 
 @Singleton
 public class GeSchemaRepository extends SchemaRepositoryBase {
@@ -304,10 +305,11 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
 
     @Override
     public Iterable<Concept> getConceptsByName(List<String> conceptNames, String namespace) {
-        try (QueryResultsIterable<Vertex> vertices = getGraph().query(getAuthorizations(namespace))
-                .hasConceptType(SchemaRepository.TYPE_CONCEPT)
-                .has(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Contains.IN, Values.stringArray(conceptNames.toArray(new String[0])))
-                .vertices()) {
+        GeQueryBuilder qb = boolQuery()
+                .and(hasConceptType(SchemaRepository.TYPE_CONCEPT))
+                .and(hasFilter(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Contains.IN, Values.stringArray(conceptNames.toArray(new String[0]))));
+
+        try (QueryResultsIterable<Vertex> vertices = getGraph().query(qb, getAuthorizations(namespace)).vertices()) {
             return transformConcepts(vertices, namespace);
         } catch (Exception e) {
             throw new GeException("Could not close scroll iterable: ", e);
@@ -317,10 +319,11 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
     @Override
     public boolean hasConceptByName(String conceptName, String namespace) {
         try {
-            try (QueryResultsIterable<String> results = getGraph().query(getAuthorizations(namespace))
-                    .hasConceptType(SchemaRepository.TYPE_CONCEPT)
-                    .has(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Compare.EQUAL, Values.stringValue(conceptName))
-                    .vertexIds()) {
+            GeQueryBuilder qb = boolQuery()
+                    .and(hasConceptType(SchemaRepository.TYPE_CONCEPT))
+                    .and(hasFilter(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Compare.EQUAL, Values.stringValue(conceptName)));
+
+            try (QueryResultsIterable<String> results = getGraph().query(qb, getAuthorizations(namespace)).vertexIds()) {
                 return results.getTotalHits() == 1;
             }
         } catch (IOException e) {
@@ -330,10 +333,11 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
 
     @Override
     public Iterable<SchemaProperty> getPropertiesByName(List<String> propertyNames, String namespace) {
-        try (QueryResultsIterable<Vertex> vertices = getGraph().query(getAuthorizations(namespace))
-                .hasConceptType(SchemaRepository.TYPE_PROPERTY)
-                .has(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Contains.IN, Values.stringArray(propertyNames.toArray(new String[0])))
-                .vertices()) {
+        GeQueryBuilder qb = boolQuery()
+                .and(hasConceptType(SchemaRepository.TYPE_PROPERTY))
+                .and(hasFilter(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Contains.IN, Values.stringArray(propertyNames.toArray(new String[0]))));
+
+        try (QueryResultsIterable<Vertex> vertices = getGraph().query(qb, getAuthorizations(namespace)).vertices()) {
             return transformProperties(vertices, namespace);
         } catch (Exception e) {
             throw new GeException("Could not close scroll iterable: ", e);
@@ -342,10 +346,11 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
 
     @Override
     public Iterable<Relationship> getRelationshipsByName(List<String> relationshipNames, String namespace) {
-        try (QueryResultsIterable<Vertex> vertices = getGraph().query(getAuthorizations(namespace))
-                .hasConceptType(SchemaRepository.TYPE_RELATIONSHIP)
-                .has(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Contains.IN, Values.stringArray(relationshipNames.toArray(new String[0])))
-                .vertices()) {
+        GeQueryBuilder qb = boolQuery()
+                .and(hasConceptType(SchemaRepository.TYPE_RELATIONSHIP))
+                .and(hasFilter(SchemaProperties.ONTOLOGY_TITLE.getPropertyName(), Contains.IN, Values.stringArray(relationshipNames.toArray(new String[0]))));
+
+        try (QueryResultsIterable<Vertex> vertices = getGraph().query(qb, getAuthorizations(namespace)).vertices()) {
             return transformRelationships(vertices, namespace);
         } catch (Exception e) {
             throw new GeException("Could not close scroll iterable: ", e);
@@ -354,10 +359,11 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
 
     @Override
     public List<SchemaProperty> getPropertiesByIntent(String intent, String namespace) {
-        try (QueryResultsIterable<Vertex> vertices = getGraph().query(getAuthorizations(namespace))
-                .hasConceptType(SchemaRepository.TYPE_PROPERTY)
-                .has(SchemaProperties.INTENT.getPropertyName(), Values.stringValue(intent))
-                .vertices()) {
+        GeQueryBuilder qb = boolQuery()
+                .and(hasConceptType(SchemaRepository.TYPE_PROPERTY))
+                .and(hasFilter(SchemaProperties.INTENT.getPropertyName(), Compare.EQUAL, Values.stringValue(intent)));
+
+        try (QueryResultsIterable<Vertex> vertices = getGraph().query(qb, getAuthorizations(namespace)).vertices()) {
             return transformProperties(vertices, namespace);
         } catch (Exception e) {
             throw new GeException("Could not close scroll iterable: ", e);

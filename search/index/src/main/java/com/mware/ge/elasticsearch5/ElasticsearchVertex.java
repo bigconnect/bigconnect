@@ -37,9 +37,9 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.*;
-import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.mutation.ExistingVertexMutation;
 import com.mware.ge.query.VertexQuery;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 public class ElasticsearchVertex extends ElasticsearchElement implements Vertex {
     private String className = ElasticsearchElement.class.getSimpleName();
@@ -227,13 +227,8 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     }
 
     @Override
-    public VertexQuery query(Authorizations authorizations) {
-        return query(null, authorizations);
-    }
-
-    @Override
-    public VertexQuery query(String queryString, Authorizations authorizations) {
-        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
+    public VertexQuery query(GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryBuilder, authorizations);
     }
 
     @Override

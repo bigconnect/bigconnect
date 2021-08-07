@@ -49,14 +49,13 @@ public enum Contains implements Predicate {
     IN, NOT_IN;
 
     @Override
-    public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(Iterable<Property> properties, Object second) {
         if (IterableUtils.count(properties) == 0 && this == NOT_IN) {
             return true;
         }
 
         for (Property property : properties) {
-            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
-            if (evaluate(property.getValue(), second, propertyDefinition)) {
+            if (evaluate(property.getValue(), second)) {
                 return true;
             }
         }
@@ -64,17 +63,17 @@ public enum Contains implements Predicate {
     }
 
     @Override
-    public void validate(PropertyDefinition propertyDefinition) {
+    public void validate() {
     }
 
     @Override
-    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
+    public boolean evaluate(Object first, Object second) {
         if (second instanceof Iterable) {
             switch (this) {
                 case IN:
-                    return evaluateInIterable(first, (Iterable) second, propertyDefinition);
+                    return evaluateInIterable(first, (Iterable) second);
                 case NOT_IN:
-                    return !evaluateInIterable(first, (Iterable) second, propertyDefinition);
+                    return !evaluateInIterable(first, (Iterable) second);
                 default:
                     throw new GeException("Not implemented: " + this);
             }
@@ -86,36 +85,36 @@ public enum Contains implements Predicate {
         if (second.getClass().isArray()) {
             switch (this) {
                 case IN:
-                    return evaluateInIterable(first, (Object[]) second, propertyDefinition);
+                    return evaluateInIterable(first, (Object[]) second);
                 case NOT_IN:
-                    return !evaluateInIterable(first, (Object[]) second, propertyDefinition);
+                    return !evaluateInIterable(first, (Object[]) second);
                 default:
                     throw new GeException("Not implemented: " + this);
             }
         } else {
             switch (this) {
                 case IN:
-                    return evaluateInIterable(first, new Object[] { second }, propertyDefinition);
+                    return evaluateInIterable(first, new Object[] { second });
                 case NOT_IN:
-                    return !evaluateInIterable(first, new Object[] { second }, propertyDefinition);
+                    return !evaluateInIterable(first, new Object[] { second });
                 default:
                     throw new GeException("Not implemented: " + this);
             }
         }
     }
 
-    private boolean evaluateInIterable(Object first, Iterable second, PropertyDefinition propertyDefinition) {
+    private boolean evaluateInIterable(Object first, Iterable second) {
         for (Object o : second) {
-            if (Compare.evaluate(first, Compare.EQUAL, o, propertyDefinition)) {
+            if (Compare.evaluate(first, Compare.EQUAL, o)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean evaluateInIterable(Object first, Object[] second, PropertyDefinition propertyDefinition) {
+    private boolean evaluateInIterable(Object first, Object[] second) {
         for (Object o : second) {
-            if (Compare.evaluate(first, Compare.EQUAL, o, propertyDefinition)) {
+            if (Compare.evaluate(first, Compare.EQUAL, o)) {
                 return true;
             }
         }

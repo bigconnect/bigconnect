@@ -42,9 +42,9 @@ import com.mware.ge.PropertyDefinition;
 import java.util.Collection;
 
 public interface Predicate {
-    boolean evaluate(Iterable<Property> properties, Object value, Collection<PropertyDefinition> propertyDefinitions);
+    boolean evaluate(Iterable<Property> properties, Object value);
 
-    boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition);
+    boolean evaluate(Object first, Object second);
 
-    void validate(PropertyDefinition propertyDefinition);
+    void validate();
 }

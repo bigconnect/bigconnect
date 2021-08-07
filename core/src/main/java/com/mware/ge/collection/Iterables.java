@@ -168,7 +168,7 @@ public final class Iterables {
         return collection;
     }
 
-    public static <X> Iterable<X> filter(Predicate<? super X> specification, Iterable<X> i) {
+    public static <X> Iterable<X> filter(Iterable<X> i, Predicate<? super X> specification) {
         return new FilterIterable<>(i, specification);
     }
 

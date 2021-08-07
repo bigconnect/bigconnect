@@ -51,6 +51,9 @@ import com.mware.ge.*;
 import com.mware.ge.query.*;
 import com.mware.ge.query.aggregations.*;
 import com.mware.ge.query.aggregations.SupportOrderByAggregation.AggregationSortContainer;
+import com.mware.ge.query.builder.BoolQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.time.Clocks;
 import com.mware.ge.values.storable.*;
@@ -68,6 +71,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import static com.mware.ge.query.builder.GeQueryBuilders.*;
 import static com.mware.ge.values.storable.DateTimeValue.datetime;
 import static com.mware.ge.values.storable.Values.*;
 
@@ -97,35 +101,44 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         JSONArray sourceFilterJson = getSourceFilterJson(searchOptions);
         String sourceLogicalOperator = getSourceLogicalOperator(searchOptions);
 
-        Query query = getQuery(searchOptions, authorizations);
-        applyLogicalOperatorsToQuery(query, sourceLogicalOperator);
-        applyFiltersToQuery(query, filterJson, user, searchOptions);
-        applyConceptTypeFilterToQuery(query, searchOptions);
-        applyRefinementsToQuery(query, searchOptions);
-        applyEdgeLabelFilterToQuery(query, searchOptions);
-        applySortToQuery(query, searchOptions);
-        applyAggregationsToQuery(query, searchOptions);
-        applyExtendedDataFilters(query, searchOptions);
-        if(searchOptions.getOptionalParameter("includeFacets", Boolean.FALSE)) {
-            applyDefaultAggregationsToQuery(query, searchOptions.getWorkspaceId());
+        BoolQueryBuilder queryBuilder = getQuery(searchOptions, authorizations);
+        Query query;
+        Long size = 0L, offset = 0L;
+
+        if (queryBuilder != null) {
+            applyLogicalOperatorsToQuery(queryBuilder, sourceLogicalOperator);
+            applyFiltersToQuery(queryBuilder, filterJson, user, searchOptions);
+            applyConceptTypeFilterToQuery(queryBuilder, searchOptions);
+            applyRefinementsToQuery(queryBuilder, searchOptions);
+            applyEdgeLabelFilterToQuery(queryBuilder, searchOptions);
+            applyExtendedDataFilters(queryBuilder, searchOptions);
+            if (sourceFilterJson != null) {
+                applyFiltersToQuery(queryBuilder, sourceFilterJson, user, searchOptions);
+            }
+
+            size = searchOptions.getOptionalParameter("size", defaultSearchResultCount);
+            if (size != null && size != -1) {
+                queryBuilder.limit(size);
+            }
+
+            offset = searchOptions.getOptionalParameter("offset", 0L);
+            if (offset != null) {
+                queryBuilder.skip(offset.intValue());
+            }
+
+            applySortToQuery(queryBuilder, searchOptions);
+
+            query = graph.query(queryBuilder, authorizations);
+            applyAggregationsToQuery(query, searchOptions);
+            if(searchOptions.getOptionalParameter("includeFacets", Boolean.FALSE)) {
+                applyDefaultAggregationsToQuery(query, searchOptions.getWorkspaceId());
+            }
+
+        } else {
+            query = new EmptyResultsGraphQuery();
         }
 
-        if (sourceFilterJson != null) {
-            applyFiltersToQuery(query, sourceFilterJson, user, searchOptions);
-        }
-
-        FetchHints fetchHints = getFetchHints(searchOptions);
-        Long size = searchOptions.getOptionalParameter("size", defaultSearchResultCount);
-        if (size != null && size != -1) {
-            query.limit(size);
-        }
-
-        Long offset = searchOptions.getOptionalParameter("offset", 0L);
-        if (offset != null) {
-            query.skip(offset.intValue());
-        }
-
-        try (QueryResultsIterable<? extends GeObject> searchResults = getSearchResults(query, fetchHints)) {
+        try (QueryResultsIterable<? extends GeObject> searchResults = getSearchResults(query, getFetchHints(searchOptions))) {
             if (searchResults == null) {
                 throw new BcException("Failed to extract search results.");
             }
@@ -145,22 +158,20 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return FetchHintsBuilder.parse(new JSONObject(fetchHintsString)).build();
     }
 
-    private void applyExtendedDataFilters(Query query, SearchOptions searchOptions) {
+    private void applyExtendedDataFilters(BoolQueryBuilder query, SearchOptions searchOptions) {
         String[] filterStrings = searchOptions.getOptionalParameter("extendedDataFilters[]", String[].class);
         if (filterStrings == null || filterStrings.length == 0) {
             return;
         }
 
-        List<HasExtendedDataFilter> filters = new ArrayList<>();
         for (String filterString : filterStrings) {
             JSONObject filterJson = new JSONObject(filterString);
             String elementTypeString = filterJson.optString("elementType");
             ElementType elementType = elementTypeString == null ? null : ElementType.valueOf(elementTypeString);
             String elementId = filterJson.optString("elementId");
             String tableName = filterJson.optString("tableName");
-            filters.add(new HasExtendedDataFilter(elementType, elementId, tableName));
+            query.and(GeQueryBuilders.hasExtendedData(elementType, elementId, tableName));
         }
-        query.hasExtendedData(filters);
     }
 
     private void applyAggregationsToQuery(Query query, SearchOptions searchOptions) {
@@ -347,7 +358,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return ChronoField.valueOf(chronoField);
     }
 
-    protected void applySortToQuery(Query query, SearchOptions searchOptions) {
+    protected void applySortToQuery(GeQueryBuilder query, SearchOptions searchOptions) {
         String[] sorts = searchOptions.getOptionalParameter("sort[]", String[].class);
         if (sorts == null) {
             JSONArray sortsJson = searchOptions.getOptionalParameter("sort", JSONArray.class);
@@ -385,16 +396,16 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
 
     protected abstract EnumSet<GeObjectType> getResultType();
 
-    protected abstract Query getQuery(SearchOptions searchOptions, Authorizations authorizations);
+    protected abstract BoolQueryBuilder getQuery(SearchOptions searchOptions, Authorizations authorizations);
 
-    protected void applyConceptTypeFilterToQuery(Query query, SearchOptions searchOptions) {
+    protected void applyConceptTypeFilterToQuery(BoolQueryBuilder query, SearchOptions searchOptions) {
         Collection<SchemaRepository.ElementTypeFilter> conceptTypeFilters = getConceptTypeFilters(searchOptions);
         if (conceptTypeFilters != null) {
             schemaRepository.addConceptTypeFilterToQuery(query, conceptTypeFilters, searchOptions.getWorkspaceId());
         }
     }
 
-    protected void applyEdgeLabelFilterToQuery(Query query, SearchOptions searchOptions) {
+    protected void applyEdgeLabelFilterToQuery(BoolQueryBuilder query, SearchOptions searchOptions) {
         Collection<SchemaRepository.ElementTypeFilter> edgeFilters = getEdgeLabelFilters(searchOptions);
         if (edgeFilters != null) {
             schemaRepository.addEdgeLabelFilterToQuery(query, edgeFilters, searchOptions.getWorkspaceId());
@@ -434,7 +445,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return null;
     }
 
-    protected void applyFiltersToQuery(Query query, JSONArray filterJson, User user, SearchOptions searchOptions) {
+    protected void applyFiltersToQuery(BoolQueryBuilder query, JSONArray filterJson, User user, SearchOptions searchOptions) {
         for (int i = 0; i < filterJson.length(); i++) {
             JSONObject obj = filterJson.getJSONObject(i);
             if (obj.length() > 0) {
@@ -449,47 +460,47 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    private void updateQueryWithPropertyNameFilter(Query graphQuery, JSONObject obj, User user, SearchOptions searchOptions) {
+    private void updateQueryWithPropertyNameFilter(BoolQueryBuilder graphQuery, JSONObject obj, User user, SearchOptions searchOptions) {
         try {
             String predicateString = obj.optString("predicate");
             String propertyName = obj.getString("propertyName");
             if ("has".equals(predicateString)) {
-                graphQuery.has(propertyName);
+                graphQuery.and(GeQueryBuilders.exists(propertyName));
             } else if ("hasNot".equals(predicateString)) {
-                graphQuery.hasNot(propertyName);
+                graphQuery.andNot(GeQueryBuilders.exists(propertyName));
             } else if ("in".equals(predicateString)) {
                 JSONArray arr = obj.getJSONArray("values");
                 Value valueArr = convertJsonArray(arr);
-                graphQuery.has(propertyName, Contains.IN, valueArr);
+                graphQuery.and(hasFilter(propertyName, Contains.IN, valueArr));
             } else {
                 PropertyType propertyDataType = PropertyType.convert(obj.optString("propertyDataType"));
                 JSONArray values = obj.getJSONArray("values");
                 Object value0 = jsonValueToObject(values, propertyDataType, 0);
 
                 if (PropertyType.STRING.equals(propertyDataType) && (predicateString == null || "~".equals(predicateString) || "".equals(predicateString))) {
-                    graphQuery.has(propertyName, TextPredicate.CONTAINS, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, TextPredicate.CONTAINS, (Value) value0));
                 } else if (PropertyType.DATE.equals(propertyDataType)) {
                     applyDateToQuery(graphQuery, obj, predicateString, values, searchOptions);
                 } else if (PropertyType.BOOLEAN.equals(propertyDataType)) {
-                    graphQuery.has(propertyName, Compare.EQUAL, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
                 } else if (PropertyType.GEO_LOCATION.equals(propertyDataType)) {
                     GeoCompare geoComparePredicate = GeoCompare.valueOf(predicateString.toUpperCase());
-                    graphQuery.has(propertyName, geoComparePredicate, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, geoComparePredicate, (Value) value0));
                 } else if ("<".equals(predicateString)) {
-                    graphQuery.has(propertyName, Compare.LESS_THAN, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN, (Value) value0));
                 } else if ("<=".equals(predicateString)) {
-                    graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, (Value) value0));
                 } else if (">".equals(predicateString)) {
-                    graphQuery.has(propertyName, Compare.GREATER_THAN, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN, (Value) value0));
                 } else if (">=".equals(predicateString)) {
-                    graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, (Value) value0);
+                    graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, (Value) value0));
                 } else if ("range".equals(predicateString)) {
                     Object value1 = jsonValueToObject(values, propertyDataType, 1);
                     if (value0 instanceof DateTimeValue && value1 instanceof DateTimeValue) {
                         ZonedDateTime start = ((DateTimeValue) value0).asObjectCopy();
                         ZonedDateTime end = ((DateTimeValue) value1).asObjectCopy();
-                        graphQuery.has(propertyName, Compare.RANGE,
-                                Values.of(new Range<>(start, true, end, false)));
+                        graphQuery.and(hasFilter(propertyName, Compare.RANGE,
+                                Values.of(new Range<>(start, true, end, false))));
                     } else {
                         throw new IllegalArgumentException("Range query must have DateTimeValue values");
                     }
@@ -497,7 +508,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                     if (PropertyType.DOUBLE.equals(propertyDataType)) {
                         applyDoubleEqualityToQuery(graphQuery, obj, value0);
                     } else {
-                        graphQuery.has(propertyName, Compare.EQUAL, (Value) value0);
+                        graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
                     }
                 } else {
                     throw new BcException("unhandled query\n" + obj.toString(2));
@@ -508,25 +519,26 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    private void updateQueryWithDataTypeFilter(Query graphQuery, JSONObject obj, User user, SearchOptions searchOptions) {
+    private void updateQueryWithDataTypeFilter(BoolQueryBuilder graphQuery, JSONObject obj, User user, SearchOptions searchOptions) {
         String dataType = obj.getString("dataType");
         String predicateString = obj.optString("predicate");
         PropertyType propertyType = PropertyType.valueOf(dataType);
+
         try {
             if ("has".equals(predicateString)) {
-                graphQuery.has(PropertyType.getTypeClass(propertyType));
+                graphQuery.and(exists(graph, PropertyType.getTypeClass(propertyType)));
             } else if ("hasNot".equals(predicateString)) {
-                graphQuery.hasNot(PropertyType.getTypeClass(propertyType));
+                graphQuery.andNot(exists(graph, PropertyType.getTypeClass(propertyType)));
             } else if ("in".equals(predicateString)) {
                 JSONArray values = obj.getJSONArray("values");
                 Value valueArr = convertJsonArray(values);
-                graphQuery.has(PropertyType.getTypeClass(propertyType), Contains.IN, Values.of(valueArr));
+                graphQuery.and(hasFilter(graph, PropertyType.getTypeClass(propertyType), Contains.IN, Values.of(valueArr)));
             } else {
                 JSONArray values = obj.getJSONArray("values");
                 Object value0 = jsonValueToObject(values, propertyType, 0);
                 if (PropertyType.GEO_LOCATION.equals(propertyType)) {
                     GeoCompare geoComparePredicate = GeoCompare.valueOf(predicateString.toUpperCase());
-                    graphQuery.has(GeoShapeValue.class, geoComparePredicate, (Value) value0);
+                    graphQuery.and(hasFilter(graph, GeoShapeValue.class, geoComparePredicate, (Value) value0));
                 } else {
                     throw new UnsupportedOperationException("Data type queries are not yet supported for type: " + dataType);
                 }
@@ -536,10 +548,8 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    protected void applyLogicalOperatorsToQuery(Query currentQuery, String logicalSourceString) {
-        if (currentQuery instanceof QueryBase) {
-            ((QueryBase) currentQuery).setLogicalQuery(logicalSourceString);
-        }
+    protected void applyLogicalOperatorsToQuery(BoolQueryBuilder currentQuery, String logicalSourceString) {
+        throw new UnsupportedOperationException("NOT IMPLEMENTED");
     }
 
 
@@ -561,7 +571,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return searchOptions.getOptionalParameter("logicalSourceString", String.class);
     }
 
-    protected void applyRefinementsToQuery(Query query, SearchOptions searchOptions) {
+    protected void applyRefinementsToQuery(BoolQueryBuilder query, SearchOptions searchOptions) {
         JSONArray refinementJson = searchOptions.getOptionalParameter("refinement", JSONArray.class);
         if(refinementJson == null)
             return;
@@ -574,7 +584,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
 
                 if ("conceptType".equals(propertyName) || SearchIndex.CONCEPT_TYPE_FIELD_NAME.equals(propertyName)) {
                     String propertyValue = obj.getString("bucketKey");
-                    query.hasConceptType(propertyValue);
+                    query.and(hasConceptType(propertyValue));
                 } else {
                     SchemaProperty property = schemaRepository.getPropertyByName(propertyName);
                     PropertyType propertyDataType = property.getDataType();
@@ -582,7 +592,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                     if ("term".equals(refinementType)) {
                         String propertyValue = obj.getString("bucketKey");
                         if (EMPTY_REFINEMENT_STRING.equals(propertyValue)) {
-                            query.hasNot(propertyName);
+                            query.andNot(exists(propertyName));
                         } else {
                             switch (propertyDataType) {
                                 case DATE:
@@ -590,21 +600,21 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                                     String displayType = property.getDisplayType();
                                     boolean isDateOnly = displayType != null && displayType.equals("dateOnly");
                                     dtv = moveDateToStart(dtv);
-                                    query.has(propertyName, Compare.GREATER_THAN_EQUAL, dtv);
+                                    query.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, dtv));
                                     dtv = moveDateToEnd(dtv, isDateOnly);
-                                    query.has(propertyName, Compare.LESS_THAN, dtv);
+                                    query.and(hasFilter(propertyName, Compare.LESS_THAN, dtv));
                                     break;
                                 case BOOLEAN:
-                                    query.has(propertyName, Compare.EQUAL, booleanValue(Boolean.parseBoolean(propertyValue)));
+                                    query.and(hasFilter(propertyName, Compare.EQUAL, booleanValue(Boolean.parseBoolean(propertyValue))));
                                     break;
                                 case DOUBLE:
-                                    query.has(propertyName, Compare.EQUAL, doubleValue(Double.parseDouble(propertyValue)));
+                                    query.and(hasFilter(propertyName, Compare.EQUAL, doubleValue(Double.parseDouble(propertyValue))));
                                     break;
                                 case INTEGER:
-                                    query.has(propertyName, Compare.EQUAL, intValue(Integer.parseInt(propertyValue)));
+                                    query.and(hasFilter(propertyName, Compare.EQUAL, intValue(Integer.parseInt(propertyValue))));
                                     break;
                                 default:
-                                    query.has(propertyName, Compare.EQUAL, Values.of(propertyValue));
+                                    query.and(hasFilter(propertyName, Compare.EQUAL, Values.of(propertyValue)));
                             }
                         }
                     } else if ("histogram".equals(refinementType)) {
@@ -625,23 +635,23 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                                 if (fromValue != null) {
                                     DateTimeValue dtv = DateTimeValue.ofEpochMillis(longValue(Long.parseLong(fromValue)));
                                     dtv = moveDateToStart(dtv);
-                                    query.has(propertyName, Compare.GREATER_THAN, dtv);
+                                    query.and(hasFilter(propertyName, Compare.GREATER_THAN, dtv));
                                 }
 
                                 if (toValue != null) {
                                     DateTimeValue dtv = DateTimeValue.ofEpochMillis(longValue(Long.parseLong(toValue)));
                                     dtv = moveDateToEnd(dtv, isDateOnly);
-                                    query.has(propertyName, Compare.LESS_THAN_EQUAL, dtv);
+                                    query.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, dtv));
                                 }
                                 break;
                             case DOUBLE:
                             case INTEGER:
                                 if (fromValue != null) {
-                                    query.has(propertyName, Compare.GREATER_THAN, doubleValue(Double.parseDouble(fromValue)));
+                                    query.and(hasFilter(propertyName, Compare.GREATER_THAN, doubleValue(Double.parseDouble(fromValue))));
                                 }
 
                                 if (toValue != null) {
-                                    query.has(propertyName, Compare.LESS_THAN_EQUAL, doubleValue(Double.parseDouble(toValue)));
+                                    query.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, doubleValue(Double.parseDouble(toValue))));
                                 }
                                 break;
                             default:
@@ -655,7 +665,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    private void applyDoubleEqualityToQuery(Query graphQuery, JSONObject obj, Object value0) throws ParseException {
+    private void applyDoubleEqualityToQuery(BoolQueryBuilder graphQuery, JSONObject obj, Object value0) throws ParseException {
         String propertyName = obj.getString("propertyName");
         JSONObject metadata = obj.has("metadata") ? obj.getJSONObject("metadata") : null;
 
@@ -666,14 +676,14 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
             double upperBound = Precision.equals(doubleParam, lowerBound, Precision.EPSILON) ? lowerBound + Math.pow(10, -inputPrecision) :
                     Precision.round(doubleParam, inputPrecision, BigDecimal.ROUND_UP);
 
-            graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, doubleValue(lowerBound - Precision.EPSILON));
-            graphQuery.has(propertyName, Compare.LESS_THAN, doubleValue(upperBound + Precision.EPSILON));
+            graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, doubleValue(lowerBound - Precision.EPSILON)));
+            graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN, doubleValue(upperBound + Precision.EPSILON)));
         } else {
-            graphQuery.has(propertyName, Compare.EQUAL, Values.of(value0));
+            graphQuery.and(hasFilter(propertyName, Compare.EQUAL, Values.of(value0)));
         }
     }
 
-    private void applyDateToQuery(Query graphQuery, JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions) throws ParseException {
+    private void applyDateToQuery(BoolQueryBuilder graphQuery, JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions) throws ParseException {
         String propertyName = obj.getString("propertyName");
         SchemaProperty property = schemaRepository.getPropertyByName(propertyName, searchOptions.getWorkspaceId());
 
@@ -681,8 +691,8 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
             DateTimeValue calendar = convertToDateTimeValue(values, 0);
 
             if (predicate == null || predicate.equals("equal") || predicate.equals("=")) {
-                graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, calendar);
-                graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, calendar);
+                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, calendar));
+                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, calendar));
             } else if (predicate.equals("range")) {
                 if (values.length() > 1) {
                     DateTimeValue startCalendar = convertToDateTimeValue(values, 0);
@@ -690,17 +700,17 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                     ZonedDateTime start = startCalendar.asObjectCopy();
                     ZonedDateTime end = endCalendar.asObjectCopy();
                     if (start.isBefore(end)) {
-                        graphQuery.has(propertyName, Compare.RANGE,
-                                Values.of(new Range<>(start, true, end, false)));
+                        graphQuery.and(hasFilter(propertyName, Compare.RANGE,
+                                Values.of(new Range<>(start, true, end, false))));
                     } else {
-                        graphQuery.has(propertyName, Compare.RANGE,
-                                Values.of(new Range<>(end, true, start, false)));
+                        graphQuery.and(hasFilter(propertyName, Compare.RANGE,
+                                Values.of(new Range<>(end, true, start, false))));
                     }
                 }
             } else if (predicate.equals("<")) {
-                graphQuery.has(propertyName, Compare.LESS_THAN_EQUAL, calendar);
+                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, calendar));
             } else if (predicate.equals(">")) {
-                graphQuery.has(propertyName, Compare.GREATER_THAN_EQUAL, calendar);
+                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, calendar));
             }
         }
     }

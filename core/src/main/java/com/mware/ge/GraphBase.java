@@ -41,23 +41,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mware.ge.event.GraphEvent;
 import com.mware.ge.event.GraphEventListener;
-import com.mware.ge.id.IdGenerator;
-import com.mware.ge.id.IdentityNameSubstitutionStrategy;
-import com.mware.ge.id.NameSubstitutionStrategy;
 import com.mware.ge.metric.GeMetricRegistry;
 import com.mware.ge.metric.StackTraceTracker;
 import com.mware.ge.mutation.ElementMutation;
 import com.mware.ge.mutation.ExistingElementMutation;
+import com.mware.ge.query.Query;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.values.storable.StreamingPropertyValueRef;
-import com.mware.ge.query.GraphQuery;
-import com.mware.ge.query.MultiVertexQuery;
-import com.mware.ge.query.SimilarToGraphQuery;
 import com.mware.ge.util.*;
-import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -348,10 +342,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public abstract GraphQuery query(Authorizations authorizations);
-
-    @Override
-    public abstract GraphQuery query(String queryString, Authorizations authorizations);
+    public abstract Query query(GeQueryBuilder queryBuilder, Authorizations authorizations);
 
     @Override
     public abstract void reindex(Authorizations authorizations);
@@ -389,16 +380,6 @@ public abstract class GraphBase implements Graph {
         for (GraphEventListener graphEventListener : this.graphEventListeners) {
             graphEventListener.onGraphEvent(graphEvent);
         }
-    }
-
-    @Override
-    public boolean isQuerySimilarToTextSupported() {
-        return false;
-    }
-
-    @Override
-    public SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
-        throw new GeNotSupportedException("querySimilarTo not supported");
     }
 
     @Override

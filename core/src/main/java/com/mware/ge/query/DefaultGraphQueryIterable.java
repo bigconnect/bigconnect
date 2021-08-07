@@ -37,6 +37,8 @@
 package com.mware.ge.query;
 
 import com.mware.ge.*;
+import com.mware.ge.query.builder.BoolQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.query.aggregations.AggregationResult;
 import com.mware.ge.scoring.ScoringStrategy;
@@ -55,26 +57,29 @@ public class DefaultGraphQueryIterable<T> implements
         Iterable<T>,
         QueryResultsIterable<T>,
         IterableWithScores<T> {
-    private final QueryParameters parameters;
+    private final GeQueryBuilder query;
     private final Iterable<T> iterable;
     private final boolean evaluateQueryString;
-    private final boolean evaluateHasContainers;
+    private final boolean evaluateFilters;
+    private final Authorizations authorizations;
 
     public DefaultGraphQueryIterable(
-            QueryParameters parameters,
+            GeQueryBuilder query,
             Iterable<T> iterable,
             boolean evaluateQueryString,
-            boolean evaluateHasContainers,
-            boolean evaluateSortContainers
+            boolean evaluateFilters,
+            boolean evaluateSortContainers,
+            Authorizations authorizations
     ) {
         checkNotNull(iterable, "iterable cannot be null");
-        this.parameters = parameters;
+        this.query = query;
         this.evaluateQueryString = evaluateQueryString;
-        this.evaluateHasContainers = evaluateHasContainers;
-        if (evaluateSortContainers && this.parameters.getSortContainers().size() > 0) {
-            this.iterable = sortUsingSortContainers(iterable, parameters.getSortContainers());
-        } else if (evaluateHasContainers && this.parameters.getScoringStrategy() != null) {
-            this.iterable = sortUsingScoringStrategy(iterable, parameters.getScoringStrategy());
+        this.evaluateFilters = evaluateFilters;
+        this.authorizations = authorizations;
+        if (evaluateSortContainers && query.getSortContainers().size() > 0) {
+            this.iterable = sortUsingSortContainers(iterable, query.getSortContainers());
+        } else if (evaluateFilters && query.getScoringStrategy() != null) {
+            this.iterable = sortUsingScoringStrategy(iterable, query.getScoringStrategy());
         } else {
             this.iterable = iterable;
         }
@@ -86,7 +91,7 @@ public class DefaultGraphQueryIterable<T> implements
         return list;
     }
 
-    private List<T> sortUsingSortContainers(Iterable<T> iterable, List<QueryBase.SortContainer> sortContainers) {
+    private List<T> sortUsingSortContainers(Iterable<T> iterable, Iterable<QueryBase.SortContainer> sortContainers) {
         List<T> list = toList(iterable);
         list.sort(new SortContainersComparator<>(sortContainers));
         return list;
@@ -141,7 +146,7 @@ public class DefaultGraphQueryIterable<T> implements
                     return;
                 }
 
-                if (!iterateAll && parameters.getLimit() != null && (this.count >= parameters.getSkip() + parameters.getLimit())) {
+                if (!iterateAll && query.getLimit() != null && (this.count >= query.getSkip() + query.getLimit())) {
                     return;
                 }
 
@@ -150,48 +155,18 @@ public class DefaultGraphQueryIterable<T> implements
                     GeObject geElem = elem instanceof GeObject ? (GeObject) elem : null;
 
                     boolean match = true;
-                    if (evaluateHasContainers && geElem != null) {
-                        for (QueryBase.HasContainer has : parameters.getHasContainers()) {
-                            if (!has.isMatch(geElem)) {
-                                match = false;
-                                break;
-                            }
-                        }
-                        if (geElem instanceof Edge && parameters.getEdgeLabels().size() > 0) {
-                            Edge edge = (Edge) geElem;
-                            if (!parameters.getEdgeLabels().contains(edge.getLabel())) {
-                                match = false;
-                            }
-                        }
-                        if (geElem instanceof Vertex && parameters.getConceptTypes().size() > 0) {
-                            Vertex vertex = (Vertex) geElem;
-                            if (!parameters.getConceptTypes().contains(vertex.getConceptType())) {
-                                match = false;
-                            }
-                        }
-                        if (parameters.getIds() != null) {
-                            if (geElem instanceof Element) {
-                                if (!parameters.getIds().contains(((Element) geElem).getId())) {
-                                    match = false;
-                                }
-                            } else if (geElem instanceof ExtendedDataRow) {
-                                if (!parameters.getIds().contains(((ExtendedDataRow) geElem).getId().getElementId())) {
-                                    match = false;
-                                }
-                            } else {
-                                throw new GeException("Unhandled element type: " + geElem.getClass().getName());
-                            }
-                        }
+                    if (evaluateFilters && geElem != null) {
+                        match = query.matches(geElem, authorizations);
 
-                        if (parameters.getMinScore() != null) {
-                            if (parameters.getScoringStrategy() == null) {
+                        if (query.getMinScore() != null) {
+                            if (query.getScoringStrategy() == null) {
                                 match = false;
                             } else {
-                                Double elementScore = parameters.getScoringStrategy().getScore(geElem);
+                                Double elementScore = query.getScoringStrategy().getScore(geElem);
                                 if (elementScore == null) {
                                     match = false;
                                 } else {
-                                    match = elementScore >= parameters.getMinScore();
+                                    match = elementScore >= query.getMinScore();
                                 }
                             }
                         }
@@ -199,17 +174,9 @@ public class DefaultGraphQueryIterable<T> implements
                     if (!match) {
                         continue;
                     }
-                    if (evaluateQueryString
-                            && geElem != null
-                            && parameters instanceof QueryStringQueryParameters
-                            && ((QueryStringQueryParameters) parameters).getQueryString() != null
-                            && !evaluateQueryString(geElem, ((QueryStringQueryParameters) parameters).getQueryString())
-                            ) {
-                        continue;
-                    }
 
                     this.count++;
-                    if (!iterateAll && (this.count <= parameters.getSkip())) {
+                    if (!iterateAll && (this.count <= query.getSkip())) {
                         continue;
                     }
 
@@ -218,48 +185,6 @@ public class DefaultGraphQueryIterable<T> implements
                 }
             }
         };
-    }
-
-    protected boolean evaluateQueryString(GeObject geObject, String queryString) {
-        if (geObject instanceof Element) {
-            return evaluateQueryString((Element) geObject, queryString);
-        } else if (geObject instanceof ExtendedDataRow) {
-            return evaluateQueryString((ExtendedDataRow) geObject, queryString);
-        } else {
-            throw new GeException("Unhandled GeObject type: " + geObject.getClass().getName());
-        }
-    }
-
-    private boolean evaluateQueryString(Element element, String queryString) {
-        for (Property property : element.getProperties()) {
-            if (evaluateQueryStringOnValue(property.getValue(), queryString)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean evaluateQueryString(ExtendedDataRow extendedDataRow, String queryString) {
-        for (Property property : extendedDataRow.getProperties()) {
-            if (evaluateQueryStringOnValue(property.getValue(), queryString)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean evaluateQueryStringOnValue(Object value, String queryString) {
-        if (value == null) {
-            return false;
-        }
-        if (queryString.equals("*")) {
-            return true;
-        }
-        if (value instanceof StreamingPropertyValue) {
-            value = ((StreamingPropertyValue) value).readToString();
-        }
-        String valueString = value.toString().toLowerCase();
-        return valueString.contains(queryString.toLowerCase());
     }
 
     @Override
@@ -280,10 +205,10 @@ public class DefaultGraphQueryIterable<T> implements
 
     @Override
     public Double getScore(Object id) {
-        if (parameters.getScoringStrategy() != null) {
+        if (query.getScoringStrategy() != null) {
             GeObject GeObject = findGeObjectById(id);
             if (GeObject != null) {
-                return parameters.getScoringStrategy().getScore(GeObject);
+                return query.getScoringStrategy().getScore(GeObject);
             }
         }
         return 0.0;

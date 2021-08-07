@@ -64,8 +64,9 @@ import com.mware.core.util.BcLoggerFactory;
 import com.mware.core.util.ExecutorServiceUtil;
 import com.mware.ge.*;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.BoolQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.values.storable.*;
-import com.mware.ge.query.GraphQuery;
 import com.mware.ge.query.Query;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.util.IterableUtils;
@@ -896,9 +897,10 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
                 }
                 Graph graph = getGraph();
                 Authorizations authorizations = graph.createAuthorizations(namespace);
-                GraphQuery query = graph.query(authorizations);
-                addConceptTypeFilterToQuery(query, concept.getName(), false, namespace);
-                query.limit(0);
+                BoolQueryBuilder qb = GeQueryBuilders.boolQuery()
+                                .limit(0);
+                addConceptTypeFilterToQuery(qb, concept.getName(), false, namespace);
+                Query query = graph.query(qb, authorizations);
 
                 QueryResultsIterable resultsIterable = query.search();
                 long results = resultsIterable.getTotalHits();
@@ -947,9 +949,12 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
         if (property != null) {
             Graph graph = getGraph();
             Authorizations authorizations = graph.createAuthorizations(namespace);
-            GraphQuery query = graph.query(authorizations);
-            query.has(propertyName);
-            query.limit(0);
+            Query query = graph.query(
+                    GeQueryBuilders
+                            .exists(propertyName)
+                            .limit(0),
+                    authorizations
+            );
 
             QueryResultsIterable resultsIterable = query.search();
             long results = resultsIterable.getTotalHits();
@@ -973,9 +978,10 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
             for (Relationship relationship : relationships) {
                 Graph graph = getGraph();
                 Authorizations authorizations = graph.createAuthorizations(namespace);
-                GraphQuery query = graph.query(authorizations);
-                addEdgeLabelFilterToQuery(query, relationshipName, false, namespace);
-                query.limit(0);
+                BoolQueryBuilder qb = GeQueryBuilders.boolQuery()
+                                .limit(0);
+                addEdgeLabelFilterToQuery(qb, relationshipName, false, namespace);
+                Query query = graph.query(qb, authorizations);
 
                 QueryResultsIterable resultsIterable = query.search();
                 long results = resultsIterable.getTotalHits();
@@ -1003,7 +1009,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
     }
 
     @Override
-    public void addConceptTypeFilterToQuery(Query query, String conceptName, boolean includeChildNodes, String namespace) {
+    public void addConceptTypeFilterToQuery(BoolQueryBuilder query, String conceptName, boolean includeChildNodes, String namespace) {
         checkNotNull(conceptName, "conceptName cannot be null");
         List<ElementTypeFilter> filters = new ArrayList<>();
         filters.add(new ElementTypeFilter(conceptName, includeChildNodes));
@@ -1011,7 +1017,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
     }
 
     @Override
-    public void addConceptTypeFilterToQuery(Query query, Collection<ElementTypeFilter> filters, String namespace) {
+    public void addConceptTypeFilterToQuery(BoolQueryBuilder query, Collection<ElementTypeFilter> filters, String namespace) {
         checkNotNull(query, "query cannot be null");
         checkNotNull(filters, "filters cannot be null");
 
@@ -1033,11 +1039,11 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
             }
         }
 
-        query.hasConceptType(conceptIds);
+        query.and(GeQueryBuilders.hasConceptType(conceptIds.toArray(new String[0])));
     }
 
     @Override
-    public void addEdgeLabelFilterToQuery(Query query, String edgeLabel, boolean includeChildNodes, String namespace) {
+    public void addEdgeLabelFilterToQuery(BoolQueryBuilder query, String edgeLabel, boolean includeChildNodes, String namespace) {
         checkNotNull(edgeLabel, "edgeLabel cannot be null");
         List<ElementTypeFilter> filters = new ArrayList<>();
         filters.add(new ElementTypeFilter(edgeLabel, includeChildNodes));
@@ -1045,7 +1051,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
     }
 
     @Override
-    public void addEdgeLabelFilterToQuery(Query query, Collection<ElementTypeFilter> filters, String namespace) {
+    public void addEdgeLabelFilterToQuery(BoolQueryBuilder query, Collection<ElementTypeFilter> filters, String namespace) {
         checkNotNull(filters, "filters cannot be null");
 
         if (filters.isEmpty()) {
@@ -1066,7 +1072,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
             }
         }
 
-        query.hasEdgeLabel(edgeIds);
+        query.and(GeQueryBuilders.hasEdgeLabel(edgeIds.toArray(new String[0])));
     }
 
     @Override

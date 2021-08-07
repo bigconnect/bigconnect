@@ -41,6 +41,7 @@ import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.mutation.ExtendedDataMutation;
 import com.mware.ge.property.PropertyDescriptor;
 import com.mware.ge.query.*;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.Preconditions;
 
 import static com.mware.ge.util.Preconditions.checkNotNull;
@@ -139,18 +140,13 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
-        return new DefaultGraphQuery(graph, queryString, authorizations);
+    public Query queryGraph(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return new DefaultGraphQuery(graph, queryBuilder, authorizations);
     }
 
     @Override
-    public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
-    }
-
-    @Override
-    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
-        return new DefaultVertexQuery(graph, vertex, queryString, authorizations);
+    public VertexQuery queryVertex(Graph graph, Vertex vertex, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return new DefaultVertexQuery(graph, vertex, queryBuilder, authorizations);
     }
 
     @Override
@@ -187,16 +183,6 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public boolean isQuerySimilarToTextSupported() {
-        return false;
-    }
-
-    @Override
-    public SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations) {
-        throw new GeNotSupportedException("querySimilarTo not supported");
-    }
-
-    @Override
     public boolean isFieldLevelSecuritySupported() {
         return true;
     }
@@ -225,8 +211,8 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
-        return new DefaultExtendedDataQuery(graph, element, tableName, queryString, authorizations);
+    public Query queryExtendedData(Graph graph, Element element, String tableName, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return new DefaultExtendedDataQuery(graph, element, tableName, queryBuilder, authorizations);
     }
 
     @Override

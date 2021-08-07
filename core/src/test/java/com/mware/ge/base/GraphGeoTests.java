@@ -42,8 +42,10 @@ import com.mware.ge.TextIndexHint;
 import com.mware.ge.Vertex;
 import com.mware.ge.event.GraphEvent;
 import com.mware.ge.event.GraphEventListener;
+import com.mware.ge.query.Compare;
 import com.mware.ge.query.GeoCompare;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.type.*;
 import com.mware.ge.values.storable.GeoPointValue;
 import com.mware.ge.values.storable.GeoShapeValue;
@@ -58,6 +60,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.hasFilter;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.GeAssert.assertResultsCount;
 import static com.mware.ge.util.IterableUtils.count;
@@ -106,9 +109,10 @@ public abstract class GraphGeoTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        List<Vertex> vertices = toList(getGraph().query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1))
-                .vertices());
+        List<Vertex> vertices = toList(getGraph().query(
+                hasFilter("location", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)),
+                AUTHORIZATIONS_A
+        ).vertices());
         assertEquals(1, count(vertices));
         GeoPointValue geoPoint = (GeoPointValue) vertices.get(0).getPropertyValue("location");
         assertEquals(38.9186, geoPoint.getLatitude().doubleValue(), 0.001);
@@ -119,32 +123,37 @@ public abstract class GraphGeoTests implements GraphTestSetup {
                 .setProperty("location", geoPointValue(39.0299, -77.5121), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, geoCircleValue(39.0299, -77.5121, 1))
-                .vertices());
+        vertices = toList(getGraph().query(
+                hasFilter("location", GeoCompare.WITHIN, geoCircleValue(39.0299, -77.5121, 1)),
+                AUTHORIZATIONS_A
+        ).vertices());
         assertEquals(1, count(vertices));
         geoPoint = (GeoPointValue) vertices.get(0).getPropertyValue("location");
         assertEquals(39.0299, geoPoint.getLatitude().doubleValue(), 0.001);
         assertEquals(-77.5121, geoPoint.getLongitude().doubleValue(), 0.001);
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 25))
-                .vertices());
+        vertices = toList(getGraph().query(
+                hasFilter("location", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 25)),
+                AUTHORIZATIONS_A
+        ).vertices());
         assertEquals(2, count(vertices));
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, geoRectValue(new GeoPoint(39, -78), new GeoPoint(38, -77)))
-                .vertices());
+        vertices = toList(getGraph().query(
+                hasFilter("location", GeoCompare.WITHIN, geoRectValue(new GeoPoint(39, -78), new GeoPoint(38, -77))),
+                AUTHORIZATIONS_A
+        ).vertices());
         assertEquals(2, count(vertices));
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, geoHashValue(new GeoHash(38.9186, -77.2297, 2)))
-                .vertices());
+        vertices = toList(getGraph().query(
+                hasFilter("location", GeoCompare.WITHIN, geoHashValue(new GeoHash(38.9186, -77.2297, 2))),
+                AUTHORIZATIONS_A
+        ).vertices());
         assertEquals(3, count(vertices));
 
-        vertices = toList(getGraph().query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, geoHashValue(new GeoHash(38.9186, -77.2297, 3)))
-                .vertices());
+        vertices = toList(getGraph().query(
+                hasFilter("location", GeoCompare.WITHIN, geoHashValue(new GeoHash(38.9186, -77.2297, 3))),
+                AUTHORIZATIONS_A
+        ).vertices());
         assertEquals(1, count(vertices));
     }
 
@@ -233,22 +242,21 @@ public abstract class GraphGeoTests implements GraphTestSetup {
                 .addShape(new GeoLine(new GeoPoint(39.5, -84.0), new GeoPoint(38.5, -84.0)));
 
         Arrays.asList(circle, rect, triangle, line, collection).forEach(searchArea -> {
-            QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A_AND_B)
-                    .has("location", GeoCompare.INTERSECTS, geoShapeValue(searchArea))
+            QueryResultsIterable<Vertex> vertices = getGraph().query(hasFilter("location", GeoCompare.INTERSECTS, geoShapeValue(searchArea)), AUTHORIZATIONS_A_AND_B)
                     .vertices();
             assertEquals("Incorrect total hits match INTERSECTS for shape ", 3, vertices.getTotalHits());
             assertVertexIdsAnyOrder(vertices, "v1", "v3", "v4");
 
-            vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.DISJOINT, geoShapeValue(searchArea)).vertices();
+            vertices = getGraph().query(hasFilter("location", GeoCompare.DISJOINT, geoShapeValue(searchArea)), AUTHORIZATIONS_A_AND_B).vertices();
             assertEquals("Incorrect total hits match DISJOINT for shape ", 1, vertices.getTotalHits());
             assertVertexIdsAnyOrder(vertices, "v2");
 
             if (searchArea != line) {
-                vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.WITHIN, geoShapeValue(searchArea)).vertices();
+                vertices = getGraph().query(hasFilter("location", GeoCompare.WITHIN, geoShapeValue(searchArea)), AUTHORIZATIONS_A_AND_B).vertices();
                 assertEquals("Incorrect total hits match WITHIN for shape ", 1, vertices.getTotalHits());
                 assertVertexIdsAnyOrder(vertices, "v3");
 
-                vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.CONTAINS, geoShapeValue(searchArea)).vertices();
+                vertices = getGraph().query(hasFilter("location", GeoCompare.CONTAINS, geoShapeValue(searchArea)), AUTHORIZATIONS_A_AND_B).vertices();
                 if (intersects instanceof GeoLine) {
                     assertEquals("Incorrect total hits match CONTAINS for shape ", 0, vertices.getTotalHits());
                 } else {
@@ -260,18 +268,18 @@ public abstract class GraphGeoTests implements GraphTestSetup {
 
         // Punch a hole in the polygon around the "within" shape and make sure that the results look ok
         triangle.addHole(Arrays.asList(new GeoPoint(40, -92.5), new GeoPoint(40, -88.5), new GeoPoint(37.4, -88.5), new GeoPoint(37.4, -92.5), new GeoPoint(40, -92.5)));
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.INTERSECTS, geoShapeValue(triangle)).vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(hasFilter("location", GeoCompare.INTERSECTS, geoShapeValue(triangle)), AUTHORIZATIONS_A_AND_B).vertices();
         assertEquals("Incorrect total hits match INTERSECTS for polygon with hole", 2, vertices.getTotalHits());
         assertVertexIdsAnyOrder(vertices, "v1", "v4");
 
-        vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.DISJOINT, geoShapeValue(triangle)).vertices();
+        vertices = getGraph().query(hasFilter("location", GeoCompare.DISJOINT, geoShapeValue(triangle)), AUTHORIZATIONS_A_AND_B).vertices();
         assertEquals("Incorrect total hits match DISJOINT for polygon with hole", 2, vertices.getTotalHits());
         assertVertexIdsAnyOrder(vertices, "v2", "v3");
 
-        vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.WITHIN, geoShapeValue(triangle)).vertices();
+        vertices = getGraph().query(hasFilter("location", GeoCompare.WITHIN, geoShapeValue(triangle)), AUTHORIZATIONS_A_AND_B).vertices();
         assertEquals("Incorrect total hits match WITHIN for polygon with hole", 0, vertices.getTotalHits());
 
-        vertices = getGraph().query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.CONTAINS, geoShapeValue(triangle)).vertices();
+        vertices = getGraph().query(hasFilter("location", GeoCompare.CONTAINS, geoShapeValue(triangle)), AUTHORIZATIONS_A_AND_B).vertices();
         if (intersects instanceof GeoLine) {
             assertEquals("Incorrect total hits match CONTAINS for polygon with hole", 0, vertices.getTotalHits());
         } else {
@@ -289,7 +297,7 @@ public abstract class GraphGeoTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)).vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(hasFilter("prop1", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_A).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
 
@@ -299,25 +307,25 @@ public abstract class GraphGeoTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        vertices = getGraph().query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)).vertices();
+        vertices = getGraph().query(hasFilter("prop1", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_A).vertices();
         if (multivalueGeopointQueryWithinMeansAny()) {
             assertResultsCount(0, 0, vertices);
         } else {
             assertResultsCount(1, 1, vertices);
         }
 
-        vertices = getGraph().query(AUTHORIZATIONS_A).has("prop1", GeoCompare.INTERSECTS, geoCircleValue(38.9186, -77.2297, 1)).vertices();
+        vertices = getGraph().query(hasFilter("prop1", GeoCompare.INTERSECTS, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_A).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
 
-        vertices = getGraph().query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, geoCircleValue(38.6270, -90.1994, 1)).vertices();
+        vertices = getGraph().query(hasFilter("prop1", GeoCompare.WITHIN, geoCircleValue(38.6270, -90.1994, 1)), AUTHORIZATIONS_A).vertices();
         if (multivalueGeopointQueryWithinMeansAny()) {
             assertResultsCount(0, 0, vertices);
         } else {
             assertResultsCount(1, 1, vertices);
         }
 
-        vertices = getGraph().query(AUTHORIZATIONS_A).has("prop1", GeoCompare.INTERSECTS, geoCircleValue(38.6270, -90.1994, 1)).vertices();
+        vertices = getGraph().query(hasFilter("prop1", GeoCompare.INTERSECTS, geoCircleValue(38.6270, -90.1994, 1)), AUTHORIZATIONS_A).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
     }
@@ -337,11 +345,11 @@ public abstract class GraphGeoTests implements GraphTestSetup {
                 .deleteProperties("key1", "prop2")
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1")).vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A).vertices();
         assertResultsCount(0, 0, vertices);
-        vertices = getGraph().query(AUTHORIZATIONS_A).has("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)).vertices();
+        vertices = getGraph().query(hasFilter("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_A).vertices();
         assertResultsCount(0, 0, vertices);
-        QueryResultsIterable<String> vertexIds = getGraph().query(AUTHORIZATIONS_A).has("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)).vertexIds();
+        QueryResultsIterable<String> vertexIds = getGraph().query(hasFilter("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_A).vertexIds();
         assertResultsCount(0, 0, vertexIds);
     }
 

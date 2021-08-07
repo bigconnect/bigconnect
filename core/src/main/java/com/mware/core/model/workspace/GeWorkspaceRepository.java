@@ -69,6 +69,7 @@ import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.*;
 import com.mware.ge.mutation.ExistingEdgeMutation;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.search.IndexHint;
 import com.mware.ge.util.FilterIterable;
 
@@ -365,8 +366,7 @@ public class GeWorkspaceRepository extends WorkspaceRepository {
                 UserRepository.VISIBILITY_STRING
         );
         try (QueryResultsIterable<Vertex> workspaceVertices =
-                    getGraph().query(authorizations).hasConceptType(WORKSPACE_CONCEPT_NAME)
-                            .vertices()) {
+                    getGraph().query(GeQueryBuilders.hasConceptType(WORKSPACE_CONCEPT_NAME), authorizations).vertices()) {
             return stream(workspaceVertices)
                     .map((Vertex workspaceVertex) -> {
                         String cacheKey = getUserWorkspaceVertexCacheKey(workspaceVertex.getId(), user);

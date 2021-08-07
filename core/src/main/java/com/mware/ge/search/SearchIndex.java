@@ -41,9 +41,9 @@ import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.mutation.ExtendedDataMutation;
 import com.mware.ge.query.*;
 import com.mware.ge.property.PropertyDescriptor;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 import java.util.Collection;
-import java.util.Set;
 
 public interface SearchIndex {
     String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
@@ -112,15 +112,11 @@ public interface SearchIndex {
 
     void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations);
 
-    GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations);
+    Query queryGraph(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations);
 
-    MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations);
+    VertexQuery queryVertex(Graph graph, Vertex vertex, GeQueryBuilder queryBuilder, Authorizations authorizations);
 
-    VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
-
-    Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations);
-
-    SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
+    Query queryExtendedData(Graph graph, Element element, String tableName, GeQueryBuilder queryBuilder, Authorizations authorizations);
 
     void flush(Graph graph);
 
@@ -135,8 +131,6 @@ public interface SearchIndex {
     void drop(Graph graph);
 
     SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
-
-    boolean isQuerySimilarToTextSupported();
 
     boolean isFieldLevelSecuritySupported();
 
@@ -178,4 +172,8 @@ public interface SearchIndex {
     void enableBulkIngest(boolean enable);
 
     int getNumShards();
+
+    default boolean isQuerySimilarToTextSupported() {
+        return false;
+    }
 }

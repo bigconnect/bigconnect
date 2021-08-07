@@ -67,7 +67,7 @@ public abstract class ArrayUtil {
      * @param <T>      The type of the array items
      * @return {@code true} if all items in {@code contains} exists in {@code array}, otherwise {@code false}.
      */
-    @Deprecated
+
     public static <T> boolean containsAll(T[] array, T[] contains) {
         for (T check : contains) {
             if (!contains(array, check)) {
@@ -85,7 +85,6 @@ public abstract class ArrayUtil {
      * @param <T>      The type of the array items
      * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
      */
-    @Deprecated
     public static <T> boolean contains(T[] array, T contains) {
         return contains(array, array.length, contains);
     }
@@ -99,7 +98,6 @@ public abstract class ArrayUtil {
      * @param <T>         The type of the array items
      * @return {@code true} if {@code contains} exists in {@code array}, otherwise {@code false}.
      */
-    @Deprecated
     public static <T> boolean contains(T[] array, int arrayLength, T contains) {
         for (int i = 0; i < arrayLength; i++) {
             T item = array[i];
@@ -118,7 +116,6 @@ public abstract class ArrayUtil {
      * @param <T>   The type of the items
      * @return {@code true} if {@code first} and {@code other} are both {@code null} or are both equal.
      */
-    @Deprecated
     public static <T> boolean nullSafeEquals(T first, T other) {
         return first == null ? first == other : first.equals(other);
     }
@@ -134,7 +131,7 @@ public abstract class ArrayUtil {
      * @return an array containing the union of {@code first} and {@code other}. Items occurring in
      * both {@code first} and {@code other} will only have of the two in the resulting union.
      */
-    @Deprecated
+
     public static <T> T[] union(T[] first, T[] other) {
         if (first == null || other == null) {
             return first == null ? other : first;
@@ -167,7 +164,7 @@ public abstract class ArrayUtil {
      * @param <T>      The type of the array items
      * @return how many of the items in {@code contains} are missing from {@code array}.
      */
-    @Deprecated
+
     public static <T> int missing(T[] array, T[] contains) {
         int missing = 0;
         for (T check : contains) {

@@ -297,11 +297,11 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
         String propertyKey = "k1";
         String propertyName = "p1";
         Map<String, Long> values = ImmutableMap.of(
-                "value1", createDate(2016, 4, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value2", createDate(2016, 5, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value3", createDate(2016, 6, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value4", createDate(2016, 7, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value5", createDate(2016, 8, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli()
+                "value1", createDateTime(2016, 4, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value2", createDateTime(2016, 5, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value3", createDateTime(2016, 6, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value4", createDateTime(2016, 7, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value5", createDateTime(2016, 8, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli()
         );
 
         ElementMutation<Vertex> vertexMutation = getGraph().prepareVertex(vertexId, VISIBILITY_EMPTY, CONCEPT_TYPE_THING);
@@ -325,11 +325,11 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
         String propertyKey = "k1";
         String propertyName = "p1";
         Map<String, Long> values = ImmutableMap.of(
-                "value1", createDate(2016, 4, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value2", createDate(2016, 5, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value3", createDate(2016, 6, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value4", createDate(2016, 7, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
-                "value5", createDate(2016, 8, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli()
+                "value1", createDateTime(2016, 4, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value2", createDateTime(2016, 5, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value3", createDateTime(2016, 6, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value4", createDateTime(2016, 7, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli(),
+                "value5", createDateTime(2016, 8, 6, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli()
         );
 
         ElementMutation<Edge> edgeMutation = getGraph().prepareEdge(edgeId, v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY);
@@ -346,8 +346,8 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
 
     @Test
     public void testTimestampsInExistingElementMutation() {
-        Long t1 = createDate(2017, 1, 18, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli();
-        Long t2 = createDate(2017, 1, 19, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli();
+        Long t1 = createDateTime(2017, 1, 18, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli();
+        Long t2 = createDateTime(2017, 1, 19, 9, 20, 0).asObjectCopy().toInstant().toEpochMilli();
 
         getGraph().prepareVertex("v1", VISIBILITY_EMPTY, CONCEPT_TYPE_THING)
                 .addPropertyValue("k1", "prop1", stringValue("test1"), Metadata.create(), t1, VISIBILITY_EMPTY)
@@ -374,9 +374,9 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
 
     @Test
     public void testPropertyHistoricalVersions() {
-        DateTimeValue time25 = createDate(2015, 4, 6, 16, 15, 0);
+        DateTimeValue time25 = createDateTime(2015, 4, 6, 16, 15, 0);
         long time25Millis = time25.asObjectCopy().toInstant().toEpochMilli();
-        DateTimeValue time30 = createDate(2015, 4, 6, 16, 16, 0);
+        DateTimeValue time30 = createDateTime(2015, 4, 6, 16, 16, 0);
         long time30Millis = time30.asObjectCopy().toInstant().toEpochMilli();
 
         Metadata metadata = Metadata.create();
@@ -411,10 +411,10 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
 
     @Test
     public void testStreamingPropertyHistoricalVersions() {
-        DateTimeValue time25 = createDate(2015, 4, 6, 16, 15, 0);
+        DateTimeValue time25 = createDateTime(2015, 4, 6, 16, 15, 0);
         long time25Millis = time25.asObjectCopy().toInstant().toEpochMilli();
 
-        DateTimeValue time30 = createDate(2015, 4, 6, 16, 16, 0);
+        DateTimeValue time30 = createDateTime(2015, 4, 6, 16, 16, 0);
         long time30Millis = time30.asObjectCopy().toInstant().toEpochMilli();
 
         Metadata metadata = Metadata.create();
@@ -445,10 +445,10 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
 
     @Test
     public void testGetVertexAtASpecificTimeInHistory() {
-        DateTimeValue time25 = createDate(2015, 4, 6, 16, 15, 0);
+        DateTimeValue time25 = createDateTime(2015, 4, 6, 16, 15, 0);
         long time25Millis = time25.asObjectCopy().toInstant().toEpochMilli();
 
-        DateTimeValue time30 = createDate(2015, 4, 6, 16, 16, 0);
+        DateTimeValue time30 = createDateTime(2015, 4, 6, 16, 16, 0);
         long time30Millis = time30.asObjectCopy().toInstant().toEpochMilli();
 
         Metadata metadata = Metadata.create();
@@ -483,9 +483,9 @@ public abstract class GraphHistoryTests implements GraphTestSetup {
 
     @Test
     public void testAllPropertyHistoricalVersions() {
-        DateTimeValue time25 = createDate(2015, 4, 6, 16, 15, 0);
+        DateTimeValue time25 = createDateTime(2015, 4, 6, 16, 15, 0);
         long time25Millis = time25.asObjectCopy().toInstant().toEpochMilli();
-        DateTimeValue time30 = createDate(2015, 4, 6, 16, 16, 0);
+        DateTimeValue time30 = createDateTime(2015, 4, 6, 16, 16, 0);
         long time30Millis = time30.asObjectCopy().toInstant().toEpochMilli();
 
         Metadata metadata = Metadata.create();

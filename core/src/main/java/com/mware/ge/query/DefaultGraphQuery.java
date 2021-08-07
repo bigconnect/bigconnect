@@ -38,34 +38,37 @@ package com.mware.ge.query;
 
 import com.mware.ge.*;
 import com.mware.ge.query.aggregations.Aggregation;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.util.JoinIterable;
 
 public class DefaultGraphQuery extends GraphQueryBase {
-    public DefaultGraphQuery(Graph graph, String queryString, Authorizations authorizations) {
-        super(graph, queryString, authorizations);
+    public DefaultGraphQuery(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        super(graph, queryBuilder, authorizations);
     }
 
     @Override
     public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
-                getParameters(),
+                getBuilder(),
                 this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
                 true,
                 true,
                 true,
-                getAggregations()
+                getAggregations(),
+                getAuthorizations()
         );
     }
 
     @Override
     public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
-                getParameters(),
+                getBuilder(),
                 this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
                 true,
                 true,
                 true,
-                getAggregations()
+                getAggregations(),
+                getAuthorizations()
         );
     }
 
@@ -73,9 +76,9 @@ public class DefaultGraphQuery extends GraphQueryBase {
     protected <T extends Element> Iterable<T> getIterableFromElementType(ElementType elementType, FetchHints fetchHints) throws GeException {
         switch (elementType) {
             case VERTEX:
-                return (Iterable<T>) getGraph().getVertices(fetchHints, getParameters().getAuthorizations());
+                return (Iterable<T>) getGraph().getVertices(fetchHints, getAuthorizations());
             case EDGE:
-                return (Iterable<T>) getGraph().getEdges(fetchHints, getParameters().getAuthorizations());
+                return (Iterable<T>) getGraph().getEdges(fetchHints, getAuthorizations());
             default:
                 throw new GeException("Unexpected element type: " + elementType);
         }

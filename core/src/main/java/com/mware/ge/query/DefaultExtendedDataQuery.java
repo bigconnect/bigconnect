@@ -38,6 +38,7 @@ package com.mware.ge.query;
 
 import com.mware.ge.*;
 import com.mware.ge.query.aggregations.Aggregation;
+import com.mware.ge.query.builder.GeQueryBuilder;
 
 public class DefaultExtendedDataQuery extends QueryBase {
     private final Element element;
@@ -47,10 +48,10 @@ public class DefaultExtendedDataQuery extends QueryBase {
             Graph graph,
             Element element,
             String tableName,
-            String queryString,
+            GeQueryBuilder queryBuilder,
             Authorizations authorizations
     ) {
-        super(graph, queryString, authorizations);
+        super(graph, queryBuilder, authorizations);
         this.element = element;
         this.tableName = tableName;
     }
@@ -74,12 +75,13 @@ public class DefaultExtendedDataQuery extends QueryBase {
     @Override
     protected QueryResultsIterable<? extends GeObject> extendedData(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
-                getParameters(),
+                getBuilder(),
                 getElement().getExtendedData(getTableName()),
                 true,
                 true,
                 true,
-                getAggregations()
+                getAggregations(),
+                getAuthorizations()
         );
     }
 

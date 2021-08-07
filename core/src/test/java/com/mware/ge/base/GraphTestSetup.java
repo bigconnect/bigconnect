@@ -43,6 +43,8 @@ import com.mware.ge.query.QueryResultsIterable;
 import com.mware.ge.query.aggregations.TermsAggregation;
 import com.mware.ge.query.aggregations.TermsBucket;
 import com.mware.ge.query.aggregations.TermsResult;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.values.storable.DateTimeValue;
 import com.mware.ge.values.storable.DateValue;
 import org.junit.Rule;
@@ -127,7 +129,7 @@ public interface GraphTestSetup {
         return DateValue.date(year, month, day);
     }
 
-    default DateTimeValue createDate(int year, int month, int day, int hour, int min, int sec) {
+    default DateTimeValue createDateTime(int year, int month, int day, int hour, int min, int sec) {
         return DateTimeValue.datetime(year, month, day, hour, min, sec, 0, ZoneOffset.UTC);
     }
 
@@ -162,7 +164,8 @@ public interface GraphTestSetup {
     }
 
     default TermsResult queryGraphQueryWithTermsAggregationResult(String queryString, String propertyName, ElementType elementType, Integer buckets, Authorizations authorizations) {
-        Query q = (queryString == null ? getGraph().query(authorizations) : getGraph().query(queryString, authorizations)).limit(0);
+        GeQueryBuilder qb = queryString == null ? GeQueryBuilders.searchAll() : GeQueryBuilders.search(queryString).limit(0);
+        Query q = getGraph().query(qb, authorizations);
         TermsAggregation agg = new TermsAggregation("terms-count", propertyName);
         if (buckets != null) {
             agg.setSize(buckets);

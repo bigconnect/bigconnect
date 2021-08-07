@@ -38,6 +38,7 @@ package com.mware.ge.query;
 
 import com.mware.ge.*;
 import com.mware.ge.query.aggregations.*;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.values.storable.DateTimeValue;
 import com.mware.ge.values.storable.Value;
@@ -50,14 +51,15 @@ public class DefaultGraphQueryIterableWithAggregations<T extends GeObject> exten
     private final Collection<Aggregation> aggregations;
 
     public DefaultGraphQueryIterableWithAggregations(
-            QueryParameters parameters,
+            GeQueryBuilder query,
             Iterable<T> iterable,
             boolean evaluateQueryString,
             boolean evaluateHasContainers,
             boolean evaluateSortContainers,
-            Collection<Aggregation> aggregations
+            Collection<Aggregation> aggregations,
+            Authorizations authorizations
     ) {
-        super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
+        super(query, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, authorizations);
         this.aggregations = aggregations;
     }
 

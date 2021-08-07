@@ -37,6 +37,7 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.*;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -60,11 +61,11 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
             Client client,
             Graph graph,
             Vertex sourceVertex,
-            String queryString,
+            GeQueryBuilder queryBuilder,
             Options options,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(client, graph, queryBuilder, options, authorizations);
         this.sourceVertex = sourceVertex;
     }
 

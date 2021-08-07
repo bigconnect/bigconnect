@@ -46,6 +46,8 @@ import com.mware.ge.query.GeoCompare;
 import com.mware.ge.query.IterableWithTotalHits;
 import com.mware.ge.query.QueryResultsIterable;
 import com.mware.ge.query.aggregations.TermsResult;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.IOUtils;
 import com.mware.ge.util.IncreasingTime;
 import com.mware.ge.util.IterableUtils;
@@ -68,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.*;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.GeAssert.assertResultsCount;
 import static com.mware.ge.util.IterableUtils.count;
@@ -277,7 +280,7 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         getGraph().createAuthorizations(AUTHORIZATIONS_ALL);
         getGraph().flush();
 
-        assertResultsCount(1, 1, getGraph().query(AUTHORIZATIONS_A).has("age", intValue(25)).vertices());
+        assertResultsCount(1, 1, getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_A).vertices());
 
         Vertex v1 = getGraph().getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_ALL);
         ExistingElementMutation<Vertex> m = v1.prepareMutation();
@@ -306,8 +309,8 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         v1 = getGraph().getVertex("v1", AUTHORIZATIONS_A);
         assertNull("v1 should not be returned for auth a", v1);
 
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_A).has("age", intValue(25)).vertices());
-        assertResultsCount(1, 1, getGraph().query(AUTHORIZATIONS_B).has("age", intValue(25)).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_A).vertices());
+        assertResultsCount(1, 1, getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_B).vertices());
     }
 
     @Test
@@ -326,8 +329,8 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         v1 = getGraph().getVertex("v1", AUTHORIZATIONS_A);
         assertNull(v1.getProperty("prop1"));
 
-        assertEquals(1, count(getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1")).vertices()));
-        assertEquals(0, count(getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1")).vertices()));
+        assertEquals(1, count(getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_B).vertices()));
+        assertEquals(0, count(getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A).vertices()));
 
         TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
         Map<Object, Long> propertyCountByValue = termsBucketToMap(aggregationResult.getBuckets());
@@ -363,8 +366,8 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         e1 = getGraph().getEdge("e1", AUTHORIZATIONS_A);
         assertNull(e1.getProperty("prop2"));
 
-        assertEquals(1, count(getGraph().query(AUTHORIZATIONS_B).has("prop2", stringValue("value2")).edges()));
-        assertEquals(0, count(getGraph().query(AUTHORIZATIONS_A).has("prop2", stringValue("value2")).edges()));
+        assertEquals(1, count(getGraph().query(hasFilter("prop2", Compare.EQUAL, stringValue("value2")), AUTHORIZATIONS_B).edges()));
+        assertEquals(0, count(getGraph().query(hasFilter("prop2", Compare.EQUAL, stringValue("value2")), AUTHORIZATIONS_A).edges()));
 
         propertyCountByValue = queryGraphQueryWithTermsAggregation("prop2", ElementType.EDGE, AUTHORIZATIONS_A);
         if (propertyCountByValue != null) {
@@ -406,11 +409,11 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         assertNull(v1.getProperty("prop1"));
         assertNotNull(v1.getProperty("prop2"));
 
-        toList(getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1")).vertices());
-        toList(getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1")).vertices());
+        toList(getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A).vertices());
+        toList(getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_B).vertices());
 
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1")).vertices());
-        assertResultsCount(1, 1, getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1")).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A).vertices());
+        assertResultsCount(1, 1, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_B).vertices());
 
         Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
         if (propertyCountByValue != null) {
@@ -437,10 +440,10 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1")).vertices());
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1")).vertices());
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1New")).vertices());
-        assertResultsCount(1, 1, getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1New")).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_B).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1New")), AUTHORIZATIONS_B).vertices());
+        assertResultsCount(1, 1, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1New")), AUTHORIZATIONS_A).vertices());
 
         v1 = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertNotNull(v1.getProperty("prop1"));
@@ -458,12 +461,12 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         assertNotNull(v1.getProperty("prop1"));
         assertEquals(stringValue("value1New2"), v1.getPropertyValue("prop1"));
 
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1")).vertices());
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1")).vertices());
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1New")).vertices());
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1New")).vertices());
-        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_B).has("prop1", stringValue("value1New2")).vertices());
-        assertResultsCount(1, 1, getGraph().query(AUTHORIZATIONS_A).has("prop1", stringValue("value1New2")).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_B).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_A).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1New")), AUTHORIZATIONS_B).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1New")), AUTHORIZATIONS_A).vertices());
+        assertResultsCount(0, 0, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1New2")), AUTHORIZATIONS_B).vertices());
+        assertResultsCount(1, 1, getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1New2")), AUTHORIZATIONS_A).vertices());
     }
 
     @Test
@@ -541,13 +544,13 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .alterPropertyVisibility(v1.getProperty("key1", "prop2", VISIBILITY_A), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_EMPTY).has("prop1", stringValue("value1")).vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(hasFilter("prop1", Compare.EQUAL, stringValue("value1")), AUTHORIZATIONS_EMPTY).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
-        QueryResultsIterable<String> vertexIds = getGraph().query(AUTHORIZATIONS_EMPTY).has("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)).vertexIds();
+        QueryResultsIterable<String> vertexIds = getGraph().query(hasFilter("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_EMPTY).vertexIds();
         assertIdsAnyOrder(vertexIds, "v1");
         assertResultsCount(1, 1, vertexIds);
-        vertices = getGraph().query(AUTHORIZATIONS_EMPTY).has("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)).vertices();
+        vertices = getGraph().query(hasFilter("prop2", GeoCompare.WITHIN, geoCircleValue(38.9186, -77.2297, 1)), AUTHORIZATIONS_EMPTY).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
     }
@@ -658,8 +661,7 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         v1.setProperty("prop1", stringValue("value1New"), VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        Iterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .has("prop2", stringValue("value2"))
+        Iterable<Vertex> vertices = getGraph().query(hasFilter("prop2", Compare.EQUAL, stringValue("value2")), AUTHORIZATIONS_A_AND_B)
                 .vertices();
         assertVertexIds(vertices, "v1");
     }
@@ -696,8 +698,7 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
         assertEquals(count, vertices.size());
 
         System.out.println("Query vertices");
-        vertices = Lists.newArrayList(getGraph().query(authorizations)
-                .limit((Integer) null)
+        vertices = Lists.newArrayList(getGraph().query(searchAll().limit((Integer) null), authorizations)
                 .vertices());
         assertEquals(count, vertices.size());
     }
@@ -712,24 +713,21 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        Iterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, intValue(25))
+        Iterable<Vertex> vertices = getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_A)
                 .vertices();
         assertEquals(1, count(vertices));
         if (vertices instanceof IterableWithTotalHits) {
             assertEquals(1, ((IterableWithTotalHits) vertices).getTotalHits());
         }
 
-        vertices = getGraph().query(AUTHORIZATIONS_B)
-                .has("age", Compare.EQUAL, intValue(25))
+        vertices = getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_B)
                 .vertices();
         assertEquals(0, count(vertices)); // need auth A to see the v2 node itself
         if (vertices instanceof IterableWithTotalHits) {
             assertEquals(0, ((IterableWithTotalHits) vertices).getTotalHits());
         }
 
-        vertices = getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, intValue(25))
+        vertices = getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_A_AND_B)
                 .vertices();
         assertEquals(2, count(vertices));
         if (vertices instanceof IterableWithTotalHits) {
@@ -785,8 +783,7 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_ALL);
         getGraph().flush();
 
-        Iterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_MIXED_CASE_a_AND_B)
-                .has("age", Compare.EQUAL, intValue(25))
+        Iterable<Vertex> vertices = getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_MIXED_CASE_a_AND_B)
                 .vertices();
         assertEquals(1, count(vertices));
     }
@@ -800,8 +797,10 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        Iterable<Vertex> vertices = getGraph().query("hello", AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, intValue(25))
+        GeQueryBuilder qb = boolQuery()
+                .and(search("hello"))
+                .and(hasFilter("age", Compare.EQUAL, intValue(25)));
+        Iterable<Vertex> vertices = getGraph().query(qb, AUTHORIZATIONS_A_AND_B)
                 .vertices();
         assertEquals(1, count(vertices));
 
@@ -840,12 +839,10 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .setProperty("age", intValue(25), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
-        Iterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, intValue(25))
+        Iterable<Vertex> vertices = getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_A)
                 .vertices();
         assertResultsCount(1, 1, (QueryResultsIterable) vertices);
-        vertices = getGraph().query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, intValue(25))
+        vertices = getGraph().query(hasFilter("age", Compare.EQUAL, intValue(25)), AUTHORIZATIONS_A_AND_B)
                 .vertices();
         assertResultsCount(2, 2, (QueryResultsIterable) vertices);
     }
@@ -862,7 +859,7 @@ public abstract class GraphSecurityTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
-        long count = graph.query(new String[] { "v1" }, AUTHORIZATIONS_B)
+        long count = graph.query(hasIds("v1"), AUTHORIZATIONS_B)
                 .vertexIds()
                 .getTotalHits();
 

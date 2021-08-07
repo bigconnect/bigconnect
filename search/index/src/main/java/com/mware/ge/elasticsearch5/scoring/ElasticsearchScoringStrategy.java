@@ -38,7 +38,6 @@ package com.mware.ge.elasticsearch5.scoring;
 
 import com.mware.ge.Graph;
 import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
-import com.mware.ge.query.QueryParameters;
 import com.mware.ge.scoring.ScoringStrategy;
 import org.elasticsearch.index.query.QueryBuilder;
 
@@ -46,7 +45,6 @@ public interface ElasticsearchScoringStrategy extends ScoringStrategy {
     QueryBuilder updateElasticsearchQuery(
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query,
-            QueryParameters queryParameters
+            QueryBuilder query
     );
 }

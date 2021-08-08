@@ -40,4 +40,9 @@ public class HasExtendedDataQueryBuilder extends GeQueryBuilder {
         }
         return false;
     }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new HasExtendedDataQueryBuilder(elementType, elementId, tableName);
+    }
 }

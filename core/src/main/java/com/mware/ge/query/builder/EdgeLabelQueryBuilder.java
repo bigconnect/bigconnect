@@ -33,4 +33,9 @@ public class EdgeLabelQueryBuilder extends GeQueryBuilder {
         }
         return false;
     }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new EdgeLabelQueryBuilder(edgeLabels);
+    }
 }

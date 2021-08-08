@@ -37,6 +37,7 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.*;
+import com.mware.ge.collection.Iterables;
 import com.mware.ge.query.builder.GeQueryBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -70,8 +71,8 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     }
 
     @Override
-    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
-        List<QueryBuilder> filters = super.getFilters(elementTypes, fetchHints);
+    protected List<QueryBuilder> getInternalFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
+        List<QueryBuilder> filters = super.getInternalFilters(elementTypes, fetchHints);
 
         List<QueryBuilder> relatedFilters = new ArrayList<>();
 
@@ -131,23 +132,14 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     }
 
     private QueryBuilder getVertexFilter(EnumSet<ElasticsearchDocumentType> elementTypes) {
-        List<QueryBuilder> filters = new ArrayList<>();
-        List<String> edgeLabels = getParameters().getEdgeLabels();
-        String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
-                ? null
-                : edgeLabels.toArray(new String[edgeLabels.size()]);
-        Stream<EdgeInfo> edgeInfos = stream(sourceVertex.getEdgeInfos(
-                direction,
-                edgeLabelsArray,
-                getParameters().getAuthorizations()
-        ));
+        Iterable<Vertex> results = sourceVertex.getVertices(direction, FetchHints.PROPERTIES_AND_EDGE_REFS, getAuthorizations());
+        results = Iterables.filter(results, v -> getBuilder().matches(v, getAuthorizations()));
         if (otherVertexId != null) {
-            edgeInfos = edgeInfos.filter(ei -> ei.getVertexId().equals(otherVertexId));
+            results =  Iterables.filter(results, v -> v.getId().equals(otherVertexId));
         }
-        if (getParameters().getIds() != null) {
-            edgeInfos = edgeInfos.filter(ei -> getParameters().getIds().contains(ei.getVertexId()));
-        }
-        String[] ids = edgeInfos.map(EdgeInfo::getVertexId).toArray(String[]::new);
+
+        List<QueryBuilder> filters = new ArrayList<>();
+        String[] ids = Iterables.asArray(String.class, Iterables.map(results, ElementId::getId));
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
             filters.add(QueryBuilders.termsQuery(ELEMENT_ID_FIELD_NAME, ids));

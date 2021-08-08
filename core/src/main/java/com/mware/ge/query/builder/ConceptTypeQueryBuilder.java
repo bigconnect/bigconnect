@@ -12,11 +12,20 @@ public class ConceptTypeQueryBuilder extends GeQueryBuilder {
         this.conceptTypes = conceptTypes;
     }
 
+    public String[] getConceptTypes() {
+        return conceptTypes;
+    }
+
     @Override
     public boolean matches(GeObject geObject, Authorizations authorizations) {
         if (geObject instanceof Vertex) {
             return ArrayUtil.contains(conceptTypes, ((Vertex) geObject).getConceptType());
         }
         return false;
+    }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new ConceptTypeQueryBuilder(conceptTypes);
     }
 }

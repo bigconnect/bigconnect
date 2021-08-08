@@ -698,9 +698,13 @@ public abstract class GraphQueryTests implements GraphTestSetup {
                 .vertices();
         assertResultsCount(0, vertices);
 
-        assertResultsCount(0, getGraph().query(exists(getGraph(), DoubleValue.class), AUTHORIZATIONS_A)
-                .vertices()
-        );
+        try {
+            getGraph().query(exists(getGraph(), DoubleValue.class), AUTHORIZATIONS_A)
+                    .vertices();
+            fail("Should not allow searching for a dataType that there are no mappings for");
+        } catch (GeException ex) {
+            // expected
+        }
 
         vertices = getGraph().query(exists(getGraph(), FloatValue.class), AUTHORIZATIONS_A)
                 .vertices();

@@ -40,6 +40,7 @@ import com.mware.ge.Authorizations;
 import com.mware.ge.FetchHints;
 import com.mware.ge.Graph;
 import com.mware.ge.query.GraphQuery;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -57,18 +58,18 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
             Graph graph,
             String elementId,
             String tableName,
-            String queryString,
+            GeQueryBuilder queryBuilder,
             Options options,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(client, graph, queryBuilder, options, authorizations);
         this.elementId = elementId;
         this.tableName = tableName;
     }
 
     @Override
-    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
-        List<QueryBuilder> filters = super.getFilters(elementTypes, fetchHints);
+    protected List<QueryBuilder> getInternalFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
+        List<QueryBuilder> filters = super.getInternalFilters(elementTypes, fetchHints);
         BoolQueryBuilder filter = QueryBuilders.boolQuery()
                 .must(QueryBuilders.termsQuery(
                         Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,

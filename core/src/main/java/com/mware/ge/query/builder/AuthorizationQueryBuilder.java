@@ -8,7 +8,7 @@ import com.mware.ge.util.StreamUtils;
 public class AuthorizationQueryBuilder extends GeQueryBuilder {
     private final String[] authorizations;
 
-    public AuthorizationQueryBuilder(String... authorizations) {
+    protected AuthorizationQueryBuilder(String... authorizations) {
         this.authorizations = authorizations;
     }
 
@@ -46,5 +46,10 @@ public class AuthorizationQueryBuilder extends GeQueryBuilder {
             }
         }
         return false;
+    }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new AuthorizationQueryBuilder(authorizations);
     }
 }

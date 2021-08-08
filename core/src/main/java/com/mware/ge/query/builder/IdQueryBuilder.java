@@ -24,4 +24,9 @@ public class IdQueryBuilder extends GeQueryBuilder {
             throw new GeException("Unhandled element type: " + geElem.getClass().getName());
         }
     }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new IdQueryBuilder(ids);
+    }
 }

@@ -48,6 +48,8 @@ import com.mware.ge.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringSt
 import com.mware.ge.elasticsearch5.sorting.ElasticsearchLengthOfStringSortingStrategy;
 import com.mware.ge.query.QueryResultsIterable;
 import com.mware.ge.query.SortDirection;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.scoring.ScoringStrategy;
 import com.mware.ge.sorting.SortingStrategy;
 import org.junit.Assert;
@@ -79,7 +81,11 @@ public class ElasticSortingScoringTests extends GraphSortingScoringTests impleme
 
         getSearchIndex().clearCache();
 
-        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
+        QueryResultsIterable<Vertex> vertices = graph.query(
+                GeQueryBuilders.searchAll()
+                        .sort("age", SortDirection.ASCENDING),
+                AUTHORIZATIONS_A
+        ).vertices();
         Assert.assertEquals(2, count(vertices));
     }
 

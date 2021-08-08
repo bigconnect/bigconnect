@@ -92,8 +92,8 @@ public class ElasticsearchResource extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        System.setProperty("REMOTE_ES_CLUSTER_NAME", "bdl");
-        System.setProperty("REMOTE_ES_ADDRESSES", "localhost");
+//        System.setProperty("REMOTE_ES_CLUSTER_NAME", "bdl");
+//        System.setProperty("REMOTE_ES_ADDRESSES", "localhost");
 
         buildRunner();
     }
@@ -182,6 +182,7 @@ public class ElasticsearchResource extends ExternalResource {
             configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, clusterName);
             configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, getLocation());
         }
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + SIDECAR, false);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_SHARDS", "1")));
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_REPLICAS", "0")));
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);

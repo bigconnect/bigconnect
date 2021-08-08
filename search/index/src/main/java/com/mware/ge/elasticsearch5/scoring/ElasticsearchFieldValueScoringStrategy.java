@@ -36,19 +36,19 @@
  */
 package com.mware.ge.elasticsearch5.scoring;
 
+import com.mware.ge.Authorizations;
+import com.mware.ge.GeException;
+import com.mware.ge.Graph;
 import com.mware.ge.PropertyDefinition;
+import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
+import com.mware.ge.scoring.FieldValueScoringStrategy;
+import com.mware.ge.util.IOUtils;
 import com.mware.ge.values.storable.NumberValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.functionscore.ScriptScoreFunctionBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import com.mware.ge.Graph;
-import com.mware.ge.GeException;
-import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
-import com.mware.ge.query.QueryParameters;
-import com.mware.ge.scoring.FieldValueScoringStrategy;
-import com.mware.ge.util.IOUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -73,9 +73,10 @@ public class ElasticsearchFieldValueScoringStrategy
     public QueryBuilder updateElasticsearchQuery(
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query
+            QueryBuilder query,
+            Authorizations authorizations
     ) {
-        List<String> fieldNames = getFieldNames(graph, searchIndex, query, getField());
+        List<String> fieldNames = getFieldNames(graph, searchIndex, authorizations, getField());
         if (fieldNames == null) {
             return query;
         }
@@ -89,7 +90,7 @@ public class ElasticsearchFieldValueScoringStrategy
     private List<String> getFieldNames(
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
-            QueryParameters queryParameters,
+            Authorizations authorizations,
             String field
     ) {
         PropertyDefinition propertyDefinition = graph.getPropertyDefinition(field);
@@ -103,7 +104,7 @@ public class ElasticsearchFieldValueScoringStrategy
         String[] propertyNames = searchIndex.getPropertyNames(
                 graph,
                 propertyDefinition.getPropertyName(),
-                queryParameters.getAuthorizations()
+                authorizations
         );
         return Arrays.stream(propertyNames)
                 .filter(propertyName -> NumberValue.class.isAssignableFrom(propertyDefinition.getDataType()))

@@ -36,6 +36,7 @@
  */
 package com.mware.ge.elasticsearch5;
 
+import com.mware.ge.Authorizations;
 import com.mware.ge.ElementType;
 import com.mware.ge.ExtendedDataRow;
 import com.mware.ge.query.aggregations.*;
@@ -75,13 +76,13 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
     public ElasticsearchGraphQueryIterable(
             ElasticsearchSearchQueryBase query,
             SearchResponse searchResponse,
-            GeQueryBuilder parameters,
             Iterable<T> iterable,
             long totalHits,
             long searchTimeInNanoSeconds,
-            SearchHits hits
+            SearchHits hits,
+            Authorizations authorizations
     ) {
-        super(query, iterable, false, false, false);
+        super(query.getBuilder(), iterable, false, false, false, authorizations);
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {

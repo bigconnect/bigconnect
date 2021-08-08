@@ -11,4 +11,9 @@ public class SearchAllQueryBuilder extends GeQueryBuilder {
     public boolean matches(GeObject geObject, Authorizations authorizations) {
         return true;
     }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new SearchAllQueryBuilder();
+    }
 }

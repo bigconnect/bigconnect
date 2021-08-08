@@ -36,6 +36,7 @@
  */
 package com.mware.ge.elasticsearch5.sorting;
 
+import com.mware.ge.Authorizations;
 import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.PropertyDefinition;
@@ -78,14 +79,14 @@ public class ElasticsearchLengthOfStringSortingStrategy
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
             SearchRequestBuilder q,
-            QueryParameters parameters,
+            Authorizations authorizations,
             SortDirection direction
     ) {
         PropertyDefinition propertyDefinition = graph.getPropertyDefinition(getPropertyName());
 
         SortOrder esOrder = direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
         Map<String, Object> scriptParams = new HashMap<>();
-        String[] propertyNames = searchIndex.getPropertyNames(graph, getPropertyName(), parameters.getAuthorizations());
+        String[] propertyNames = searchIndex.getPropertyNames(graph, getPropertyName(), authorizations);
         List<String> fieldNames = Arrays.stream(propertyNames)
                 .map(propertyName -> {
                     String suffix = propertyDefinition.getDataType().isAssignableFrom(TextValue.class)

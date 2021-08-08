@@ -106,4 +106,5 @@ public abstract class GeQueryBuilder {
     }
 
     public abstract boolean matches(GeObject geObject, Authorizations authorizations);
+    public abstract GeQueryBuilder clone();
 }

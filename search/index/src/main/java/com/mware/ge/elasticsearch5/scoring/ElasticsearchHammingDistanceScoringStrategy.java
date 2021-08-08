@@ -36,6 +36,7 @@
  */
 package com.mware.ge.elasticsearch5.scoring;
 
+import com.mware.ge.Authorizations;
 import com.mware.ge.PropertyDefinition;
 import com.mware.ge.values.storable.TextValue;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -74,9 +75,9 @@ public class ElasticsearchHammingDistanceScoringStrategy
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
             QueryBuilder query,
-            QueryParameters queryParameters
+            Authorizations authorizations
     ) {
-        List<String> fieldNames = getFieldNames(graph, searchIndex, queryParameters, getField());
+        List<String> fieldNames = getFieldNames(graph, searchIndex, authorizations, getField());
         if (fieldNames == null) {
             return query;
         }
@@ -91,7 +92,7 @@ public class ElasticsearchHammingDistanceScoringStrategy
     private List<String> getFieldNames(
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
-            QueryParameters queryParameters,
+            Authorizations authorizations,
             String field
     ) {
         PropertyDefinition propertyDefinition = graph.getPropertyDefinition(field);
@@ -108,7 +109,7 @@ public class ElasticsearchHammingDistanceScoringStrategy
         String[] propertyNames = searchIndex.getPropertyNames(
                 graph,
                 propertyDefinition.getPropertyName(),
-                queryParameters.getAuthorizations()
+                authorizations
         );
         return Arrays.stream(propertyNames)
                 .filter(propertyName -> TextValue.class.isAssignableFrom(propertyDefinition.getDataType()))

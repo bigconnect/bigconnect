@@ -1633,8 +1633,42 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
-                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                authorizations
+        );
+    }
+
+    @Override
+    public VertexQuery queryVertex(Graph graph, Vertex vertex, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return new ElasticsearchSearchVertexQuery(
+                getClient(),
+                graph,
+                vertex,
+                queryBuilder,
+                new ElasticsearchSearchVertexQuery.Options()
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                authorizations
+        );
+    }
+
+    @Override
+    public Query queryExtendedData(Graph graph, Element element, String tableName, GeQueryBuilder queryBuilder, Authorizations authorizations) {
+        return new ElasticsearchSearchExtendedDataQuery(
+                getClient(),
+                graph,
+                element.getId(),
+                tableName,
+                queryBuilder,
+                new ElasticsearchSearchExtendedDataQuery.Options()
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }

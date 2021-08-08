@@ -13,7 +13,7 @@ public class RangeQueryBuilder extends GeQueryBuilder {
     private final Value endValue;
     private final boolean inclusiveEndValue;
 
-    public RangeQueryBuilder(String propertyName, Value startValue, boolean inclusiveStartValue, Value endValue, boolean inclusiveEndValue) {
+    protected RangeQueryBuilder(String propertyName, Value startValue, boolean inclusiveStartValue, Value endValue, boolean inclusiveEndValue) {
         this.propertyName = propertyName;
         this.startValue = startValue;
         this.inclusiveStartValue = inclusiveStartValue;
@@ -53,5 +53,10 @@ public class RangeQueryBuilder extends GeQueryBuilder {
             boolQuery.and(GeQueryBuilders.hasFilter(propertyName, predicate, endValue));
         }
         return boolQuery.matches(geObject, authorizations);
+    }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new RangeQueryBuilder(propertyName, startValue, inclusiveStartValue, endValue, inclusiveEndValue);
     }
 }

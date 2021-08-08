@@ -41,6 +41,7 @@ import com.mware.ge.base.GraphBaseTests;
 import com.mware.ge.base.GraphTestSetup;
 import com.mware.ge.base.TestGraphFactory;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -52,6 +53,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.hasFilter;
 import static com.mware.ge.util.CloseableUtils.closeQuietly;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.IterableUtils.count;
@@ -204,8 +206,7 @@ public class ElasticBaseTests extends GraphBaseTests implements GraphTestSetup {
             for (int it = 0; it < queryIterations; it++) {
                 System.out.println("query " + it);
                 for (int i = 0; i < verticesToCreate; i++) {
-                    toList(getGraph().query(AUTHORIZATIONS_EMPTY)
-                            .has("name", stringValue("value" + i))
+                    toList(getGraph().query(hasFilter("name", stringValue("value" + i)), AUTHORIZATIONS_EMPTY)
                             .vertices());
                 }
             }
@@ -239,10 +240,11 @@ public class ElasticBaseTests extends GraphBaseTests implements GraphTestSetup {
         }
         getGraph().flush();
 
-        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_EMPTY)
-                .has("name", stringValue("value1"))
-                .limit((Long) null)
-                .vertices();
+        QueryResultsIterable<Vertex> vertices = getGraph().query(
+                hasFilter("name", stringValue("value1"))
+                        .limit((Long) null),
+                AUTHORIZATIONS_EMPTY
+        ).vertices();
         assertEquals(verticesToCreate, vertices.getTotalHits());
         Iterator<Vertex> it = vertices.iterator();
         Assert.assertTrue(it.hasNext());
@@ -270,15 +272,15 @@ public class ElasticBaseTests extends GraphBaseTests implements GraphTestSetup {
         assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).vertexIds(), "v1");
         assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).vertexIds(), "v1");
 
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", stringValue("Joe")).vertexIds(), "v1");
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", stringValue("Tom")).vertexIds(), "v1");
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", stringValue("Janet")).vertexIds(), "v1");
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", stringValue("Bob")).vertexIds());
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Joe")), AUTHORIZATIONS_EMPTY).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Tom")), AUTHORIZATIONS_EMPTY).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Janet")), AUTHORIZATIONS_EMPTY).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Bob")), AUTHORIZATIONS_EMPTY).vertexIds());
 
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", stringValue("Joe")).vertexIds(), "v1");
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", stringValue("Tom")).vertexIds(), "v1");
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", stringValue("Janet")).vertexIds(), "v1");
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", stringValue("Bob")).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Joe")), AUTHORIZATIONS_A).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Tom")), AUTHORIZATIONS_A).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Janet")), AUTHORIZATIONS_A).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Bob")), AUTHORIZATIONS_A).vertexIds(), "v1");
     }
 
     /**
@@ -302,8 +304,8 @@ public class ElasticBaseTests extends GraphBaseTests implements GraphTestSetup {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", stringValue("Joe")).vertexIds());
-        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_B).has("name", stringValue("Joe")).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Joe")), AUTHORIZATIONS_A).vertexIds());
+        assertIdsAnyOrder(graph.query(hasFilter("name", stringValue("Joe")), AUTHORIZATIONS_B).vertexIds(), "v1");
     }
 
     /**

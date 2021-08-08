@@ -112,7 +112,10 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final Integer LOG_REQUEST_SIZE_LIMIT_DEFAULT = null;
 
     public static final String MAX_QUERY_STRING_TERMS = "maxQueryStringTerms";
-    public static final int MAX_QUERY_STRING_TERMS_DEFAULT = 2000;
+
+    // elasticsearch defaults to 1024. For larger values please update elasticsearch.yml:
+    // - index.query.bool.max_clause_count: 10240
+    public static final int MAX_QUERY_STRING_TERMS_DEFAULT = 1024;
 
     public static final String BULK_POOL_SIZE = "bulk.poolSize";
     public static final String BULK_BACKLOG_SIZE = "bulk.backlogSize";

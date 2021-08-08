@@ -36,10 +36,12 @@
  */
 package com.mware.ge.elasticsearch5;
 
+import com.mware.ge.Authorizations;
+
 import java.util.ArrayList;
 
 public class EmptyElasticsearchGraphQueryIterable<T> extends ElasticsearchGraphQueryIterable<T> {
     public EmptyElasticsearchGraphQueryIterable(ElasticsearchSearchQueryBase query) {
-        super(query, null, new ArrayList<>(), 0, 0, null);
+        super(query, null, new ArrayList<>(), 0, 0, null, new Authorizations());
     }
 }

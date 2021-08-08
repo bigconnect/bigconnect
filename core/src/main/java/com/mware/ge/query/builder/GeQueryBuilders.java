@@ -1,6 +1,7 @@
 package com.mware.ge.query.builder;
 
 import com.mware.ge.ElementType;
+import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.PropertyDefinition;
 import com.mware.ge.query.Compare;
@@ -43,6 +44,10 @@ public class GeQueryBuilders {
                 .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
                 .map(PropertyDefinition::getPropertyName)
                 .collect(Collectors.toSet());
+
+        if (propertyNames.isEmpty()) {
+            throw new GeException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+        }
 
         BoolQueryBuilder boolQueryBuilder = boolQuery();
         propertyNames.forEach(propName -> boolQueryBuilder.or(exists(propName)));
@@ -134,9 +139,6 @@ public class GeQueryBuilders {
     }
 
     private static boolean isPropertyOfType(PropertyDefinition propertyDefinition, Class<? extends Value> dataType) {
-//        boolean propertyIsDate = TemporalValue.class.isAssignableFrom(propertyDefinition.getDataType());
-//        boolean dataTypeIsDate = TemporalValue.class.isAssignableFrom(dataType);
-
         return dataType.isAssignableFrom(propertyDefinition.getDataType());
     }
 }

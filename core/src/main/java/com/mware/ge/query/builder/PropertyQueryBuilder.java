@@ -26,12 +26,17 @@ public class PropertyQueryBuilder extends GeQueryBuilder {
         return predicate;
     }
 
-    public Value getValues() {
+    public Value getValue() {
         return value;
     }
 
     @Override
     public boolean matches(GeObject geObject, Authorizations authorizations) {
         return this.predicate.evaluate(geObject.getProperties(propertyName), value);
+    }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new PropertyQueryBuilder(propertyName, predicate, value);
     }
 }

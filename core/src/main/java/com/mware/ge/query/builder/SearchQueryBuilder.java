@@ -6,7 +6,7 @@ import com.mware.ge.values.storable.StreamingPropertyValue;
 public class SearchQueryBuilder extends GeQueryBuilder {
     private final String queryString;
 
-    public SearchQueryBuilder(String query) {
+    protected SearchQueryBuilder(String query) {
         this.queryString = query;
     }
 
@@ -40,5 +40,10 @@ public class SearchQueryBuilder extends GeQueryBuilder {
         }
         String valueString = value.toString().toLowerCase();
         return valueString.contains(queryString.toLowerCase());
+    }
+
+    @Override
+    public GeQueryBuilder clone() {
+        return new SearchQueryBuilder(queryString);
     }
 }

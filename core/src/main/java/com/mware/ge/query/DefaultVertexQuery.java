@@ -69,33 +69,6 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
             return Iterables.filter(results, v -> v.getId().equals(getOtherVertexId()));
         }
 
-
-//        List<String> edgeLabels = getBuilder().getEdgeLabels();
-//        String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
-//                ? null
-//                : edgeLabels.toArray(new String[edgeLabels.size()]);
-//        Iterable<Vertex> results = getSourceVertex().getVertices(
-//                getDirection(),
-//                edgeLabelsArray,
-//                fetchHints,
-//                getAuthorizations()
-//        );
-//        if (getOtherVertexId() != null) {
-//            results = new FilterIterable<Vertex>(results) {
-//                @Override
-//                protected boolean isIncluded(Vertex otherVertex) {
-//                    return otherVertex.getId().equals(getOtherVertexId());
-//                }
-//            };
-//        }
-//        if (getParameters().getIds() != null) {
-//            results = new FilterIterable<Vertex>(results) {
-//                @Override
-//                protected boolean isIncluded(Vertex otherVertex) {
-//                    return getParameters().getIds().contains(otherVertex.getId());
-//                }
-//            };
-//        }
         return results;
     }
 

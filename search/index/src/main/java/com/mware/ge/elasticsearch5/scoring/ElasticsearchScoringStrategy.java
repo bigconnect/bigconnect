@@ -36,6 +36,7 @@
  */
 package com.mware.ge.elasticsearch5.scoring;
 
+import com.mware.ge.Authorizations;
 import com.mware.ge.Graph;
 import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
 import com.mware.ge.scoring.ScoringStrategy;
@@ -45,6 +46,7 @@ public interface ElasticsearchScoringStrategy extends ScoringStrategy {
     QueryBuilder updateElasticsearchQuery(
             Graph graph,
             Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query
+            QueryBuilder query,
+            Authorizations authorizations
     );
 }

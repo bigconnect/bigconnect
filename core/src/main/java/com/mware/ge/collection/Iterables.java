@@ -205,12 +205,12 @@ public final class Iterables {
         return new FlattenIterable<>(multiIterator);
     }
 
-    public static <FROM, TO> Iterable<TO> map(Function<? super FROM, ? extends TO> function, Iterable<FROM> from) {
+    public static <FROM, TO> Iterable<TO> map(Iterable<FROM> from, Function<? super FROM, ? extends TO> function) {
         return new MapIterable<>(from, function);
     }
 
-    public static <FROM, TO> Iterable<TO> flatMap(Function<? super FROM, ? extends Iterable<TO>> function, Iterable<FROM> from) {
-        return new CombiningIterable<>(map(function, from));
+    public static <FROM, TO> Iterable<TO> flatMap(Iterable<FROM> from, Function<? super FROM, ? extends Iterable<TO>> function) {
+        return new CombiningIterable<>(map(from, function));
     }
 
     @SafeVarargs

@@ -100,6 +100,8 @@ public enum ElasticsearchDocumentType {
                     enums.add(VERTEX_EXTENDED_DATA);
                     enums.add(EDGE_EXTENDED_DATA);
                     break;
+                case STREAMING_DATA:
+                    break;
                 default:
                     throw new GeException("Unhandled Ge object type: " + objectType);
             }

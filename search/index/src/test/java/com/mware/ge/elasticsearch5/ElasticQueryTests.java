@@ -44,6 +44,7 @@ import com.mware.ge.base.TestGraphFactory;
 import com.mware.ge.elasticsearch5.lucene.DefaultQueryStringTransformer;
 import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.query.QueryResultsIterable;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.values.storable.TextValue;
 import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsAction;
@@ -58,6 +59,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
+import static com.mware.ge.query.builder.GeQueryBuilders.searchAll;
 import static com.mware.ge.util.CloseableUtils.closeQuietly;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.IterableUtils.count;
@@ -121,7 +123,12 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
         vertices = graph.query("knownAs:joe", AUTHORIZATIONS_A).vertices();
         Assert.assertEquals(2, count(vertices));
 
-        vertices = graph.query("knownAs:joe", AUTHORIZATIONS_A).has("food", stringValue("pizza")).vertices();
+        vertices = graph.query(
+                GeQueryBuilders.boolQuery()
+                        .and(GeQueryBuilders.search("knownAs:joe"))
+                        .and(GeQueryBuilders.hasFilter("food", stringValue("pizza"))),
+                AUTHORIZATIONS_A
+        ).vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("food:pizza", AUTHORIZATIONS_A).vertices();
@@ -164,13 +171,13 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
         assertResultsCount(2, 2, vertices);
         assertEquals(startingNumQueries + 2, getNumQueries());
 
-        vertices = graph.query(AUTHORIZATIONS_A).limit(1).vertices();
+        vertices = graph.query(searchAll().limit(1), AUTHORIZATIONS_A).vertices();
         assertEquals(startingNumQueries + 4, getNumQueries());
 
         assertResultsCount(1, 2, vertices);
         assertEquals(startingNumQueries + 4, getNumQueries());
 
-        vertices = graph.query(AUTHORIZATIONS_A).limit(10).vertices();
+        vertices = graph.query(searchAll().limit(10), AUTHORIZATIONS_A).vertices();
         assertEquals(startingNumQueries + 6, getNumQueries());
 
         assertResultsCount(2, 2, vertices);
@@ -282,13 +289,11 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
         }
         graph.flush();
 
-        int resultCount = count(graph.query(AUTHORIZATIONS_A)
-                .limit(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT - 1)
+        int resultCount = count(graph.query(searchAll().limit(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT - 1), AUTHORIZATIONS_A)
                 .vertices());
         assertEquals(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT - 1, resultCount);
 
-        resultCount = count(graph.query(AUTHORIZATIONS_A)
-                .limit(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT + 1)
+        resultCount = count(graph.query(searchAll().limit(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT + 1), AUTHORIZATIONS_A)
                 .vertices());
         assertEquals(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT + 1, resultCount);
 
@@ -305,23 +310,21 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
         }
         getGraph().flush();
         QueryResultsIterable<String> queryResults = getGraph()
-                .query("*", AUTHORIZATIONS_EMPTY)
-                .limit(0)
+                .query(searchAll().limit(0), AUTHORIZATIONS_EMPTY)
                 .vertexIds();
         assertEquals(vertexCount, queryResults.getTotalHits());
         closeQuietly(queryResults);
     }
 
     @Test
-    public void testLargeTotalHitsScroll() throws InterruptedException {
+    public void testLargeTotalHitsScroll() {
         int vertexCount = 10_045;
         for (int write = 0; write < vertexCount; write++) {
             getGraph().prepareVertex("v" + write, VISIBILITY_EMPTY, CONCEPT_TYPE_THING).save(AUTHORIZATIONS_EMPTY);
         }
         getGraph().flush();
         QueryResultsIterable<String> queryResults = getGraph()
-                .query("*", AUTHORIZATIONS_EMPTY)
-                .limit((Long) null)
+                .query(searchAll().limit((Long) null), AUTHORIZATIONS_EMPTY)
                 .vertexIds();
         assertEquals(vertexCount, queryResults.getTotalHits());
         closeQuietly(queryResults);

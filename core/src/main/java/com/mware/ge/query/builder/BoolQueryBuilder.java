@@ -6,13 +6,14 @@ import org.apache.commons.lang3.BooleanUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BoolQueryBuilder extends GeQueryBuilder {
-    private final List<GeQueryBuilder> andClauses = new ArrayList<>();
-    private final List<GeQueryBuilder> orClauses = new ArrayList<>();
-    private final List<GeQueryBuilder> notClauses = new ArrayList<>();
+    private List<GeQueryBuilder> andClauses = new ArrayList<>();
+    private List<GeQueryBuilder> orClauses = new ArrayList<>();
+    private List<GeQueryBuilder> notClauses = new ArrayList<>();
 
-    public BoolQueryBuilder() {
+    protected BoolQueryBuilder() {
     }
 
     public BoolQueryBuilder and(GeQueryBuilder queryBuilder) {
@@ -76,5 +77,14 @@ public class BoolQueryBuilder extends GeQueryBuilder {
             Boolean or = BooleanUtils.or(orClauseResults.toArray(Boolean[]::new));
             return and && or;
         }
+    }
+
+    @Override
+    public GeQueryBuilder clone() {
+        BoolQueryBuilder other = new BoolQueryBuilder();
+        other.andClauses = andClauses.stream().map(GeQueryBuilder::clone).collect(Collectors.toList());
+        other.notClauses = notClauses.stream().map(GeQueryBuilder::clone).collect(Collectors.toList());
+        other.orClauses = orClauses.stream().map(GeQueryBuilder::clone).collect(Collectors.toList());
+        return other;
     }
 }

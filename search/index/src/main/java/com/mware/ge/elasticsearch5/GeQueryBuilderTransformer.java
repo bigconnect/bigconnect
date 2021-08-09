@@ -212,18 +212,22 @@ public class GeQueryBuilderTransformer {
 
         List<QueryBuilder> filters = new ArrayList<>();
         String[] propertyNames = searchIndex.getPropertyNames(graph, propertyDefinition.getPropertyName(), authorizations);
-        for (String propertyName : propertyNames) {
-            filters.add(QueryBuilders.existsQuery(propertyName));
-            if (GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
-            } else if (isExactMatchPropertyDefinition(propertyDefinition)) {
-                filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+        if (propertyNames.length > 0) {
+            for (String propertyName : propertyNames) {
+                filters.add(QueryBuilders.existsQuery(propertyName));
+                if (GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                    filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
+                } else if (isExactMatchPropertyDefinition(propertyDefinition)) {
+                    filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+                }
             }
-        }
-
-        if (filters.isEmpty()) {
-            // If we didn't add any filters, this means it doesn't exist on any elements so raise an error
-            throw new GeNoMatchingPropertiesException(qb.getPropertyName());
+        } else {
+            filters.add(QueryBuilders.existsQuery(qb.getPropertyName()));
+            if (GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
+            } else if (isExactMatchPropertyDefinition(propertyDefinition)) {
+                filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+            }
         }
 
         return getSingleFilterOrOrTheFilters(filters, qb);
@@ -287,7 +291,7 @@ public class GeQueryBuilderTransformer {
         }
 
         List<QueryBuilder> filters = new ArrayList<>();
-        if (propertyDefinition != null && !GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
+        if (!GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
             throw new GeNotSupportedException("Unable to perform geo query on field of type: " + propertyDefinition.getDataType().getName());
         }
 
@@ -547,19 +551,21 @@ public class GeQueryBuilderTransformer {
 
     protected QueryBuilder getFilterForComparePredicate(Compare compare, PropertyQueryBuilder has) {
         String[] propertyNames = searchIndex.getPropertyNames(graph, has.getPropertyName(), authorizations);
-        if (propertyNames.length == 0) {
-            if (compare.equals(Compare.NOT_EQUAL)) {
-                return QueryBuilders.matchAllQuery();
-            }
-            throw new GeNoMatchingPropertiesException(has.getPropertyName());
+        if (propertyNames.length == 0 && compare.equals(Compare.NOT_EQUAL)) {
+            return QueryBuilders.matchAllQuery();
         }
 
         Object convertedValue = convertQueryValue(has.getValue());
 
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String propertyName : propertyNames) {
-            filters.add(getFilterForProperty(compare, has, propertyName, convertedValue));
+        if (propertyNames.length > 0) {
+            for (String propertyName : propertyNames) {
+                filters.add(getFilterForProperty(compare, has, propertyName, convertedValue));
+            }
+        } else {
+            filters.add(getFilterForProperty(compare, has, has.getPropertyName(), convertedValue));
         }
+
         if (compare == Compare.NOT_EQUAL) {
             return getSingleFilterOrAndTheFilters(filters, has);
         }

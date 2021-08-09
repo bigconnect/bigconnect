@@ -1,11 +1,11 @@
 package com.mware.ge.query.builder;
 
-import com.mware.ge.ElementType;
-import com.mware.ge.GeException;
-import com.mware.ge.Graph;
-import com.mware.ge.PropertyDefinition;
+import com.mware.ge.*;
 import com.mware.ge.query.Compare;
+import com.mware.ge.query.GeoCompare;
 import com.mware.ge.query.Predicate;
+import com.mware.ge.query.TextPredicate;
+import com.mware.ge.values.storable.GeoShapeValue;
 import com.mware.ge.values.storable.TemporalValue;
 import com.mware.ge.values.storable.Value;
 
@@ -67,6 +67,21 @@ public class GeQueryBuilders {
                 .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
                 .map(PropertyDefinition::getPropertyName)
                 .collect(Collectors.toSet());
+
+        if (propertyNames.isEmpty()) {
+            throw new GeException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+        }
+
+        propertyNames.forEach(propName -> {
+            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(graph.getPropertyDefinitions(), propName);
+            if (predicate instanceof TextPredicate && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+                throw new GeException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not full text indexed.");
+            } else if (predicate instanceof GeoCompare && !isPropertyOfType(propertyDefinition, GeoShapeValue.class)) {
+                throw new GeException("GeoCompare query is only allowed for GeoShape types. Property " + propertyDefinition.getPropertyName() + " is not a GeoShape.");
+            } else if (Compare.STARTS_WITH.equals(predicate) && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                throw new GeException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not exact match indexed.");
+            }
+        });
 
         BoolQueryBuilder boolQueryBuilder = boolQuery();
         propertyNames.forEach(propName -> boolQueryBuilder.or(hasFilter(propName, predicate, value)));

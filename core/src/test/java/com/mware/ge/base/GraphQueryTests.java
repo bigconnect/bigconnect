@@ -185,7 +185,11 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         getGraph().addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
         getGraph().flush();
 
-        QueryResultsIterable<String> idsIterable = getGraph().query(AUTHORIZATIONS_A).vertexIds();
+        QueryResultsIterable<String> idsIterable = getGraph().query(boolQuery().andNot(exists("notSetProp")), AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
+        assertResultsCount(3, 3, idsIterable);
+
+        idsIterable = getGraph().query(AUTHORIZATIONS_A).vertexIds();
         assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
         assertResultsCount(3, 3, idsIterable);
 
@@ -236,10 +240,6 @@ public abstract class GraphQueryTests implements GraphTestSetup {
 
         idsIterable = getGraph().query(exists("notSetProp"), AUTHORIZATIONS_A).vertexIds();
         assertResultsCount(0, 0, idsIterable);
-
-        idsIterable = getGraph().query(boolQuery().andNot(exists("notSetProp")), AUTHORIZATIONS_A).vertexIds();
-        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
-        assertResultsCount(3, 3, idsIterable);
 
         try {
             getGraph().query(hasFilter("notSetProp", Compare.NOT_EQUAL, intValue(5)), AUTHORIZATIONS_A).vertexIds();
@@ -801,8 +801,13 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
-        assertResultsCount(0, getGraph().query(hasFilter(getGraph(), DoubleValue.class, Compare.EQUAL, doubleValue(25)), AUTHORIZATIONS_A)
-                .vertices());
+        try {
+            getGraph().query(hasFilter(getGraph(), DoubleValue.class, Compare.EQUAL, doubleValue(25)), AUTHORIZATIONS_A)
+                    .vertices();
+            fail("Should not allow searching for a dataType that there are no mappings for");
+        } catch (GeException e) {
+            // expected
+        }
 
         // If given a property that is defined in the graph but never used, return no results
         vertices = getGraph().query(hasFilter(getGraph(), FloatValue.class, Compare.EQUAL, floatValue(25)), AUTHORIZATIONS_A)

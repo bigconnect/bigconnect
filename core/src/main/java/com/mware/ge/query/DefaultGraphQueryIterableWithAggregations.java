@@ -103,26 +103,15 @@ public class DefaultGraphQueryIterableWithAggregations<T extends GeObject> exten
     private CardinalityResult getCardinalityAggregationResult(CardinalityAggregation agg, Iterator<T> it) {
         String fieldName = agg.getPropertyName();
 
-        if (Element.ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
-                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
-                || ExtendedDataRow.ROW_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
-            Set<Value> values = new HashSet<>();
-            while (it.hasNext()) {
-                T geObject = it.next();
-                Iterable<Value> propertyValues = geObject.getPropertyValues(fieldName);
-                for (Value propertyValue : propertyValues) {
-                    values.add(propertyValue);
-                }
+        Set<Value> values = new HashSet<>();
+        while (it.hasNext()) {
+            T geObject = it.next();
+            Iterable<Value> propertyValues = geObject.getPropertyValues(fieldName);
+            for (Value propertyValue : propertyValues) {
+                values.add(propertyValue);
             }
-            return new CardinalityResult(values.size());
-        } else {
-            throw new GeException("Cannot use cardinality aggregation on properties with visibility: " + fieldName);
         }
+        return new CardinalityResult(values.stream().distinct().count());
     }
 
     private TermsResult getTermsAggregationResult(TermsAggregation agg, Iterator<T> it) {

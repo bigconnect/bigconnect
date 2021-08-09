@@ -124,6 +124,17 @@ public class ObjectUtils {
         if (second instanceof Comparable) {
             return ((Comparable) second).compareTo(first);
         }
+
+        if (first instanceof DateTimeValue && second instanceof DateValue) {
+            return ((DateTimeValue)first).asObjectCopy().toLocalDate()
+                    .compareTo(((DateValue)second).asObjectCopy());
+        }
+
+        if (first instanceof DateValue && second instanceof DateTimeValue) {
+            return ((DateValue)first).asObjectCopy()
+                    .compareTo(((DateTimeValue)second).asObjectCopy().toLocalDate());
+        }
+
         if (first instanceof Value && second instanceof Value) {
             return AnyValues.COMPARATOR.compare((Value)first, (Value)second);
         }

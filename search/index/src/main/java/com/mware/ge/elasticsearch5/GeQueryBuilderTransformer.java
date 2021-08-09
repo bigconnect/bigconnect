@@ -204,30 +204,30 @@ public class GeQueryBuilderTransformer {
 
     protected QueryBuilder getFilterForExists(com.mware.ge.query.builder.ExistsQueryBuilder qb) {
         PropertyDefinition propertyDefinition = graph.getPropertyDefinition(qb.getPropertyName());
-
-        if (propertyDefinition == null) {
-            // If we didn't find any property definitions, this means none of them are defined on the graph
-            throw new GeNoMatchingPropertiesException(qb.getPropertyName());
-        }
-
         List<QueryBuilder> filters = new ArrayList<>();
-        String[] propertyNames = searchIndex.getPropertyNames(graph, propertyDefinition.getPropertyName(), authorizations);
-        if (propertyNames.length > 0) {
-            for (String propertyName : propertyNames) {
-                filters.add(QueryBuilders.existsQuery(propertyName));
+
+        if (propertyDefinition != null) {
+            String[] propertyNames = searchIndex.getPropertyNames(graph, propertyDefinition.getPropertyName(), authorizations);
+            if (propertyNames.length > 0) {
+                for (String propertyName : propertyNames) {
+                    filters.add(QueryBuilders.existsQuery(propertyName));
+                    if (GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                        filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
+                    } else if (isExactMatchPropertyDefinition(propertyDefinition)) {
+                        filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+                    }
+                }
+            } else {
+                filters.add(QueryBuilders.existsQuery(qb.getPropertyName()));
                 if (GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                    filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
+                    filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
                 } else if (isExactMatchPropertyDefinition(propertyDefinition)) {
-                    filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+                    filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
                 }
             }
         } else {
             filters.add(QueryBuilders.existsQuery(qb.getPropertyName()));
-            if (GeoShapeValue.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
-            } else if (isExactMatchPropertyDefinition(propertyDefinition)) {
-                filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
-            }
+            filters.add(QueryBuilders.existsQuery(qb.getPropertyName() + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
         }
 
         return getSingleFilterOrOrTheFilters(filters, qb);

@@ -36,7 +36,9 @@
  */
 package com.mware.ge;
 
+import com.mware.ge.collection.Iterables;
 import com.mware.ge.util.ConvertingIterable;
+import com.mware.ge.util.IterableUtils;
 import com.mware.ge.values.storable.Value;
 
 import java.util.Iterator;
@@ -134,12 +136,7 @@ public interface GeObject extends Comparable {
      * @param name The name of the property to retrieve
      */
     default Iterable<Value> getPropertyValues(String name) {
-        return new ConvertingIterable<Property, Value>(getProperties(name)) {
-            @Override
-            protected Value convert(Property o) {
-                return o.getValue();
-            }
-        };
+        return Iterables.map(getProperties(name), Property::getValue);
     }
 
     /**
@@ -150,12 +147,7 @@ public interface GeObject extends Comparable {
      * @param name The name of the property to retrieve
      */
     default Iterable<Value> getPropertyValues(String key, String name) {
-        return new ConvertingIterable<Property, Value>(getProperties(key, name)) {
-            @Override
-            protected Value convert(Property p) {
-                return p.getValue();
-            }
-        };
+        return Iterables.map(getProperties(key, name), Property::getValue);
     }
 
     /**

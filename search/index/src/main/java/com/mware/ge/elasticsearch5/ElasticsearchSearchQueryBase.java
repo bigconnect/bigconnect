@@ -891,46 +891,17 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             cardinalityAgg.field(fieldName);
             cardinalityAggs.add(cardinalityAgg);
         } else {
-            LOGGER.debug("Excuting Cardinality Aggregation on empty visibility only !");
-            PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(fieldName);
             String[] propertyNames = getSearchIndex().getPropertyNames(getGraph(), fieldName, getAuthorizations());
-            String propertyName = null;
-
-            if (propertyNames.length == 1) {
-                propertyName = propertyNames[0];
-            } else if (propertyNames.length > 1) {
-                PropertyNameVisibilitiesStore visibilitiesStore = getSearchIndex().getPropertyNameVisibilitiesStore();
-
-                // get only the property with empty visibility
-                boolean found = false;
-                for (String p : propertyNames) {
-                    String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(p);
-                    String publicHash = visibilitiesStore.getHash(getGraph(), p, Visibility.EMPTY);
-                    if (publicHash.equals(visibilityHash)) {
-                        propertyName = p;
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                    throw new GeException("Could not find a property with empty visibility: " + fieldName);
-            }
-
-            if (propertyName == null)
-                throw new GeException("Could not compute the CardinalityAggregation property for: " + fieldName);
-
-            boolean exactMatchProperty = queryTransformer.isExactMatchPropertyDefinition(propertyDefinition);
-            String propertyNameWithSuffix;
-            if (exactMatchProperty) {
-                propertyNameWithSuffix = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-            } else {
-                propertyNameWithSuffix = propertyName;
-            }
-
             String aggregationName = createAggregationName(agg.getAggregationName(), "0");
             CardinalityAggregationBuilder cardinalityAgg = AggregationBuilders.cardinality(aggregationName);
-            cardinalityAgg.field(propertyNameWithSuffix);
+            String scriptSrc = StringUtils.join(
+                    Arrays.stream(propertyNames)
+                            .map(pn -> String.format("(doc['%s'].size() > 0 ? doc['%s'].value + '#' : '')", pn, pn)).toArray(),
+                    '+'
+            );
+            Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, Collections.EMPTY_MAP);
+
+            cardinalityAgg.script(script);
             cardinalityAggs.add(cardinalityAgg);
         }
         return cardinalityAggs;

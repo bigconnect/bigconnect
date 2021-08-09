@@ -185,11 +185,7 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         getGraph().addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
         getGraph().flush();
 
-        QueryResultsIterable<String> idsIterable = getGraph().query(boolQuery().andNot(exists("notSetProp")), AUTHORIZATIONS_A).vertexIds();
-        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
-        assertResultsCount(3, 3, idsIterable);
-
-        idsIterable = getGraph().query(AUTHORIZATIONS_A).vertexIds();
+        QueryResultsIterable<String> idsIterable = getGraph().query(AUTHORIZATIONS_A).vertexIds();
         assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
         assertResultsCount(3, 3, idsIterable);
 
@@ -241,12 +237,11 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         idsIterable = getGraph().query(exists("notSetProp"), AUTHORIZATIONS_A).vertexIds();
         assertResultsCount(0, 0, idsIterable);
 
-        try {
-            getGraph().query(hasFilter("notSetProp", Compare.NOT_EQUAL, intValue(5)), AUTHORIZATIONS_A).vertexIds();
-            fail("Value queries should not be allowed for properties that are not defined.");
-        } catch (GeException ve) {
-            assertEquals("Could not find property definition for property name: notSetProp", ve.getMessage());
-        }
+        idsIterable = getGraph().query(boolQuery().andNot(exists("notSetProp")), AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
+        assertResultsCount(3, 3, idsIterable);
+
+        assertResultsCount(3, 3, getGraph().query(hasFilter("notSetProp", Compare.NOT_EQUAL, intValue(5)), AUTHORIZATIONS_A).vertexIds());
     }
 
     @Test
@@ -629,7 +624,7 @@ public abstract class GraphQueryTests implements GraphTestSetup {
 
         vertices = getGraph().query(hasFilter("lastAccessed", Compare.EQUAL, createDate(2014, 2, 24)), AUTHORIZATIONS_A)
                 .vertices();
-        assertEquals(0, count(vertices));
+        assertEquals(1, count(vertices));
 
         vertices = getGraph().query(
                 boolQuery()
@@ -2138,12 +2133,8 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         stats = queryGraphQueryWithCardinalityAggregation(Element.ID_PROPERTY_NAME, AUTHORIZATIONS_A_AND_B);
         assumeTrue("Cardinality aggregation not supported", stats != null);
         assertEquals(4, (long) stats.value());
-        try {
-            CardinalityResult r = queryGraphQueryWithCardinalityAggregation("age", AUTHORIZATIONS_A_AND_B);
-            fail("should have thrown Cannot use cardinality aggregation on properties with visibility: age");
-        } catch (GeException ex) {
-            assertEquals(ex.getMessage(), "Cannot use cardinality aggregation on properties with visibility: age");
-        }
+        CardinalityResult r = queryGraphQueryWithCardinalityAggregation("age", AUTHORIZATIONS_A_AND_B);
+        assertEquals(r.value().intValue(), 3);
     }
 
 
@@ -2744,7 +2735,7 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         assertEquals("un-indexed property shouldn't match partials", 0, count(getGraph().query(hasFilter("none", stringValue("Test")), AUTHORIZATIONS_A).vertices()));
 
         assertEquals(1, count(getGraph().query(hasFilter("both", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
-        assertEquals(1, count(getGraph().query(hasFilter("fullText", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
+        assertEquals("default has predicate is equals which shouldn't work for full text", 0, count(getGraph().query(hasFilter("fullText", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
         assertEquals(1, count(getGraph().query(hasFilter("exactMatch", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
         if (count(getGraph().query(hasFilter("none", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()) != 0) {
             LOGGER.warn("default has predicate is equals which shouldn't work for un-indexed");
@@ -2752,7 +2743,7 @@ public abstract class GraphQueryTests implements GraphTestSetup {
     }
 
     @Test
-    public void testTextIndexDoesNotContain() throws Exception {
+    public void testTextIndexDoesNotContain() {
         getGraph().defineProperty("both").dataType(TextValue.class).textIndexHint(TextIndexHint.ALL).define();
         getGraph().defineProperty("fullText").dataType(TextValue.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
         getGraph().defineProperty("exactMatch").dataType(TextValue.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();

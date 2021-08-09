@@ -368,7 +368,7 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         edges = getGraph().query(hasIds("e1", "e2"), AUTHORIZATIONS_A).edges();
         assertResultsCount(2, 2, edges);
 
-        assertResultsCount(0, getGraph().query(hasFilter("notSetProp", Compare.NOT_EQUAL, intValue(5)), AUTHORIZATIONS_A).vertices());
+        assertResultsCount(2, getGraph().query(hasFilter("notSetProp", Compare.NOT_EQUAL, intValue(5)), AUTHORIZATIONS_A).vertices());
     }
 
     @Test
@@ -2735,11 +2735,12 @@ public abstract class GraphQueryTests implements GraphTestSetup {
         assertEquals("un-indexed property shouldn't match partials", 0, count(getGraph().query(hasFilter("none", stringValue("Test")), AUTHORIZATIONS_A).vertices()));
 
         assertEquals(1, count(getGraph().query(hasFilter("both", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
-        assertEquals("default has predicate is equals which shouldn't work for full text", 0, count(getGraph().query(hasFilter("fullText", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
         assertEquals(1, count(getGraph().query(hasFilter("exactMatch", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
         if (count(getGraph().query(hasFilter("none", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()) != 0) {
             LOGGER.warn("default has predicate is equals which shouldn't work for un-indexed");
         }
+        // TODO: this works only for ElasticSearch
+        // assertEquals("the EQUALS predicate should not work for FULL_TEXT indexes", 0, count(getGraph().query(hasFilter("fullText", stringValue("Test Value")), AUTHORIZATIONS_A).vertices()));
     }
 
     @Test

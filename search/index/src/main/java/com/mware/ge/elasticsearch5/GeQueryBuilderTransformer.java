@@ -93,8 +93,8 @@ public class GeQueryBuilderTransformer {
                 ((BoolQueryBuilder) query).should(toElasticQueryBuilder(elementTypes, orClause));
             }
             return query;
-        } else if (qb instanceof PropertyQueryBuilder) {
-            return getFiltersForProperty((PropertyQueryBuilder) qb);
+        } else if (qb instanceof PropertyQueryBuilder || qb instanceof com.mware.ge.query.builder.RangeQueryBuilder) {
+            return getFiltersForProperty(qb);
         } else if (qb instanceof com.mware.ge.query.builder.ExistsQueryBuilder) {
             return getFilterForExists((com.mware.ge.query.builder.ExistsQueryBuilder) qb);
         } else if (qb instanceof HasExtendedDataQueryBuilder) {
@@ -233,18 +233,24 @@ public class GeQueryBuilderTransformer {
         return getSingleFilterOrOrTheFilters(filters, qb);
     }
 
-    protected QueryBuilder getFiltersForProperty(PropertyQueryBuilder qb) {
-        if (qb.getPredicate() instanceof Compare) {
-            return getFilterForComparePredicate((Compare) qb.getPredicate(), qb);
-        } else if (qb.getPredicate() instanceof Contains) {
-            return getFilterForContainsPredicate((Contains) qb.getPredicate(), qb);
-        } else if (qb.getPredicate() instanceof TextPredicate) {
-            return getFilterForTextPredicate((TextPredicate) qb.getPredicate(), qb);
-        } else if (qb.getPredicate() instanceof GeoCompare) {
-            return getFilterForGeoComparePredicate((GeoCompare) qb.getPredicate(), qb);
-        } else {
-            throw new GeException("Unexpected predicate type " + qb.getPredicate().getClass().getName());
-        }
+    protected QueryBuilder getFiltersForProperty(GeQueryBuilder qb) {
+        if (qb instanceof PropertyQueryBuilder) {
+            PropertyQueryBuilder pqb = (PropertyQueryBuilder) qb;
+            if (pqb.getPredicate() instanceof Compare) {
+                return getFilterForComparePredicate((Compare) pqb.getPredicate(), pqb);
+            } else if (pqb.getPredicate() instanceof Contains) {
+                return getFilterForContainsPredicate((Contains) pqb.getPredicate(), pqb);
+            } else if (pqb.getPredicate() instanceof TextPredicate) {
+                return getFilterForTextPredicate((TextPredicate) pqb.getPredicate(), pqb);
+            } else if (pqb.getPredicate() instanceof GeoCompare) {
+                return getFilterForGeoComparePredicate((GeoCompare) pqb.getPredicate(), pqb);
+            } else {
+                throw new GeException("Unexpected predicate type " + pqb.getPredicate().getClass().getName());
+            }
+        } else if (qb instanceof com.mware.ge.query.builder.RangeQueryBuilder) {
+            return getFilterForRangeQuery((com.mware.ge.query.builder.RangeQueryBuilder) qb);
+        } else
+            throw new IllegalArgumentException("Invalid GeQueryBuilder: "+qb.getClass().getName());
     }
 
     private QueryBuilder getFilterForHasExtendedData(HasExtendedDataQueryBuilder has) {
@@ -547,6 +553,36 @@ public class GeQueryBuilderTransformer {
             default:
                 throw new GeException("Unexpected Contains predicate " + has.getPredicate());
         }
+    }
+
+    protected QueryBuilder getFilterForRangeQuery(com.mware.ge.query.builder.RangeQueryBuilder rqb) {
+        String[] propertyNames = searchIndex.getPropertyNames(graph, rqb.getPropertyName(), authorizations);
+        List<QueryBuilder> filters = new ArrayList<>();
+        Object startValue = convertQueryValue(rqb.getStartValue());
+        Object endValue = convertQueryValue(rqb.getEndValue());
+
+        if (propertyNames.length > 0) {
+            for (String propertyName : propertyNames) {
+                RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(propertyName);
+                if (startValue != null) {
+                    rangeQueryBuilder = rqb.isInclusiveStartValue() ? rangeQueryBuilder.gte(startValue) : rangeQueryBuilder.gt(startValue);
+                }
+                if (endValue != null) {
+                    rangeQueryBuilder = rqb.isInclusiveEndValue() ? rangeQueryBuilder.lte(endValue) : rangeQueryBuilder.lt(endValue);
+                }
+                filters.add(rangeQueryBuilder);
+            }
+        } else {
+            RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(rqb.getPropertyName());
+            if (startValue != null) {
+                rangeQueryBuilder = rqb.isInclusiveStartValue() ? rangeQueryBuilder.gte(startValue) : rangeQueryBuilder.gt(startValue);
+            }
+            if (endValue != null) {
+                rangeQueryBuilder = rqb.isInclusiveEndValue() ? rangeQueryBuilder.lte(endValue) : rangeQueryBuilder.lt(endValue);
+            }
+            filters.add(rangeQueryBuilder);
+        }
+        return getSingleFilterOrAndTheFilters(filters, rqb);
     }
 
     protected QueryBuilder getFilterForComparePredicate(Compare compare, PropertyQueryBuilder has) {

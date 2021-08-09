@@ -37,6 +37,7 @@
 package com.mware.ge.query;
 
 import com.mware.ge.*;
+import com.mware.ge.collection.Iterables;
 import com.mware.ge.util.ObjectUtils;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.values.storable.TextValue;
@@ -52,6 +53,10 @@ public enum Compare implements Predicate {
             if (evaluate(property, second)) {
                 return true;
             }
+        }
+
+        if (Iterables.count(properties) == 0 && NOT_EQUAL.equals(this)) {
+            return true;
         }
 
         return false;

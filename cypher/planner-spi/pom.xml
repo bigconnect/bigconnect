@@ -3,14 +3,14 @@
   <parent>
     <groupId>io.bigconnect</groupId>
     <artifactId>cypher-parent</artifactId>
-    <version>4.2.2</version>
+    <version>4.3.0</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cypher-planner-spi</artifactId>
   <packaging>jar</packaging>
-  <version>4.2.2</version>
+  <version>4.3.0</version>
   <name>BigConnect - Cypher Planner SPI</name>
 
   <description>Cypher planner SPI</description>

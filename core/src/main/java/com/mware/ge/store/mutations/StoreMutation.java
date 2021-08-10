@@ -36,7 +36,6 @@
  */
 package com.mware.ge.store.mutations;
 
-import com.mware.ge.collection.Pair;
 import com.mware.ge.security.ColumnVisibility;
 
 import java.nio.ByteBuffer;

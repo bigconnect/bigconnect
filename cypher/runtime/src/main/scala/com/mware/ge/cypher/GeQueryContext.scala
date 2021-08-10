@@ -36,30 +36,31 @@
  */
 package com.mware.ge.cypher
 
-import java.net.URL
-
 import com.mware.core.model.schema.{SchemaConstants, SchemaRepository}
 import com.mware.ge._
 import com.mware.ge.cypher.ge.GeCypherQueryContext
+import com.mware.ge.cypher.index.IndexQuery.ExactPredicate
 import com.mware.ge.cypher.index.{IndexQuery, IndexReference, SearchIndexReader}
+import com.mware.ge.cypher.internal.expressions.SemanticDirection
+import com.mware.ge.cypher.internal.logical.plans._
+import com.mware.ge.cypher.internal.planner.spi.{IdempotentResult, IndexDescriptor}
+import com.mware.ge.cypher.internal.runtime._
+import com.mware.ge.cypher.internal.runtime.interpreted.IndexDescriptorCompatibility
 import com.mware.ge.cypher.util.{DefaultValueMapper, NodeValueIndexCursor}
+import com.mware.ge.cypher.values.virtual._
 import com.mware.ge.mutation.VertexMutation
 import com.mware.ge.query.QueryBase
 import com.mware.ge.query.aggregations.{TermsAggregation, TermsResult}
+import com.mware.ge.query.builder.GeQueryBuilders.{hasEdgeLabel, searchAll}
+import com.mware.ge.query.builder.{BoolQueryBuilder, GeQueryBuilder, GeQueryBuilders}
 import com.mware.ge.search.SearchIndex
-import org.apache.commons.lang3.StringUtils
-import com.mware.ge.cypher.internal.runtime._
-import com.mware.ge.cypher.internal.runtime.interpreted.IndexDescriptorCompatibility
-import com.mware.ge.cypher.internal.expressions.SemanticDirection
-import com.mware.ge.cypher.internal.logical.plans._
-import com.mware.ge.cypher.index.IndexQuery.ExactPredicate
-import com.mware.ge.cypher.internal.planner.spi.{IdempotentResult, IndexDescriptor}
-import com.mware.ge.cypher.values.virtual.{GeEdgeBuilderWrappingValue, GeEdgeWrappingValue, GeVertexMutationWrappingNodeValue, GeVertexWrappingNodeValue, GeWrappingPath}
-import com.mware.ge.values.{AnyValue, ValueMapper}
 import com.mware.ge.values.storable.{TextValue, ValueGroup, Values}
 import com.mware.ge.values.virtual.PathValue.DirectPathValue
 import com.mware.ge.values.virtual._
+import com.mware.ge.values.{AnyValue, ValueMapper}
+import org.apache.commons.lang3.StringUtils
 
+import java.net.URL
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
 
@@ -295,16 +296,13 @@ class GeQueryContext(val executionEngine: GeCypherExecutionEngine,
 
   override def nodeCountByCountStore(labelId: String): Long = {
     if (StringUtils.isEmpty(labelId)) {
-      val q = queryContext.getGraph.query(queryContext.getAuthorizations)
-        .limit(0L)
-
+      val q = queryContext.getGraph.query(searchAll().limit(0L).asInstanceOf[GeQueryBuilder], queryContext.getAuthorizations)
       withResources(q.vertices())(
         iterable =>
           iterable.getTotalHits
       )
     } else {
-      val q = queryContext.getGraph.query(queryContext.getAuthorizations)
-        .limit(0L)
+      val q = queryContext.getGraph.query(searchAll().limit(0L).asInstanceOf[GeQueryBuilder], queryContext.getAuthorizations)
         .addAggregation(new TermsAggregation("count", SearchIndex.CONCEPT_TYPE_FIELD_NAME))
 
       val found = withResources(q.vertexIds(IdFetchHint.NONE))(
@@ -319,20 +317,21 @@ class GeQueryContext(val executionEngine: GeCypherExecutionEngine,
   }
 
   override def relationshipCountByCountStore(startLabelId: String, typeId: String, endLabelId: String): Long = {
+    val qb: BoolQueryBuilder = GeQueryBuilders.boolQuery();
+
     val q = queryContext.getGraph.query(queryContext.getAuthorizations).asInstanceOf[QueryBase]
 
-    if (!StringUtils.isEmpty(startLabelId))
-      q.hasOutVertexTypes(startLabelId)
+    // TODO: implement this
+//    if (!StringUtils.isEmpty(startLabelId))
+//      q.hasOutVertexTypes(startLabelId)
+//
+//    if (!StringUtils.isEmpty(endLabelId)) {
+//      q.hasInVertexTypes(endLabelId)
+//    }
 
     if (!StringUtils.isEmpty(typeId)) {
-      q.hasEdgeLabel(typeId)
+      qb.and(hasEdgeLabel(typeId))
     }
-
-    if (!StringUtils.isEmpty(endLabelId)) {
-      q.hasInVertexTypes(endLabelId)
-    }
-
-    q.getParameters.setLimit(0L);
 
     withResources(q.edgeIds(IdFetchHint.NONE))(iterable =>
       iterable.getTotalHits

@@ -41,7 +41,6 @@ import com.mware.ge.cypher.ge.GeStatisticsHolder
 import com.mware.ge.cypher.internal.compatibility.ExceptionTranslatingPlanContext
 import com.mware.ge.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext, StatisticsCompletingGraphStatistics}
 import com.mware.ge.cypher.internal.util._
-import com.mware.ge.query._
 import com.mware.ge.query.aggregations.{CardinalityAggregation, CardinalityResult, TermsAggregation, TermsResult}
 import com.mware.ge.query.builder.GeQueryBuilders._
 import com.mware.ge.query.builder.{BoolQueryBuilder, GeQueryBuilder, GeQueryBuilders}
@@ -103,22 +102,24 @@ object GeGraphStatistics {
       val qb: BoolQueryBuilder = GeQueryBuilders.boolQuery()
         .limit(0L);
 
-      if (fromLabel.isDefined) {
-        val conceptType = fromLabel.get.id
-        query.hasOutVertexTypes(conceptType)
-      }
+      // TODO: work in progress
 
-      if (toLabel.isDefined) {
-        val conceptType = toLabel.get.id
-        query.hasInVertexTypes(conceptType)
-      }
+//      if (fromLabel.isDefined) {
+//        val conceptType = fromLabel.get.id
+//        query.hasOutVertexTypes(conceptType)
+//      }
+//
+//      if (toLabel.isDefined) {
+//        val conceptType = toLabel.get.id
+//        query.hasInVertexTypes(conceptType)
+//      }
 
       if (relTypeId.isDefined) {
         val edgeLabel = relTypeId.get.id
         qb.and(hasEdgeLabel(edgeLabel));
       }
 
-      val query = graph.query(qb, authorizations).asInstanceOf[QueryBase]
+      val query = graph.query(qb, authorizations)
       val count = withResources(query.edgeIds(IdFetchHint.NONE))(
         iterable => iterable.getTotalHits
       )

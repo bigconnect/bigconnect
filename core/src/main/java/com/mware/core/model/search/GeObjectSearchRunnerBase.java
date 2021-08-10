@@ -549,7 +549,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
     }
 
     protected void applyLogicalOperatorsToQuery(BoolQueryBuilder currentQuery, String logicalSourceString) {
-        throw new UnsupportedOperationException("NOT IMPLEMENTED");
+        // TODO: implement
     }
 
 

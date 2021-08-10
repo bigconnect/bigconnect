@@ -105,7 +105,7 @@
         <curator.version>2.13.0</curator.version>
         <elasticsearch.version>7.6.1</elasticsearch.version>
         <evo.inflector.version>1.0.1</evo.inflector.version>
-        <guice.version>4.0</guice.version>
+        <guice.version>4.2.2</guice.version>
         <visallo.closure.compiler.version>1.0.0</visallo.closure.compiler.version>
         <httpcomponents.httpclient.version>4.5.10</httpcomponents.httpclient.version>
         <inflector.version>0.7.0</inflector.version>

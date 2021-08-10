@@ -46,6 +46,7 @@ import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.*;
 import com.mware.ge.query.builder.BoolQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -75,14 +76,14 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
     protected BoolQueryBuilder getQuery(SearchOptions searchOptions, Authorizations authorizations) {
         JSONArray filterJson = getFilterJson(searchOptions, searchOptions.getWorkspaceId());
 
-        BoolQueryBuilder queryBuilder = searchOptions.getOptionalParameter("q", BoolQueryBuilder.class);
+        String queryStringParam = searchOptions.getOptionalParameter("q", String.class);
         String[] relatedToVertexIdsParam = searchOptions.getOptionalParameter("relatedToVertexIds[]", String[].class);
         String elementExtendedDataParam = searchOptions.getOptionalParameter("elementExtendedData", String.class);
 
         List<String> relatedToVertexIds = ImmutableList.of();
         ElementExtendedData elementExtendedData = null;
         if (relatedToVertexIdsParam == null && elementExtendedDataParam == null) {
-            queryBuilder = searchOptions.getRequiredParameter("q", BoolQueryBuilder.class);
+            queryStringParam = searchOptions.getRequiredParameter("q", String.class);
         } else if (elementExtendedDataParam != null) {
             elementExtendedData = ElementExtendedData.fromJsonString(elementExtendedDataParam);
         } else {
@@ -92,12 +93,15 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
                     "search %s (relatedToVertexIds: %s, elementExtendedData: %s)\n%s",
-                    queryBuilder,
+                    queryStringParam,
                     Joiner.on(",").join(relatedToVertexIds),
                     elementExtendedData,
                     filterJson.toString(2)
             );
         }
+
+        BoolQueryBuilder queryBuilder = GeQueryBuilders.boolQuery()
+                .and(GeQueryBuilders.searchAll());
 
         if (elementExtendedData != null) {
             queryBuilder.and(hasExtendedData(elementExtendedData.elementType, elementExtendedData.elementId, elementExtendedData.tableName));

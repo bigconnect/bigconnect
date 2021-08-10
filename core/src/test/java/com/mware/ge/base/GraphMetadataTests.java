@@ -244,6 +244,8 @@ public abstract class GraphMetadataTests implements GraphTestSetup {
 
     @Test
     public void testMetadataPropertyKeys() {
+        getGraph().createAuthorizations(AUTHORIZATIONS_ALL);
+
         PropertyMetadata prop1Metadata = new PropertyMetadata(new SystemUser(), new VisibilityJson(), Visibility.EMPTY);
         prop1Metadata.add("mkey1", stringValue("mvalue1"), VISIBILITY_EMPTY);
         prop1Metadata.add("mkey2", stringValue("mvalue2"), VISIBILITY_EMPTY);

@@ -38,7 +38,9 @@ package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.*;
 import com.mware.ge.collection.Iterables;
+import com.mware.ge.query.builder.EdgeLabelQueryBuilder;
 import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -135,7 +137,7 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         Iterable<Vertex> results = sourceVertex.getVertices(direction, FetchHints.PROPERTIES_AND_EDGE_REFS, getAuthorizations());
         results = Iterables.filter(results, v -> getBuilder().matches(v, getAuthorizations()));
         if (otherVertexId != null) {
-            results =  Iterables.filter(results, v -> v.getId().equals(otherVertexId));
+            results = Iterables.filter(results, v -> v.getId().equals(otherVertexId));
         }
 
         List<QueryBuilder> filters = new ArrayList<>();
@@ -149,12 +151,43 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
             for (String vertexId : ids) {
                 filters.add(
                         QueryBuilders.boolQuery()
-                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()))
+                                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()))
                                 .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, vertexId)));
             }
         }
 
+        // remove edgelabelquerybuilder from query
+        if (getBuilder() instanceof EdgeLabelQueryBuilder) {
+            setBuilder(GeQueryBuilders.searchAll());
+        } else if (getBuilder() instanceof com.mware.ge.query.builder.BoolQueryBuilder) {
+            removeEdgeLabelQuery((com.mware.ge.query.builder.BoolQueryBuilder) getBuilder());
+        }
+
         return orFilters(filters);
+    }
+
+    private void removeEdgeLabelQuery(com.mware.ge.query.builder.BoolQueryBuilder bqb) {
+        for (int i = 0; i < bqb.getAndClauses().size(); i++) {
+            GeQueryBuilder qb = bqb.getAndClauses().get(i);
+            if (qb instanceof EdgeLabelQueryBuilder)
+                bqb.getAndClauses().remove(i);
+            else if (qb instanceof com.mware.ge.query.builder.BoolQueryBuilder)
+                removeEdgeLabelQuery((com.mware.ge.query.builder.BoolQueryBuilder) qb);
+        }
+        for (int i = 0; i < bqb.getNotClauses().size(); i++) {
+            GeQueryBuilder qb = bqb.getNotClauses().get(i);
+            if (qb instanceof EdgeLabelQueryBuilder)
+                bqb.getNotClauses().remove(i);
+            else if (qb instanceof com.mware.ge.query.builder.BoolQueryBuilder)
+                removeEdgeLabelQuery((com.mware.ge.query.builder.BoolQueryBuilder) qb);
+        }
+        for (int i = 0; i < bqb.getOrClauses().size(); i++) {
+            GeQueryBuilder qb = bqb.getOrClauses().get(i);
+            if (qb instanceof EdgeLabelQueryBuilder)
+                bqb.getOrClauses().remove(i);
+            else if (qb instanceof com.mware.ge.query.builder.BoolQueryBuilder)
+                removeEdgeLabelQuery((com.mware.ge.query.builder.BoolQueryBuilder) qb);
+        }
     }
 
     private QueryBuilder orFilters(List<QueryBuilder> filters) {

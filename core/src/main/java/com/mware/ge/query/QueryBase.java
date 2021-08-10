@@ -57,9 +57,9 @@ import java.util.stream.Collectors;
 
 public abstract class QueryBase implements Query {
     private final Graph graph;
-    private final GeQueryBuilder queryBuilder;
     private final Authorizations authorizations;
     private List<Aggregation> aggregations = new ArrayList<>();
+    protected GeQueryBuilder queryBuilder;
 
     protected QueryBase(Graph graph, GeQueryBuilder queryBuilder, Authorizations authorizations) {
         this.graph = graph;
@@ -241,6 +241,10 @@ public abstract class QueryBase implements Query {
 
     public GeQueryBuilder getBuilder() {
         return queryBuilder;
+    }
+
+    protected void setBuilder(GeQueryBuilder queryBuilder) {
+        this.queryBuilder = queryBuilder;
     }
 
     public Authorizations getAuthorizations() {

@@ -272,6 +272,8 @@ public abstract class GraphBenchmarkTests implements GraphTestSetup {
 
     @Test
     public void testFindRelatedEdgesPerformance() {
+        assumeTrue(benchmarkEnabled());
+
         int totalNumberOfVertices = 1000;
         int totalNumberOfEdges = 100000;
         int totalVerticesToCheck = 1000;

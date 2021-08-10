@@ -117,8 +117,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private final int pagingLimit;
     private final TimeValue scrollKeepAlive;
     private final int termAggregationShardSize;
-    private GeQueryBuilder queryBuilder;
-    private GeQueryBuilderTransformer queryTransformer;
 
     public ElasticsearchSearchQueryBase(
             Client client,
@@ -129,14 +127,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     ) {
         super(graph, queryBuilder, authorizations);
         this.client = client;
-        this.queryBuilder = queryBuilder;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
         this.analyzer = options.analyzer;
         this.termAggregationShardSize = options.termAggregationShardSize;
-        this.queryTransformer = new GeQueryBuilderTransformer(getSearchIndex(), getGraph(), getAuthorizations(), queryBuilder, analyzer);
     }
 
     private SearchRequestBuilder buildQuery(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints, boolean includeAggregations) {
@@ -160,7 +156,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             getSearchIndex().getIndexRefreshTracker().refresh(client, indicesToQuery);
         }
 
-        QueryBuilder query = queryTransformer.getElasticQuery(elementTypes);
+        QueryBuilder query = new GeQueryBuilderTransformer(getSearchIndex(), getGraph(), getAuthorizations(), queryBuilder, analyzer)
+                .getElasticQuery(elementTypes);
 
         SearchRequestBuilder searchRequestBuilder = getClient()
                 .prepareSearch(indicesToQuery)
@@ -948,7 +945,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         } else {
             PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(fieldName);
             for (String propertyName : getSearchIndex().getPropertyNames(getGraph(), fieldName, getAuthorizations())) {
-                boolean exactMatchProperty = queryTransformer.isExactMatchPropertyDefinition(propertyDefinition);
+                boolean exactMatchProperty = GeQueryBuilderTransformer.isExactMatchPropertyDefinition(propertyDefinition);
                 String propertyNameWithSuffix;
                 if (exactMatchProperty) {
                     propertyNameWithSuffix = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
@@ -984,7 +981,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     if (orderByAgg instanceof AggregationWithFieldName) {
                         String orderByFieldName = ((AggregationWithFieldName) orderByAgg).getFieldName();
                         PropertyDefinition orderByFieldDef = getGraph().getPropertyDefinition(orderByFieldName);
-                        boolean orderByExactMatchProp = queryTransformer.isExactMatchPropertyDefinition(orderByFieldDef);
+                        boolean orderByExactMatchProp = GeQueryBuilderTransformer.isExactMatchPropertyDefinition(orderByFieldDef);
 
                         List<BucketOrder> bucketOrders = new ArrayList<>();
                         for (String orderByPropName : getSearchIndex().getPropertyNames(getGraph(), orderByFieldName, getAuthorizations())) {

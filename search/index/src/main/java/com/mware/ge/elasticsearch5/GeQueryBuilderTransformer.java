@@ -764,7 +764,7 @@ public class GeQueryBuilderTransformer {
         }
     }
 
-    protected boolean isExactMatchPropertyDefinition(PropertyDefinition propertyDefinition) {
+    protected static boolean isExactMatchPropertyDefinition(PropertyDefinition propertyDefinition) {
         return propertyDefinition != null
                 && TextValue.class.isAssignableFrom(propertyDefinition.getDataType())
                 && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH);

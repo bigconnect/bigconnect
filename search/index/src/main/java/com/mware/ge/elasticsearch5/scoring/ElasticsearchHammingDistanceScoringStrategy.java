@@ -37,19 +37,18 @@
 package com.mware.ge.elasticsearch5.scoring;
 
 import com.mware.ge.Authorizations;
+import com.mware.ge.GeException;
+import com.mware.ge.Graph;
 import com.mware.ge.PropertyDefinition;
+import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
+import com.mware.ge.scoring.HammingDistanceScoringStrategy;
+import com.mware.ge.util.IOUtils;
 import com.mware.ge.values.storable.TextValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.functionscore.ScriptScoreFunctionBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import com.mware.ge.Graph;
-import com.mware.ge.GeException;
-import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
-import com.mware.ge.query.QueryParameters;
-import com.mware.ge.scoring.HammingDistanceScoringStrategy;
-import com.mware.ge.util.IOUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;

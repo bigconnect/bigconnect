@@ -41,7 +41,6 @@ import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.PropertyDefinition;
 import com.mware.ge.elasticsearch5.Elasticsearch5SearchIndex;
-import com.mware.ge.query.QueryParameters;
 import com.mware.ge.query.SortDirection;
 import com.mware.ge.sorting.LengthOfStringSortingStrategy;
 import com.mware.ge.util.IOUtils;

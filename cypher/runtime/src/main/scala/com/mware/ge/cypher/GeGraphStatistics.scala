@@ -38,13 +38,14 @@ package com.mware.ge.cypher
 
 import com.mware.ge._
 import com.mware.ge.cypher.ge.GeStatisticsHolder
-import com.mware.ge.query._
-import com.mware.ge.query.aggregations.{CardinalityAggregation, CardinalityResult, TermsAggregation, TermsResult}
-import com.mware.ge.search.SearchIndex
 import com.mware.ge.cypher.internal.compatibility.ExceptionTranslatingPlanContext
 import com.mware.ge.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext, StatisticsCompletingGraphStatistics}
-import com.mware.ge.cypher.internal.planner.spi._
 import com.mware.ge.cypher.internal.util._
+import com.mware.ge.query._
+import com.mware.ge.query.aggregations.{CardinalityAggregation, CardinalityResult, TermsAggregation, TermsResult}
+import com.mware.ge.query.builder.GeQueryBuilders._
+import com.mware.ge.query.builder.{BoolQueryBuilder, GeQueryBuilder, GeQueryBuilders}
+import com.mware.ge.search.SearchIndex
 
 import scala.collection.JavaConverters._
 
@@ -62,9 +63,8 @@ object GeGraphStatistics {
           retValue = nodesAllCardinality()
         else {
           val conceptType = labelId.get.id
-          val q = graph.query(new Authorizations())
+          val q = graph.query(searchAll().limit(0L).asInstanceOf[GeQueryBuilder], new Authorizations())
             .addAggregation(new TermsAggregation("count", SearchIndex.CONCEPT_TYPE_FIELD_NAME))
-            .limit(0L)
 
           val found = withResources(q.vertexIds(IdFetchHint.NONE))(
             iterable =>
@@ -88,8 +88,7 @@ object GeGraphStatistics {
     override def nodesAllCardinality(): Cardinality = {
       var retValue = GeStatisticsHolder.nodeAllCount.getIfPresent("")
       if (retValue == null) {
-        val count = withResources(graph.query(new Authorizations())
-          .limit(0L)
+        val count = withResources(graph.query(searchAll().limit(0L).asInstanceOf[GeQueryBuilder], new Authorizations())
           .vertexIds(IdFetchHint.NONE))(
           iterable =>
             iterable.getTotalHits
@@ -101,7 +100,8 @@ object GeGraphStatistics {
     }
 
     override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId], planContext: PlanContext): Cardinality = {
-      val query = graph.query(authorizations).asInstanceOf[QueryBase]
+      val qb: BoolQueryBuilder = GeQueryBuilders.boolQuery()
+        .limit(0L);
 
       if (fromLabel.isDefined) {
         val conceptType = fromLabel.get.id
@@ -115,11 +115,10 @@ object GeGraphStatistics {
 
       if (relTypeId.isDefined) {
         val edgeLabel = relTypeId.get.id
-        query.hasEdgeLabel(edgeLabel)
+        qb.and(hasEdgeLabel(edgeLabel));
       }
 
-      query.limit(0L)
-
+      val query = graph.query(qb, authorizations).asInstanceOf[QueryBase]
       val count = withResources(query.edgeIds(IdFetchHint.NONE))(
         iterable => iterable.getTotalHits
       )
@@ -163,11 +162,11 @@ object GeGraphStatistics {
       index.properties.foreach(pk => cacheKey += "_" + pk.id)
       var indexCardinality = GeStatisticsHolder.nodesByPropertiesCount.getIfPresent(cacheKey)
       if (indexCardinality == null) {
-        val counts = withResources(graph.query(authorizations)
-          .hasConceptType(index.label.id)
-          .has(index.property.id)
-          .limit(0L)
-          .vertexIds(IdFetchHint.NONE))(
+        val queryBuilder: GeQueryBuilder = boolQuery()
+          .and(hasConceptType(index.label.id))
+          .and(exists(index.property.id))
+          .limit(0L);
+        val counts = withResources(graph.query(queryBuilder, authorizations).vertexIds(IdFetchHint.NONE))(
           iterable =>
             iterable.getTotalHits
         )
@@ -183,8 +182,7 @@ object GeGraphStatistics {
       var distinctCardinality = GeStatisticsHolder.nodesByPropertiesDinctinctCount.getIfPresent(cacheKey)
       if (distinctCardinality == null) {
         try {
-          val counts = withResources(graph.query(authorizations)
-            .hasConceptType(index.label.id)
+          val counts = withResources(graph.query(hasConceptType(index.label.id).limit(0L).asInstanceOf[GeQueryBuilder], authorizations)
             .addAggregation(new CardinalityAggregation("count", index.property.id))
             .vertexIds(IdFetchHint.NONE))(
             iterable =>

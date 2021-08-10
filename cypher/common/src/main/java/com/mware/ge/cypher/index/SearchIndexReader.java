@@ -26,6 +26,9 @@ import com.mware.ge.cypher.ge.GeCypherQueryContext;
 import com.mware.ge.cypher.schema.IndexDescriptor;
 import com.mware.ge.cypher.util.NodeValueIndexCursor;
 import com.mware.ge.query.*;
+import com.mware.ge.query.builder.BoolQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.values.storable.DateTimeValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.virtual.NodeValue;
@@ -35,6 +38,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import static com.mware.ge.cypher.index.IndexQuery.IndexQueryType.exact;
+import static com.mware.ge.query.builder.GeQueryBuilders.*;
 import static java.lang.String.format;
 
 public class SearchIndexReader {
@@ -47,27 +51,31 @@ public class SearchIndexReader {
     public NodeValueIndexCursor scan(IndexReference index, IndexOrder indexOrder, boolean needsValues) {
         String firstProperty = index.properties()[0];
         String conceptType = index.schema().keyId();
-        Query query = queryContext.getGraph().query(queryContext.getAuthorizations());
-        query.hasConceptType(conceptType);
-        query.has(firstProperty);
+        GeQueryBuilder qb = boolQuery()
+                .and(hasConceptType(conceptType))
+                .and(exists(firstProperty));
+        addSortToQuery(qb, index, indexOrder);
 
-        addSortToQuery(query, index, indexOrder);
+        Query query = queryContext.getGraph().query(
+                qb,
+                queryContext.getAuthorizations()
+        );
 
         return new GeNodeValueIndexCursor(query.vertexIds());
     }
 
     public NodeValueIndexCursor seek(IndexReference index, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates) {
-        Query query = toGeQuery(index, indexOrder, predicates);
+        GeQueryBuilder queryBuilder = toGeQuery(index, indexOrder, predicates);
+        Query query = queryContext.getGraph().query(queryBuilder, queryContext.getAuthorizations());
         return new GeNodeValueIndexCursor(query.vertexIds());
     }
 
-    private Query toGeQuery(IndexReference index, IndexOrder indexOrder, IndexQuery... predicates) {
+    private GeQueryBuilder toGeQuery(IndexReference index, IndexOrder indexOrder, IndexQuery... predicates) {
         IndexQuery predicate = predicates[0];
         String conceptType = index.schema().keyId();
-        Query query = queryContext.getGraph().query(queryContext.getAuthorizations());
-        query.hasConceptType(conceptType);
-
-        addSortToQuery(query, index, indexOrder);
+        BoolQueryBuilder qb = GeQueryBuilders.boolQuery();
+        qb.and(GeQueryBuilders.hasConceptType(conceptType));
+        addSortToQuery(qb, index, indexOrder);
 
         switch (predicate.type()) {
             case exact:
@@ -77,9 +85,9 @@ public class SearchIndexReader {
                     IndexQuery.ExactPredicate p = (IndexQuery.ExactPredicate) predicate1;
                     String propName = p.propertyKeyId();
                     Value v = ((IndexQuery.ExactPredicate) predicate1).value();
-                    query.has(propName, Compare.EQUAL, v);
+                    qb.and(hasFilter(propName, Compare.EQUAL, v));
                 }
-                return query;
+                return qb;
             case exists:
                 for (IndexQuery p : predicates) {
                     if (p.type() != IndexQuery.IndexQueryType.exists) {
@@ -87,25 +95,25 @@ public class SearchIndexReader {
                                 "Exists followed by another query predicate type is not supported.");
                     }
                     String propName = p.propertyKeyId();
-                    query.has(propName);
+                    qb.and(exists(propName));
                 }
-                return query;
+                return qb;
             case range:
                 assertNotComposite(predicates);
                 switch (predicate.valueGroup()) {
                     case NUMBER:
                         IndexQuery.NumberRangePredicate np = (IndexQuery.NumberRangePredicate) predicate;
                         String propName = np.propertyKeyId();
-                        return query.range(propName, np.from(), np.to());
+                        return qb.and(range(propName, np.from(), np.to()));
                     case TEXT:
                         IndexQuery.TextRangePredicate sp = (IndexQuery.TextRangePredicate) predicate;
                         propName = sp.propertyKeyId();
-                        return query.range(propName, sp.from(), sp.to());
+                        return qb.and(range(propName, sp.from(), sp.to()));
                     case DATE:
                     case ZONED_DATE_TIME:
                         IndexQuery.RangePredicate<DateTimeValue> rp = (IndexQuery.RangePredicate<DateTimeValue>) predicate;
                         propName = rp.propertyKeyId();
-                        return query.range(propName, rp.fromValue(), rp.toValue());
+                        return qb.and(range(propName, rp.fromValue(), rp.toValue()));
                     default:
                         throw new UnsupportedOperationException(
                                 format("Range scans of value group %s are not supported", predicate.valueGroup()));
@@ -114,29 +122,29 @@ public class SearchIndexReader {
                 assertNotComposite(predicates);
                 IndexQuery.StringPrefixPredicate spp = (IndexQuery.StringPrefixPredicate) predicate;
                 String propName = spp.propertyKeyId();
-                return query.has(propName, Compare.STARTS_WITH, spp.prefix());
+                return qb.and(hasFilter(propName, Compare.STARTS_WITH, spp.prefix()));
             case stringContains:
                 assertNotComposite(predicates);
                 IndexQuery.StringContainsPredicate scp = (IndexQuery.StringContainsPredicate) predicate;
                 propName = scp.propertyKeyId();
-                return query.has(propName, TextPredicate.CONTAINS, scp.contains());
+                return qb.and(hasFilter(propName, TextPredicate.CONTAINS, scp.contains()));
             case stringSuffix:
                 assertNotComposite(predicates);
                 IndexQuery.StringSuffixPredicate ssp = (IndexQuery.StringSuffixPredicate) predicate;
                 propName = ssp.propertyKeyId();
-                return query.has(propName, Compare.ENDS_WITH, ssp.suffix());
+                return qb.and(hasFilter(propName, Compare.ENDS_WITH, ssp.suffix()));
             default:
                 throw new RuntimeException("Index query not supported: " + Arrays.toString(predicates));
         }
     }
 
-    private void addSortToQuery(Query query, IndexReference index, IndexOrder indexOrder) {
+    private void addSortToQuery(GeQueryBuilder qb, IndexReference index, IndexOrder indexOrder) {
         switch (indexOrder) {
             case ASCENDING:
-                query.sort(index.schema().getPropertyId(), SortDirection.ASCENDING);
+                qb.sort(index.schema().getPropertyId(), SortDirection.ASCENDING);
                 break;
             case DESCENDING:
-                query.sort(index.schema().getPropertyId(), SortDirection.DESCENDING);
+                qb.sort(index.schema().getPropertyId(), SortDirection.DESCENDING);
                 break;
             case NONE:
         }

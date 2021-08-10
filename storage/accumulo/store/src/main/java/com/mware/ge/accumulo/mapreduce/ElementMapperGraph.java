@@ -43,6 +43,7 @@ import com.mware.ge.id.IdGenerator;
 import com.mware.ge.metric.NullMetricRegistry;
 import com.mware.ge.query.GraphQuery;
 import com.mware.ge.query.MultiVertexQuery;
+import com.mware.ge.query.builder.GeQueryBuilder;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.TableNotFoundException;
@@ -142,12 +143,7 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations) {
-        throw new GeException("Not supported");
-    }
-
-    @Override
-    public MultiVertexQuery query(String[] vertexIds, Authorizations authorizations) {
+    public MultiVertexQuery query(GeQueryBuilder queryBuilder, Authorizations authorizations) {
         throw new GeException("Not supported");
     }
 

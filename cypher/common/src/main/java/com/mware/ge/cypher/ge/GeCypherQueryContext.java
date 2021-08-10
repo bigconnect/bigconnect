@@ -75,9 +75,7 @@ import com.mware.ge.dependencies.DependencyResolver;
 import com.mware.ge.io.ResourceTracker;
 import com.mware.ge.mutation.*;
 import com.mware.ge.query.QueryResultsIterable;
-import com.mware.ge.search.IndexHint;
-import com.mware.ge.util.ConvertingIterable;
-import com.mware.ge.search.IndexHint;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.util.StreamUtils;
 import com.mware.ge.values.AnyValue;
@@ -649,12 +647,12 @@ public class GeCypherQueryContext {
     }
 
     public Iterable<NodeValue> getVertices(List<String> ids) {
-        return Iterables.map(vertex -> {
+        return Iterables.map(graph.getVertices(ids, FetchHints.ALL, authorizations), vertex -> {
             if (elementBuilders.containsKey(vertex.getId()))
                 return new GeVertexMutationWrappingNodeValue((VertexMutation) elementBuilders.get(vertex.getId()), GeCypherQueryContext.this);
             else
                 return new GeVertexWrappingNodeValue(vertex);
-        }, graph.getVertices(ids, FetchHints.ALL, authorizations));
+        });
     }
 
     public Iterator<RelationshipValue> getEdges() {
@@ -736,8 +734,7 @@ public class GeCypherQueryContext {
             final int shard = i;
             futures.add(
                     executor.submit(() -> {
-                        try (QueryResultsIterable<String> ids = graph.query(authorizations)
-                                .hasConceptType(conceptType)
+                        try (QueryResultsIterable<String> ids = graph.query(GeQueryBuilders.hasConceptType(conceptType), authorizations)
                                 .setShard(String.valueOf(shard))
                                 .vertexIds()) {
 

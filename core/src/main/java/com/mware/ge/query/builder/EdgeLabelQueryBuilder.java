@@ -8,7 +8,6 @@ import com.mware.ge.helpers.ArrayUtil;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 public class EdgeLabelQueryBuilder extends GeQueryBuilder {
@@ -29,7 +28,7 @@ public class EdgeLabelQueryBuilder extends GeQueryBuilder {
         }
         if (geObject instanceof Vertex) {
             Set<String> edgeLabels = ((Vertex) geObject).getEdgesSummary(authorizations).getEdgeLabels();
-            return CollectionUtils.intersection(edgeLabels, List.of(this.edgeLabels)).size() > 0;
+            return CollectionUtils.intersection(edgeLabels, Arrays.asList(this.edgeLabels)).size() > 0;
         }
         return false;
     }

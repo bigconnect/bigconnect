@@ -109,7 +109,7 @@ public abstract class ElementBase implements Element {
 
     protected Iterable<Property> internalGetProperties(String key, String name) {
         getFetchHints().assertPropertyIncluded(name);
-        return new FilterIterable<>(getProperties()) {
+        return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {
                 if (key != null && !property.getKey().equals(key)) {

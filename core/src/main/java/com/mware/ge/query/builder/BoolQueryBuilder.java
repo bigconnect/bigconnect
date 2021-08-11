@@ -67,14 +67,14 @@ public class BoolQueryBuilder extends GeQueryBuilder {
         }
 
         if (andClauseResults.size() > 0 && orClauseResults.size() == 0)
-            return BooleanUtils.and(andClauseResults.toArray(Boolean[]::new));
+            return BooleanUtils.and(andClauseResults.toArray(new Boolean[0]));
         else if (andClauseResults.size() == 0 && orClauseResults.size() > 0)
-            return BooleanUtils.or(orClauseResults.toArray(Boolean[]::new));
+            return BooleanUtils.or(orClauseResults.toArray(new Boolean[0]));
         else if (andClauseResults.size() == 0 && orClauseResults.size() == 0)
             return false;
         else {
-            Boolean and = BooleanUtils.and(andClauseResults.toArray(Boolean[]::new));
-            Boolean or = BooleanUtils.or(orClauseResults.toArray(Boolean[]::new));
+            Boolean and = BooleanUtils.and(andClauseResults.toArray(new Boolean[0]));
+            Boolean or = BooleanUtils.or(orClauseResults.toArray(new Boolean[0]));
             return and && or;
         }
     }

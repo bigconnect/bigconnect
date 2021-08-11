@@ -18,9 +18,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.common.geo.ShapeRelation;
 import org.elasticsearch.common.geo.builders.*;
 import org.elasticsearch.common.unit.DistanceUnit;
-import org.elasticsearch.index.query.*;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.*;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceCalculator;
@@ -739,7 +739,7 @@ public class GeQueryBuilderTransformer {
             return ((GeoShapeValue)value).asObjectCopy();
         } else if (value instanceof DateTimeArray) {
             return ((DateTimeArray)value).asObjectCopy();
-        } else if (value instanceof NoValue) {
+        } else if (value instanceof NoValue || value == null) {
             return null;
         }
         throw new IllegalArgumentException("Don't know how to convert to query value: " + value.getClass().getName());

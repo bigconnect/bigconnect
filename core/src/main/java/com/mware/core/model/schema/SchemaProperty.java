@@ -249,6 +249,7 @@ public abstract class SchemaProperty {
                         .map(s -> s.charAt(0))
                         .toArray(Character[]::new);
                 return Values.charArray(ArrayUtils.toPrimitive(charArr, '\0'));
+            case DATE:
             case DATETIME:
                 return parseDateTime(valueStr);
             case DATETIME_ARRAY:
@@ -352,6 +353,7 @@ public abstract class SchemaProperty {
 
     public static Value convert(JSONArray values, PropertyType propertyDataType, int index) throws ParseException {
         switch (propertyDataType) {
+            case DATE:
             case DATETIME: {
                 String valueStr = values.getString(index);
                 return parseDateTime(valueStr);
@@ -526,6 +528,7 @@ public abstract class SchemaProperty {
                 return new CharArrayBcProperty(getName());
             case DATETIME_ARRAY:
                 return new DateTimeArrayBcProperty(getName());
+            case DATE:
             case DATETIME:
                 return new DateTimeBcProperty(getName());
             case LOCAL_DATE:

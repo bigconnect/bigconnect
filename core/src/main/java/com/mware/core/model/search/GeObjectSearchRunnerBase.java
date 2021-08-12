@@ -479,7 +479,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
 
                 if (PropertyType.STRING.equals(propertyDataType) && (predicateString == null || "~".equals(predicateString) || "".equals(predicateString))) {
                     graphQuery.and(hasFilter(propertyName, TextPredicate.CONTAINS, (Value) value0));
-                } else if (PropertyType.DATETIME.equals(propertyDataType)) {
+                } else if (PropertyType.DATETIME.equals(propertyDataType) || PropertyType.DATE.equals(propertyDataType)) {
                     applyDateToQuery(graphQuery, obj, predicateString, values, searchOptions);
                 } else if (PropertyType.BOOLEAN.equals(propertyDataType)) {
                     graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));

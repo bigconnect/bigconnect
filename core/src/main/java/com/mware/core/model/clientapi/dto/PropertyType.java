@@ -47,6 +47,7 @@ public enum PropertyType {
     CHAR_ARRAY("charArray"),
     CHAR("char"),
     DATETIME_ARRAY("dateTimeArray"),
+    DATE("date"), // this is an alias for DATETIME
     DATETIME("dateTime"),
     LOCAL_DATETIME_ARRAY("localDateTimeArray"),
     LOCAL_DATETIME("localDateTime"),
@@ -90,6 +91,7 @@ public enum PropertyType {
             case CHAR_ARRAY: return CharArray.class;
             case CHAR: return CharValue.class;
             case DATETIME_ARRAY: return DateTimeArray.class;
+            case DATE:
             case DATETIME: return DateTimeValue.class;
             case LOCAL_DATETIME_ARRAY: return LocalDateTimeArray.class;
             case LOCAL_DATETIME: return LocalDateTimeValue.class;

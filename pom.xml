@@ -74,6 +74,7 @@
             </snapshots>
         </repository>
     </repositories>
+
     <properties>
         <!-- General -->
         <classpath.filename>${project.build.directory}/.classpath.${user.name}</classpath.filename>

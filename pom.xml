@@ -1022,6 +1022,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <version>3.1.1</version>
                         <configuration>
+                            <source>8</source>
                             <failOnError>false</failOnError>
                             <failOnWarnings>false</failOnWarnings>
                         </configuration>

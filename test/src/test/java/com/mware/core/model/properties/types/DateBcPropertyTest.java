@@ -36,12 +36,12 @@
  */
 package com.mware.core.model.properties.types;
 
+import com.mware.core.GraphTestBase;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
 import com.mware.core.model.graph.GraphUpdateContext;
 import com.mware.core.model.schema.SchemaConstants;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.core.user.User;
-import com.mware.core.GraphTestBase;
 import com.mware.ge.Authorizations;
 import com.mware.ge.Element;
 import com.mware.ge.Vertex;
@@ -60,7 +60,7 @@ public class DateBcPropertyTest extends GraphTestBase {
     private User user;
     private Authorizations authorizations;
     private PropertyMetadata metadata;
-    private DateBcProperty prop;
+    private DateTimeBcProperty prop;
 
     @Before
     public void before() throws Exception {
@@ -68,7 +68,7 @@ public class DateBcPropertyTest extends GraphTestBase {
         user = getUserRepository().getSystemUser();
         authorizations = getAuthorizationRepository().getGraphAuthorizations(user);
         metadata = new PropertyMetadata(user, new VisibilityJson(""), new Visibility(""));
-        prop = new DateBcProperty("name");
+        prop = new DateTimeBcProperty("name");
     }
 
     @Override
@@ -134,7 +134,7 @@ public class DateBcPropertyTest extends GraphTestBase {
                 prop.updatePropertyIfValueIsOlder(elemCtx, "key", newValue, metadata));
     }
 
-    private void testUpdateProperty(DateBcProperty prop, ZonedDateTime expectedValue, ZonedDateTime oldValue, GraphUpdateContext.Update<Element> update) {
+    private void testUpdateProperty(DateTimeBcProperty prop, ZonedDateTime expectedValue, ZonedDateTime oldValue, GraphUpdateContext.Update<Element> update) {
         Vertex v = getGraph().addVertex("v1", new Visibility(""), authorizations, SchemaConstants.CONCEPT_TYPE_THING);
         if (oldValue != null) {
             prop.addPropertyValue(v, "key", oldValue, new Visibility(""), authorizations);

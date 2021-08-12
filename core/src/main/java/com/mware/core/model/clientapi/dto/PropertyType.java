@@ -39,9 +39,6 @@ package com.mware.core.model.clientapi.dto;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.mware.ge.values.storable.*;
 
-import java.math.BigDecimal;
-import java.util.Date;
-
 public enum PropertyType {
     BOOLEAN_ARRAY("booleanArray"),
     BOOLEAN("boolean"),
@@ -49,8 +46,12 @@ public enum PropertyType {
     BYTE("byte"),
     CHAR_ARRAY("charArray"),
     CHAR("char"),
-    DATE_ARRAY("dateArray"),
-    DATE("date"),
+    DATETIME_ARRAY("dateTimeArray"),
+    DATETIME("dateTime"),
+    LOCAL_DATETIME_ARRAY("localDateTimeArray"),
+    LOCAL_DATETIME("localDateTime"),
+    LOCAL_DATE_ARRAY("localDateArray"),
+    LOCAL_DATE("localDate"),
     STRING_ARRAY("stringArray"),
     STRING("string"),
     DOUBLE_ARRAY("doubleArray"),
@@ -88,8 +89,12 @@ public enum PropertyType {
             case BYTE: return ByteValue.class;
             case CHAR_ARRAY: return CharArray.class;
             case CHAR: return CharValue.class;
-            case DATE_ARRAY: return DateTimeArray.class;
-            case DATE: return DateTimeValue.class;
+            case DATETIME_ARRAY: return DateTimeArray.class;
+            case DATETIME: return DateTimeValue.class;
+            case LOCAL_DATETIME_ARRAY: return LocalDateTimeArray.class;
+            case LOCAL_DATETIME: return LocalDateTimeValue.class;
+            case LOCAL_DATE_ARRAY: return DateArray.class;
+            case LOCAL_DATE: return DateValue.class;
             case STRING: return StringValue.class;
             case EXTENDED_DATA_TABLE:
             case STRING_ARRAY:

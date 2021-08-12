@@ -432,18 +432,38 @@ public class GeCypherQueryContext {
                     return PropertyType.STRING;
                 }
             } else {
-                if (_value instanceof IntegralValue) {
+                if (_value instanceof IntValue) {
                     return PropertyType.INTEGER;
+                } else if (_value instanceof LongValue) {
+                    return PropertyType.LONG;
+                } else if (_value instanceof ShortValue) {
+                    return PropertyType.SHORT;
+                } else if (_value instanceof ByteValue) {
+                    return PropertyType.BYTE;
+                } else if (_value instanceof DoubleValue) {
+                    return PropertyType.DOUBLE;
+                }  else if (_value instanceof FloatValue) {
+                    return PropertyType.FLOAT;
                 } else if (Values.isTextValue(_value)) {
                     return PropertyType.STRING;
-                } else if (_value instanceof FloatingPointValue) {
-                    return PropertyType.DOUBLE;
                 } else if (Values.isBooleanValue(_value)) {
                     return PropertyType.BOOLEAN;
-                } else if (Values.isTemporalValue(_value)) {
-                    return PropertyType.DATE;
+                } else if (_value instanceof DateTimeValue) {
+                    return PropertyType.DATETIME;
+                } else if (_value instanceof LocalDateTimeValue) {
+                    return PropertyType.LOCAL_DATETIME;
+                } else if (_value instanceof DateValue) {
+                    return PropertyType.LOCAL_DATE;
                 } else if (_value instanceof GeoPointValue) {
                     return PropertyType.GEO_LOCATION;
+                } else if (_value instanceof GeoLineValue) {
+                    return PropertyType.GEO_LINE;
+                } else if (_value instanceof GeoRectValue) {
+                    return PropertyType.GEO_RECT;
+                } else if (_value instanceof GeoPolygonValue) {
+                    return PropertyType.GEO_POLYGON;
+                } else if (_value instanceof GeoCircleValue) {
+                    return PropertyType.GEO_POLYGON;
                 } else {
                     LOGGER.warn("Could not determine BigConnect PropertyType for property '" + propertyName + "', defaulting to STRING");
                     return PropertyType.STRING;

@@ -49,7 +49,6 @@ import com.mware.core.model.workspace.Workspace;
 import com.mware.core.user.SystemUser;
 import com.mware.core.user.User;
 import com.mware.ge.*;
-import com.mware.ge.util.GeAssert;
 import com.mware.ge.util.IterableUtils;
 import org.apache.commons.compress.utils.IOUtils;
 import org.junit.Before;
@@ -879,14 +878,14 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
     @Test(expected = BcAccessDeniedException.class)
     public void testCreatingPropertyWithNoUserOrWorkspace() {
         List<Concept> thing = Collections.singletonList(getSchemaRepository().getThingConcept(workspaceId));
-        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, null, PUBLIC);
     }
 
     @Test(expected = BcAccessDeniedException.class)
     public void testCreatingPublicPropertyWithoutPublishPrivilege() {
         List<Concept> thing = Collections.singletonList(getSchemaRepository().getThingConcept(workspaceId));
-        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, user, PUBLIC);
     }
 
@@ -895,7 +894,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
         setPrivileges(user, Sets.newHashSet(Privilege.ONTOLOGY_ADD, Privilege.ONTOLOGY_PUBLISH));
 
         List<Concept> thing = Collections.singletonList(getSchemaRepository().getThingConcept(workspaceId));
-        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, user, PUBLIC);
         getSchemaRepository().clearCache();
 
@@ -909,7 +908,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
     @Test
     public void testCreatingPublicPropertyAsSystem() {
         List<Concept> thing = Collections.singletonList(getSchemaRepository().getThingConcept(workspaceId));
-        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, PUBLIC_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, systemUser, PUBLIC);
         getSchemaRepository().clearCache();
 
@@ -923,7 +922,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
     @Test(expected = BcAccessDeniedException.class)
     public void testCreatingSandboxedPropertyWithoutAddPermissionPrivilege() {
         List<Concept> thing = Collections.singletonList(getSchemaRepository().getThingConcept(workspaceId));
-        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, user, workspaceId);
     }
 
@@ -936,7 +935,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
         SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(
                 things,
                 Collections.singletonList(publicRelationship),
-                SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+                SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, user, workspaceId);
         getSchemaRepository().clearCache();
 
@@ -1062,7 +1061,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
         setPrivileges(user, Collections.singleton(Privilege.ONTOLOGY_ADD));
 
         List<Concept> thing = Collections.singletonList(getSchemaRepository().getThingConcept(workspaceId));
-        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+        SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(thing, SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         SchemaProperty sandboxedProperty = getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, user, workspaceId);
         getSchemaRepository().publishProperty(sandboxedProperty, user, workspaceId);
     }
@@ -1078,7 +1077,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
         SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(
                 things,
                 Collections.singletonList(publicRelationship),
-                SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATE);
+                SANDBOX_PROPERTY_NAME, SANDBOX_DISPLAY_NAME, PropertyType.DATETIME);
         SchemaProperty sandboxedProperty = getSchemaRepository().getOrCreateProperty(schemaPropertyDefinition, user, workspaceId);
         getSchemaRepository().publishProperty(sandboxedProperty, user, workspaceId);
         getSchemaRepository().clearCache();
@@ -1226,7 +1225,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
 
         SchemaProperty firstMetProperty = getSchemaRepository().getPropertyByName("test#firstMet", PUBLIC);
         assertEquals("First Met", firstMetProperty.getDisplayName());
-        assertEquals(PropertyType.DATE, firstMetProperty.getDataType());
+        assertEquals(PropertyType.DATETIME, firstMetProperty.getDataType());
 
         SchemaProperty favColorProperty = getSchemaRepository().getPropertyByName("test#favoriteColor", PUBLIC);
         assertEquals("Favorite Color", favColorProperty.getDisplayName());
@@ -1346,7 +1345,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
 
         SchemaProperty firstMetProperty = getSchemaRepository().getPropertyByName( "test#firstMet", PUBLIC);
         assertEquals("First Met", firstMetProperty.getDisplayName());
-        assertEquals(PropertyType.DATE, firstMetProperty.getDataType());
+        assertEquals(PropertyType.DATETIME, firstMetProperty.getDataType());
 
         SchemaProperty favColorProperty = getSchemaRepository().getPropertyByName("test#favoriteColor", PUBLIC);
         assertEquals("Favorite Color", favColorProperty.getDisplayName());
@@ -1444,7 +1443,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
         factory.newConceptProperty()
                 .forRelationships(personKnowsPerson)
                 .name("test#firstMet")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .displayName("First Met")
                 .save();
 
@@ -1633,7 +1632,7 @@ public abstract class SchemaRepositoryTestBase extends GraphTestBase {
                 .name("testhierarchy#firstMet")
                 .displayName("First Met")
                 .forRelationships(personKnowsPerson)
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         factory.newConceptProperty()

@@ -44,7 +44,6 @@ import com.mware.core.model.user.UserRepository;
 import com.mware.core.ping.PingSchema;
 import com.mware.ge.TextIndexHint;
 import com.mware.ge.values.storable.BooleanValue;
-import com.mware.ge.values.storable.Values;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -148,7 +147,7 @@ public class DefaultSchemaCreator {
                 .name(BcSchema.MODIFIED_DATE.getPropertyName())
                 .sortable(true)
                 .displayName("Modified Date")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .userVisible(true)
                 .save();
 
@@ -185,7 +184,7 @@ public class DefaultSchemaCreator {
                 .concepts(event)
                 .name(BcSchema.EVENT_TIME.getPropertyName())
                 .displayName("Event Time")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .sortable(true)
                 .userVisible(true)
                 .save();
@@ -265,13 +264,13 @@ public class DefaultSchemaCreator {
         schemaFactory.newConceptProperty()
                 .concepts(userConcept)
                 .name(UserSchema.CREATE_DATE.getPropertyName())
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         schemaFactory.newConceptProperty()
                 .concepts(userConcept)
                 .name(UserSchema.CURRENT_LOGIN_DATE.getPropertyName())
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -315,7 +314,7 @@ public class DefaultSchemaCreator {
         schemaFactory.newConceptProperty()
                 .concepts(userConcept)
                 .name(UserSchema.PREVIOUS_LOGIN_DATE.getPropertyName())
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -367,7 +366,7 @@ public class DefaultSchemaCreator {
         schemaFactory.newConceptProperty()
                 .concepts(userConcept)
                 .name(UserSchema.PASSWORD_RESET_TOKEN_EXPIRATION_DATE.getPropertyName())
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
     }
 
@@ -560,7 +559,7 @@ public class DefaultSchemaCreator {
                 .concepts(ping)
                 .name(PingSchema.CREATE_DATE.getPropertyName())
                 .displayName("Create Date")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -575,7 +574,7 @@ public class DefaultSchemaCreator {
                 .concepts(ping)
                 .name(PingSchema.GRAPH_PROPERTY_WORKER_DATE.getPropertyName())
                 .displayName("GPW Date")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -605,7 +604,7 @@ public class DefaultSchemaCreator {
                 .concepts(ping)
                 .name(PingSchema.LONG_RUNNING_PROCESS_DATE.getPropertyName())
                 .displayName("LRP Date")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .save();
 
         schemaFactory.newConceptProperty()
@@ -1009,7 +1008,7 @@ public class DefaultSchemaCreator {
                 .concepts(image, video)
                 .name(MediaBcSchema.MEDIA_DATE_TAKEN.getPropertyName())
                 .displayName("Date taken")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .userVisible(true)
                 .intents(SchemaConstants.INTENT_MEDIA_DATE_TAKEN)
                 .save();
@@ -1238,7 +1237,7 @@ public class DefaultSchemaCreator {
                 .concepts(raw)
                 .name(RawObjectSchema.SOURCE_DATE.getPropertyName())
                 .displayName("Source Date")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .sortable(true)
                 .userVisible(true)
                 .textIndexHints(EnumSet.of(TextIndexHint.EXACT_MATCH))
@@ -1353,7 +1352,7 @@ public class DefaultSchemaCreator {
                 .concepts(person)
                 .name(FaceRecognitionSchema.LAST_FACE_EVENT.getPropertyName())
                 .displayName("Face Seen On")
-                .type(PropertyType.DATE)
+                .type(PropertyType.DATETIME)
                 .userVisible(true)
                 .save();
 

@@ -36,34 +36,35 @@
  */
 package com.mware.core.model.properties.types;
 
-import com.mware.ge.values.storable.DateTimeArray;
+import com.mware.ge.values.storable.DateArray;
 import com.mware.ge.values.storable.NoValue;
 import com.mware.ge.values.storable.Value;
+import com.mware.ge.values.storable.Values;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
-import static com.mware.ge.values.storable.Values.dateTimeArray;
+import static com.mware.ge.values.storable.Values.dateArray;
 
-public class DateArrayBcProperty extends BcProperty<ZonedDateTime[]> {
-    public DateArrayBcProperty(String key) {
+public class LocalDateArrayBcProperty extends BcProperty<LocalDate[]> {
+    public LocalDateArrayBcProperty(String key) {
         super(key);
     }
 
     @Override
-    public Value wrap(ZonedDateTime[] value) {
-        return dateTimeArray(value);
+    public Value wrap(LocalDate[] value) {
+        return Values.dateArray(value);
     }
 
     @Override
-    public ZonedDateTime[] unwrap(Value value) {
+    public LocalDate[] unwrap(Value value) {
         if (value == null || value instanceof NoValue)
             return null;
         else
-            return ((DateTimeArray)value).asObjectCopy();
+            return ((DateArray)value).asObjectCopy();
     }
 
     @Override
-    protected boolean isEquals(ZonedDateTime[] newValue, ZonedDateTime[] currentValue) {
-        return dateTimeArray(newValue).equals(currentValue);
+    protected boolean isEquals(LocalDate[] newValue, LocalDate[] currentValue) {
+        return dateArray(newValue).equals(currentValue);
     }
 }

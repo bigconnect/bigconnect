@@ -59,9 +59,7 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.io.WKTReader;
 
 import java.text.ParseException;
-import java.time.Duration;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -251,15 +249,33 @@ public abstract class SchemaProperty {
                         .map(s -> s.charAt(0))
                         .toArray(Character[]::new);
                 return Values.charArray(ArrayUtils.toPrimitive(charArr, '\0'));
-            case DATE:
+            case DATETIME:
                 return parseDateTime(valueStr);
-            case DATE_ARRAY:
+            case DATETIME_ARRAY:
                 ZonedDateTime[] dateArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
                         .map(String::trim)
                         .map(SchemaProperty::parseDateTime)
                         .map(DateTimeValue::asObjectCopy)
                         .toArray(ZonedDateTime[]::new);
                 return Values.dateTimeArray(dateArr);
+            case LOCAL_DATETIME:
+                return parseLocalDateTime(valueStr);
+            case LOCAL_DATETIME_ARRAY:
+                LocalDateTime[] localDateTimeArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(SchemaProperty::parseLocalDateTime)
+                        .map(LocalDateTimeValue::asObjectCopy)
+                        .toArray(LocalDateTime[]::new);
+                return Values.localDateTimeArray(localDateTimeArr);
+            case LOCAL_DATE:
+                return parseLocalDate(valueStr);
+            case LOCAL_DATE_ARRAY:
+                LocalDate[] localDateArr = Arrays.stream(StringUtils.split(valueStr, ARRAY_SEPARATOR))
+                        .map(String::trim)
+                        .map(SchemaProperty::parseLocalDate)
+                        .map(DateValue::asObjectCopy)
+                        .toArray(LocalDate[]::new);
+                return Values.dateArray(localDateArr);
             case STRING:
                 return Values.stringValue(valueStr);
             case STRING_ARRAY:
@@ -336,9 +352,17 @@ public abstract class SchemaProperty {
 
     public static Value convert(JSONArray values, PropertyType propertyDataType, int index) throws ParseException {
         switch (propertyDataType) {
-            case DATE: {
+            case DATETIME: {
                 String valueStr = values.getString(index);
                 return parseDateTime(valueStr);
+            }
+            case LOCAL_DATE: {
+                String valueStr = values.getString(index);
+                return parseLocalDate(valueStr);
+            }
+            case LOCAL_DATETIME: {
+                String valueStr = values.getString(index);
+                return parseLocalDateTime(valueStr);
             }
             case GEO_POINT:
             case GEO_LOCATION:
@@ -470,6 +494,22 @@ public abstract class SchemaProperty {
         }
     }
 
+    private static LocalDateTimeValue parseLocalDateTime(String valueStr) {
+        try {
+            return LocalDateTimeValue.parse(valueStr);
+        } catch (TemporalParseException ex) {
+            return LocalDateTimeValue.localDateTime(Long.parseLong(valueStr), 0L);
+        }
+    }
+
+    private static DateValue parseLocalDate(String valueStr) {
+        try {
+            return DateValue.parse(valueStr);
+        } catch (TemporalParseException ex) {
+            return DateValue.epochDate(Long.parseLong(valueStr));
+        }
+    }
+
     public BcProperty geBcProperty() {
         switch (getDataType()) {
             case BOOLEAN:
@@ -484,10 +524,18 @@ public abstract class SchemaProperty {
                 return new CharBcProperty(getName());
             case CHAR_ARRAY:
                 return new CharArrayBcProperty(getName());
-            case DATE_ARRAY:
-                return new DateArrayBcProperty(getName());
-            case DATE:
-                return new DateBcProperty(getName());
+            case DATETIME_ARRAY:
+                return new DateTimeArrayBcProperty(getName());
+            case DATETIME:
+                return new DateTimeBcProperty(getName());
+            case LOCAL_DATE:
+                return new LocalDateBcProperty(getName());
+            case LOCAL_DATE_ARRAY:
+                return new LocalDateArrayBcProperty(getName());
+            case LOCAL_DATETIME:
+                return new LocalDateTimeBcProperty(getName());
+            case LOCAL_DATETIME_ARRAY:
+                return new LocalDateTimeArrayBcProperty(getName());
             case STRING:
                 return new StringBcProperty(getName());
             case STRING_ARRAY:

@@ -479,7 +479,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
 
                 if (PropertyType.STRING.equals(propertyDataType) && (predicateString == null || "~".equals(predicateString) || "".equals(predicateString))) {
                     graphQuery.and(hasFilter(propertyName, TextPredicate.CONTAINS, (Value) value0));
-                } else if (PropertyType.DATE.equals(propertyDataType)) {
+                } else if (PropertyType.DATETIME.equals(propertyDataType)) {
                     applyDateToQuery(graphQuery, obj, predicateString, values, searchOptions);
                 } else if (PropertyType.BOOLEAN.equals(propertyDataType)) {
                     graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
@@ -595,7 +595,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                             query.andNot(exists(propertyName));
                         } else {
                             switch (propertyDataType) {
-                                case DATE:
+                                case DATETIME:
                                     DateTimeValue dtv = DateTimeValue.ofEpochMillis(longValue(Long.parseLong(propertyValue)));
                                     String displayType = property.getDisplayType();
                                     boolean isDateOnly = displayType != null && displayType.equals("dateOnly");
@@ -628,7 +628,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
                             toValue = obj.getString("bucketToValue");
 
                         switch (propertyDataType) {
-                            case DATE:
+                            case DATETIME:
                                 String displayType = property.getDisplayType();
                                 boolean isDateOnly = displayType != null && displayType.equals("dateOnly");
 
@@ -723,7 +723,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
             calendar = DateTimeValue.now(Clocks.systemClock());
             calendar = moveDate(calendar, fromNow.getInt("unit"), fromNow.getInt("amount"));
         } else {
-            calendar = (DateTimeValue) jsonValueToObject(values, PropertyType.DATE, index);
+            calendar = (DateTimeValue) jsonValueToObject(values, PropertyType.DATETIME, index);
         }
         return calendar;
     }

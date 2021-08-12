@@ -47,14 +47,13 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Date;
 
 /**
  * A BcProperty that converts Dates to an appropriate value for
  * storage in Ge.
  */
-public class DateBcProperty extends BcProperty<ZonedDateTime> {
-    public DateBcProperty(String key) {
+public class DateTimeBcProperty extends BcProperty<ZonedDateTime> {
+    public DateTimeBcProperty(String key) {
         super(key);
     }
 

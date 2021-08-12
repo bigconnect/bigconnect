@@ -29,6 +29,7 @@ import org.locationtech.spatial4j.shape.Point;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -650,6 +651,12 @@ public class GeQueryBuilderTransformer {
                     return QueryBuilders.rangeQuery(propertyName)
                             .gte(lower.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli())
                             .lte(upper.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                } else if (has.getValue() instanceof LocalDateTimeValue) {
+                    LocalDateTime lower = (LocalDateTime) convertedValue;
+                    LocalDateTime upper = lower.plus(1, ChronoUnit.MILLIS);
+                    return QueryBuilders.rangeQuery(propertyName)
+                            .gte(lower.toInstant(ZoneOffset.UTC).toEpochMilli())
+                            .lte(upper.toInstant(ZoneOffset.UTC).toEpochMilli());
                 } else {
                     return QueryBuilders.termQuery(propertyName, convertedValue);
                 }
@@ -661,6 +668,10 @@ public class GeQueryBuilderTransformer {
                 } else if (has.getValue() instanceof DateTimeValue) {
                     ZonedDateTime dt = (ZonedDateTime) convertedValue;
                     return QueryBuilders.rangeQuery(propertyName).gte(dt.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                } else if (has.getValue() instanceof LocalDateTimeValue) {
+                    LocalDateTime dt = (LocalDateTime) convertedValue;
+                    return QueryBuilders.rangeQuery(propertyName)
+                            .gte(dt.toInstant(ZoneOffset.UTC).toEpochMilli());
                 }
                 return QueryBuilders.rangeQuery(propertyName).gte(convertedValue);
             case GREATER_THAN:
@@ -671,6 +682,10 @@ public class GeQueryBuilderTransformer {
                 } else if (has.getValue() instanceof DateTimeValue) {
                     ZonedDateTime dt = (ZonedDateTime) convertedValue;
                     return QueryBuilders.rangeQuery(propertyName).gt(dt.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                } else if (has.getValue() instanceof LocalDateTimeValue) {
+                    LocalDateTime dt = (LocalDateTime) convertedValue;
+                    return QueryBuilders.rangeQuery(propertyName)
+                            .gt(dt.toInstant(ZoneOffset.UTC).toEpochMilli());
                 }
                 return QueryBuilders.rangeQuery(propertyName).gt(convertedValue);
             case LESS_THAN_EQUAL:
@@ -681,6 +696,10 @@ public class GeQueryBuilderTransformer {
                 } else if (has.getValue() instanceof DateTimeValue) {
                     ZonedDateTime dt = (ZonedDateTime) convertedValue;
                     return QueryBuilders.rangeQuery(propertyName).lte(dt.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                }  else if (has.getValue() instanceof LocalDateTimeValue) {
+                    LocalDateTime dt = (LocalDateTime) convertedValue;
+                    return QueryBuilders.rangeQuery(propertyName)
+                            .lte(dt.toInstant(ZoneOffset.UTC).toEpochMilli());
                 }
                 return QueryBuilders.rangeQuery(propertyName).lte(convertedValue);
             case LESS_THAN:
@@ -691,6 +710,10 @@ public class GeQueryBuilderTransformer {
                 } else if (has.getValue() instanceof DateTimeValue) {
                     ZonedDateTime dt = (ZonedDateTime) convertedValue;
                     return QueryBuilders.rangeQuery(propertyName).lt(dt.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                } else if (has.getValue() instanceof LocalDateTimeValue) {
+                    LocalDateTime dt = (LocalDateTime) convertedValue;
+                    return QueryBuilders.rangeQuery(propertyName)
+                            .lt(dt.toInstant(ZoneOffset.UTC).toEpochMilli());
                 }
                 return QueryBuilders.rangeQuery(propertyName).lt(convertedValue);
             case NOT_EQUAL:
@@ -701,20 +724,44 @@ public class GeQueryBuilderTransformer {
                 }
                 return QueryBuilders.prefixQuery(propertyName, (String) convertedValue);
             case RANGE:
-                if (!(convertedValue instanceof ZonedDateTime[])) {
-                    throw new GeException("RANGE may only be used to query ZonedDateTime[] values");
+                if (!(convertedValue instanceof ZonedDateTime[]) && !(convertedValue instanceof LocalDateTime[]) && !(convertedValue instanceof LocalDate[])) {
+                    throw new GeException("RANGE may only be used to query Temporal[] values");
                 }
-                ZonedDateTime[] range = (ZonedDateTime[]) convertedValue;
-                ZonedDateTime startValue = range[0];
-                ZonedDateTime endValue = range[1];
-
                 RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(propertyName);
-                if (startValue != null) {
-                    rangeQueryBuilder = rangeQueryBuilder.gte(startValue.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                if (convertedValue instanceof ZonedDateTime[]) {
+                    ZonedDateTime[] range = (ZonedDateTime[]) convertedValue;
+                    ZonedDateTime startValue = range[0];
+                    ZonedDateTime endValue = range[1];
+                    if (startValue != null) {
+                        rangeQueryBuilder = rangeQueryBuilder.gte(startValue.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                    }
+                    if (endValue != null) {
+                        rangeQueryBuilder = rangeQueryBuilder.lt(endValue.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
+                    }
+                } else if (convertedValue instanceof LocalDateTime[]) {
+                    LocalDateTime[] range = (LocalDateTime[]) convertedValue;
+                    LocalDateTime startValue = range[0];
+                    LocalDateTime endValue = range[1];
+                    if (startValue != null) {
+                        rangeQueryBuilder = rangeQueryBuilder.gte(startValue.toInstant(ZoneOffset.UTC).toEpochMilli());
+                    }
+                    if (endValue != null) {
+                        rangeQueryBuilder = rangeQueryBuilder.lt(endValue.toInstant(ZoneOffset.UTC).toEpochMilli());
+                    }
+                } else if (convertedValue instanceof LocalDate[]) {
+                    LocalDate[] range = (LocalDate[]) convertedValue;
+                    LocalDate startValue = range[0];
+                    LocalDate endValue = range[1];
+                    if (startValue != null) {
+                        rangeQueryBuilder = rangeQueryBuilder.gte(startValue.atTime(23, 59, 59, 0).toInstant(ZoneOffset.UTC).toEpochMilli());
+                    }
+                    if (endValue != null) {
+                        rangeQueryBuilder = rangeQueryBuilder.lt(endValue.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli());
+                    }
+                } else {
+                    throw new GeException("Unexpected Range value " + convertedValue.getClass().getName());
                 }
-                if (endValue != null) {
-                    rangeQueryBuilder = rangeQueryBuilder.lt(endValue.withZoneSameLocal(ZoneOffset.UTC).toInstant().toEpochMilli());
-                }
+
                 return rangeQueryBuilder;
             default:
                 throw new GeException("Unexpected Compare predicate " + has.getPredicate());
@@ -739,6 +786,10 @@ public class GeQueryBuilderTransformer {
             return ((GeoShapeValue)value).asObjectCopy();
         } else if (value instanceof DateTimeArray) {
             return ((DateTimeArray)value).asObjectCopy();
+        } else if (value instanceof LocalDateTimeArray) {
+            return ((LocalDateTimeArray)value).asObjectCopy();
+        }  else if (value instanceof DateArray) {
+            return ((DateArray)value).asObjectCopy();
         } else if (value instanceof NoValue || value == null) {
             return null;
         }

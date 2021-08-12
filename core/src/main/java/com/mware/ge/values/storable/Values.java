@@ -323,8 +323,13 @@ public final class Values {
     public static Value temporalRangeValue(Range range) {
         if (range.getStart() instanceof ZonedDateTime && range.getEnd() instanceof ZonedDateTime) {
             return dateTimeArray(new ZonedDateTime[] {(ZonedDateTime)range.getStart(), (ZonedDateTime)range.getEnd()});
-        } else {
-            throw new IllegalArgumentException("Range must contain ZonedDateTime values");
+        } else if (range.getStart() instanceof LocalDateTime && range.getEnd() instanceof LocalDateTime) {
+            return localDateTimeArray(new LocalDateTime[] { (LocalDateTime)range.getStart(), (LocalDateTime)range.getEnd() });
+        }  else if (range.getStart() instanceof LocalDate && range.getEnd() instanceof LocalDate) {
+            return dateArray(new LocalDate[] { (LocalDate)range.getStart(), (LocalDate)range.getEnd() });
+        }
+        else {
+            throw new IllegalArgumentException("Range must contain Temporal values");
         }
     }
 

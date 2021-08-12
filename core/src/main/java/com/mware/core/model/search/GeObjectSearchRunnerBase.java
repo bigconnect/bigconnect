@@ -479,8 +479,8 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
 
                 if (PropertyType.STRING.equals(propertyDataType) && (predicateString == null || "~".equals(predicateString) || "".equals(predicateString))) {
                     graphQuery.and(hasFilter(propertyName, TextPredicate.CONTAINS, (Value) value0));
-                } else if (PropertyType.DATETIME.equals(propertyDataType) || PropertyType.DATE.equals(propertyDataType)) {
-                    applyDateToQuery(graphQuery, obj, predicateString, values, searchOptions);
+                } else if (PropertyType.DATETIME.equals(propertyDataType) || PropertyType.DATE.equals(propertyDataType) || PropertyType.LOCAL_DATE.equals(propertyDataType) || PropertyType.LOCAL_DATETIME.equals(propertyDataType)) {
+                    applyDateToQuery(graphQuery, obj, predicateString, values, searchOptions, propertyDataType);
                 } else if (PropertyType.BOOLEAN.equals(propertyDataType)) {
                     graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
                 } else if (PropertyType.GEO_LOCATION.equals(propertyDataType)) {
@@ -683,71 +683,85 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    private void applyDateToQuery(BoolQueryBuilder graphQuery, JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions) throws ParseException {
+    private void applyDateToQuery(BoolQueryBuilder graphQuery, JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions, PropertyType type) throws ParseException {
         String propertyName = obj.getString("propertyName");
         SchemaProperty property = schemaRepository.getPropertyByName(propertyName, searchOptions.getWorkspaceId());
 
         if (property != null && values.length() > 0) {
-            DateTimeValue calendar = convertToDateTimeValue(values, 0);
-
             if (predicate == null || predicate.equals("equal") || predicate.equals("=")) {
-                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, calendar));
-                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, calendar));
+                TemporalValue<?, ?> value = convertToTemporalValue(values, 0, type);
+                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, value));
+                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, value));
             } else if (predicate.equals("range")) {
                 if (values.length() > 1) {
-                    DateTimeValue startCalendar = convertToDateTimeValue(values, 0);
-                    DateTimeValue endCalendar = convertToDateTimeValue(values, 1);
-                    ZonedDateTime start = startCalendar.asObjectCopy();
-                    ZonedDateTime end = endCalendar.asObjectCopy();
-                    if (start.isBefore(end)) {
+                    TemporalValue<?, ?> startDate = convertToTemporalValue(values, 0, type);
+                    TemporalValue<?, ?> endDate = convertToTemporalValue(values, 1, type);
+                    int compare = COMPARATOR.compare(startDate, endDate);
+                    if (compare < 0) {
                         graphQuery.and(hasFilter(propertyName, Compare.RANGE,
-                                Values.of(new Range<>(start, true, end, false))));
+                                Values.of(new Range<>(startDate.asObjectCopy(), true, endDate.asObjectCopy(), false))));
                     } else {
                         graphQuery.and(hasFilter(propertyName, Compare.RANGE,
-                                Values.of(new Range<>(end, true, start, false))));
+                                Values.of(new Range<>(endDate.asObjectCopy(), true, startDate.asObjectCopy(), false))));
                     }
                 }
             } else if (predicate.equals("<")) {
-                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, calendar));
+                TemporalValue<?, ?> value = convertToTemporalValue(values, 0, type);
+                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, value));
             } else if (predicate.equals(">")) {
-                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, calendar));
+                TemporalValue<?, ?> value = convertToTemporalValue(values, 0, type);
+                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, value));
             }
         }
     }
 
-    DateTimeValue convertToDateTimeValue(JSONArray values, int index) throws ParseException {
-        DateTimeValue calendar;
+    TemporalValue<?, ?> convertToTemporalValue(JSONArray values, int index, PropertyType type) throws ParseException {
+        TemporalValue<?,?> calendar;
         boolean isRelative = values.get(index) instanceof JSONObject;
         if (isRelative) {
             JSONObject fromNow = (JSONObject) values.get(index);
-            calendar = DateTimeValue.now(Clocks.systemClock());
+            switch (type) {
+                case DATE:
+                case DATETIME:
+                    calendar = DateTimeValue.now(Clocks.systemClock());
+                    break;
+                case LOCAL_DATETIME:
+                    calendar = LocalDateTimeValue.now(Clocks.systemClock());
+                    break;
+                case LOCAL_DATE:
+                    calendar = DateValue.now(Clocks.systemClock());
+                    break;
+                default:
+                    throw new IllegalArgumentException("Invalid date type passed: "+type);
+            }
+
             calendar = moveDate(calendar, fromNow.getInt("unit"), fromNow.getInt("amount"));
         } else {
-            calendar = (DateTimeValue) jsonValueToObject(values, PropertyType.DATETIME, index);
+            calendar = (TemporalValue<?, ?>) jsonValueToObject(values, type, index);
         }
         return calendar;
     }
 
-    private DateTimeValue moveDate(DateTimeValue calendar, int calendarField, int amount) {
+    private TemporalValue<?, ?> moveDate(TemporalValue<?, ?> date, int calendarField, int amount) {
         switch (calendarField) {
             case Calendar.YEAR:
-                return calendar.plus(amount, ChronoUnit.YEARS);
+                return date.plus(amount, ChronoUnit.YEARS);
             case Calendar.MONTH:
-                return calendar.plus(amount, ChronoUnit.MONTHS);
+                return date.plus(amount, ChronoUnit.MONTHS);
             case Calendar.WEEK_OF_YEAR:
-                return calendar.plus(amount, ChronoUnit.WEEKS);
+                return date.plus(amount, ChronoUnit.WEEKS);
             case Calendar.DAY_OF_MONTH:
             case Calendar.DAY_OF_YEAR:
-                return calendar.plus(amount, ChronoUnit.DAYS);
+                return date.plus(amount, ChronoUnit.DAYS);
             case Calendar.HOUR_OF_DAY:
             case Calendar.HOUR:
-                return calendar.plus(amount, ChronoUnit.HOURS);
+                return date.plus(amount, ChronoUnit.HOURS);
             case Calendar.MINUTE:
-                return calendar.plus(amount, ChronoUnit.MINUTES);
+                return date.plus(amount, ChronoUnit.MINUTES);
             case Calendar.SECOND:
-                return calendar.plus(amount, ChronoUnit.SECONDS);
+                return date.plus(amount, ChronoUnit.SECONDS);
             case Calendar.MILLISECOND:
-                return calendar.plus(amount, ChronoUnit.MILLIS);
+                return date.plus(amount, ChronoUnit.MILLIS);
             default:
                 throw new IllegalArgumentException("Unknown calendar field: "+calendarField);
         }

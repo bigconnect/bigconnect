@@ -137,6 +137,10 @@ public class SearchOptions {
         return obj;
     }
 
+    public void removeParameters(String parameterName) {
+        parameters.remove(parameterName);
+    }
+
     public Map<String, Object> getParameters() {
         return parameters;
     }

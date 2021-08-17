@@ -107,6 +107,7 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
             queryBuilder.and(hasExtendedData(elementExtendedData.elementType, elementExtendedData.elementId, elementExtendedData.tableName));
         } else if (!relatedToVertexIds.isEmpty()) {
             String[] edgeLabels = getEdgeLabels(searchOptions);
+            searchOptions.removeParameters("edgeLabels");
             Set<String> allRelatedIds = relatedToVertexIds.stream()
                     .map(vertexId -> {
                         Vertex vertex = getGraph().getVertex(vertexId, FetchHints.EDGE_REFS, authorizations);
@@ -118,6 +119,7 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
                         return StreamSupport.stream(edgeInfos.spliterator(), false).map(EdgeInfo::getVertexId);
                     })
                     .collect(Collectors.toSet());
+
             if (allRelatedIds.isEmpty()) {
                 return null;
             } else {

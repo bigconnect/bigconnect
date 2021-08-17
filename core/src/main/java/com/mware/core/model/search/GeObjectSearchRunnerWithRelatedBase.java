@@ -101,7 +101,7 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
         }
 
         BoolQueryBuilder queryBuilder = GeQueryBuilders.boolQuery()
-                .and(GeQueryBuilders.searchAll());
+                .and(GeQueryBuilders.search(queryStringParam));
 
         if (elementExtendedData != null) {
             queryBuilder.and(hasExtendedData(elementExtendedData.elementType, elementExtendedData.elementId, elementExtendedData.tableName));

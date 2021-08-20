@@ -60,6 +60,7 @@ import com.mware.ge.values.storable.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Precision;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -99,21 +100,19 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
     ) {
         JSONArray filterJson = getFilterJson(searchOptions, searchOptions.getWorkspaceId());
         JSONArray sourceFilterJson = getSourceFilterJson(searchOptions);
-        String sourceLogicalOperator = getSourceLogicalOperator(searchOptions);
 
         BoolQueryBuilder queryBuilder = getQuery(searchOptions, authorizations);
         Query query;
         Long size = 0L, offset = 0L;
 
         if (queryBuilder != null) {
-            applyLogicalOperatorsToQuery(queryBuilder, sourceLogicalOperator);
-            applyFiltersToQuery(queryBuilder, filterJson, user, searchOptions);
+            applyFiltersToQuery(queryBuilder, filterJson, searchOptions);
             applyConceptTypeFilterToQuery(queryBuilder, searchOptions);
             applyRefinementsToQuery(queryBuilder, searchOptions);
             applyEdgeLabelFilterToQuery(queryBuilder, searchOptions);
             applyExtendedDataFilters(queryBuilder, searchOptions);
             if (sourceFilterJson != null) {
-                applyFiltersToQuery(queryBuilder, sourceFilterJson, user, searchOptions);
+                applyFiltersToQuery(queryBuilder, sourceFilterJson, searchOptions);
             }
 
             size = searchOptions.getOptionalParameter("size", defaultSearchResultCount);
@@ -445,70 +444,265 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return null;
     }
 
-    protected void applyFiltersToQuery(BoolQueryBuilder query, JSONArray filterJson, User user, SearchOptions searchOptions) {
-        for (int i = 0; i < filterJson.length(); i++) {
-            JSONObject obj = filterJson.getJSONObject(i);
-            if (obj.length() > 0) {
-                if (obj.has("propertyName")) {
-                    updateQueryWithPropertyNameFilter(query, obj, user, searchOptions);
-                } else if (obj.has("dataType")) {
-                    updateQueryWithDataTypeFilter(query, obj, user, searchOptions);
-                } else {
-                    throw new BcException("Query filters must have either a propertyName or dataType field. Invalid filter: " + filterJson.toString());
+    protected void applyFiltersToQuery(BoolQueryBuilder query, JSONArray filterJson, SearchOptions searchOptions) {
+        String _logicalQuery = getLogicalOperators(searchOptions);
+        if (!StringUtils.isEmpty(_logicalQuery)) {
+            try {
+                if (_logicalQuery.isEmpty()) {
+                    _logicalQuery = "[]";
+                }
+                JSONArray logicalOperations = new JSONArray(_logicalQuery);
+                if (logicalOperations.length() > 0) {
+                    BoolQueryBuilder level0BoolQuery = boolQuery();
+                    BoolQueryBuilder level1BoolQuery;
+                    BoolQueryBuilder level2BoolQuery;
+                    int counter = 0;
+                    for (int i = 0; i < logicalOperations.length(); i++) {
+                        JSONObject level0Object = (JSONObject) logicalOperations.get(i);
+                        if (level0Object.has("children") && !level0Object.isNull("children")) {
+                            level1BoolQuery = boolQuery();
+                            JSONArray level1GroupArray = (JSONArray) level0Object.get("children");
+                            for (int j = 0; j < level1GroupArray.length(); j++) {
+                                JSONObject level1Object = (JSONObject) level1GroupArray.get(j);
+                                String operatorLevel1 = "";
+                                if (level1Object.has("operator") && !level1Object.isNull("operator")) {
+                                    operatorLevel1 = level1Object.get("operator").toString();
+                                }
+
+                                //No operator, try to get from next or should clause
+                                if (operatorLevel1.equals("")) {
+                                    if ((j + 1) < level1GroupArray.length()) {
+                                        JSONObject operatorObject = (JSONObject) level1GroupArray.get(j + 1);
+                                        if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
+                                            operatorLevel1 = operatorObject.get("operator").toString();
+                                        }
+                                    }
+                                }
+
+                                // Level2 Group
+                                if (level1Object.has("children") && !level1Object.isNull("children")) {
+                                    level2BoolQuery = boolQuery();
+                                    JSONArray level2GroupArray = (JSONArray) level1Object.get("children");
+                                    for (int k = 0; k < level2GroupArray.length(); k++) {
+                                        JSONObject level2Object = (JSONObject) level2GroupArray.get(k);
+                                        String operatorLevel2 = "";
+                                        if (level2Object.has("operator") && !level2Object.isNull("operator")) {
+                                            operatorLevel2 = level2Object.get("operator").toString();
+                                        }
+
+                                        //No operator, try to get from next or should clause
+                                        if (operatorLevel2.equals("")) {
+                                            if ((k + 1) < level2GroupArray.length()) {
+                                                JSONObject operatorObject = (JSONObject) level2GroupArray.get(k + 1);
+                                                if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
+                                                    operatorLevel2 = operatorObject.get("operator").toString();
+                                                }
+                                            }
+                                        }
+
+                                        JSONObject obj = filterJson.getJSONObject(level2Object.getInt("id"));
+                                        BoolQueryBuilder qb = getFilterForValueOrDataType(obj, filterJson, searchOptions);
+                                        if (obj.length() > 0) {
+                                            if (operatorLevel2.equalsIgnoreCase("and")) {
+                                                level2BoolQuery.and(qb);
+                                                counter++;
+                                            } else if (operatorLevel2.equalsIgnoreCase("or")) {
+                                                level2BoolQuery.or(qb);
+                                                counter++;
+                                            } else if (operatorLevel2.equalsIgnoreCase("not")) {
+                                                level2BoolQuery.andNot(qb);
+                                                counter++;
+                                            } else {
+                                                level2BoolQuery.or(qb);
+                                                counter++;
+                                            }
+                                        }
+                                    }
+                                    if (operatorLevel1.equalsIgnoreCase("and")) {
+                                        level1BoolQuery.and(level2BoolQuery);
+                                    } else if (operatorLevel1.equalsIgnoreCase("or")) {
+                                        level1BoolQuery.or(level2BoolQuery);
+                                    } else if (operatorLevel1.equalsIgnoreCase("not")) {
+                                        level1BoolQuery.andNot(level2BoolQuery);
+                                    } else {
+                                        level1BoolQuery.or(level2BoolQuery);
+                                    }
+
+                                } else {
+                                    JSONObject obj = filterJson.getJSONObject(level1Object.getInt("id"));
+                                    BoolQueryBuilder qb = getFilterForValueOrDataType(obj, filterJson, searchOptions);
+                                    if (obj.length() > 0) {
+                                        if (operatorLevel1.equalsIgnoreCase("and")) {
+                                            level1BoolQuery.and(qb);
+                                            counter++;
+                                        } else if (operatorLevel1.equalsIgnoreCase("or")) {
+                                            level1BoolQuery.or(qb);
+                                            counter++;
+                                        } else if (operatorLevel1.equalsIgnoreCase("not")) {
+                                            level1BoolQuery.andNot(qb);
+                                            counter++;
+                                        } else {
+                                            level1BoolQuery.or(qb);
+                                            counter++;
+                                        }
+                                    }
+                                }
+                            }
+                            //Add group operation
+                            String operatorLevel0Group = "";
+                            if (level0Object.has("operator")) {
+                                operatorLevel0Group = level0Object.get("operator").toString();
+                            }
+                            //No operator, try to get from next or should clause
+                            if (operatorLevel0Group.equals("")) {
+                                if ((i + 1) < logicalOperations.length()) {
+                                    JSONObject operatorObject = (JSONObject) logicalOperations.get(i + 1);
+                                    if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
+                                        operatorLevel0Group = operatorObject.get("operator").toString();
+                                    }
+                                }
+                            }
+
+
+                            if (operatorLevel0Group.equalsIgnoreCase("and")) {
+                                level0BoolQuery.and(level1BoolQuery);
+                            } else if (operatorLevel0Group.equalsIgnoreCase("or")) {
+                                level0BoolQuery.or(level1BoolQuery);
+                            } else if (operatorLevel0Group.equalsIgnoreCase("not")) {
+                                level0BoolQuery.andNot(level1BoolQuery);
+                            } else {
+                                level0BoolQuery.or(level1BoolQuery);
+                            }
+
+                        } else {
+                            String operatorLevel0 = "";
+                            if (level0Object.has("operator") && !level0Object.isNull("operator")) {
+                                operatorLevel0 = level0Object.get("operator").toString();
+                            }
+
+                            //No operator, try to get from next or should clause
+                            if (operatorLevel0.equals("")) {
+                                if ((i + 1) < logicalOperations.length()) {
+                                    JSONObject operatorObject = (JSONObject) logicalOperations.get(i + 1);
+                                    if (operatorObject.has("operator") && !operatorObject.isNull("operator")) {
+                                        String nextOp = operatorObject.get("operator").toString();
+                                        // if we are first operator in the chain, we can't take not from next op, just use and
+                                        if (i == 0 && nextOp.equalsIgnoreCase("not")) {
+                                            operatorLevel0 = "and";
+                                        } else {
+                                            operatorLevel0 = nextOp;
+                                        }
+                                    }
+                                }
+                            }
+
+                            JSONObject obj = filterJson.getJSONObject(level0Object.getInt("id"));
+                            BoolQueryBuilder qb = getFilterForValueOrDataType(obj, filterJson, searchOptions);
+                            if (obj.length() > 0) {
+                                if (operatorLevel0.equalsIgnoreCase("and")) {
+                                    level0BoolQuery.and(qb);
+                                    counter++;
+                                } else if (operatorLevel0.equalsIgnoreCase("or")) {
+                                    level0BoolQuery.or(qb);
+                                    counter++;
+                                } else if (operatorLevel0.equalsIgnoreCase("not")) {
+                                    level0BoolQuery.andNot(qb);
+                                    counter++;
+                                } else {
+                                    level0BoolQuery.or(qb);
+                                    counter++;
+                                }
+                            }
+                        }
+                    }
+
+                    if (filterJson.length() > 0) {
+                        query.and(level0BoolQuery);
+                        //Add remaining filters
+                        if (counter < filterJson.length()) {
+                            for (int i = counter; i < filterJson.length(); i++) {
+                                JSONObject obj = filterJson.getJSONObject(i);
+                                if (obj.length() > 0) {
+                                    query.and(getFilterForValueOrDataType(obj, filterJson, searchOptions));
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (JSONException ex) {
+                throw new BcException("Could not parse logical query string: "+ex.getMessage());
+            }
+        } else {
+            BoolQueryBuilder queryBuilder = boolQuery();
+            for (int i = 0; i < filterJson.length(); i++) {
+                JSONObject obj = filterJson.getJSONObject(i);
+                if (obj.length() > 0) {
+                    queryBuilder.and(getFilterForValueOrDataType(obj, filterJson, searchOptions));
                 }
             }
+            query.and(queryBuilder);
         }
     }
 
-    private void updateQueryWithPropertyNameFilter(BoolQueryBuilder graphQuery, JSONObject obj, User user, SearchOptions searchOptions) {
+    private BoolQueryBuilder getFilterForValueOrDataType(JSONObject obj, JSONArray filterJson, SearchOptions searchOptions) {
+        if (obj.has("propertyName")) {
+            return getPropertyNameFilter(obj, searchOptions);
+        } else if (obj.has("dataType")) {
+            return getDataTypeFilter(obj);
+        } else {
+            throw new BcException("Query filters must have either a propertyName or dataType field. Invalid filter: " + filterJson);
+        }
+    }
+
+    private BoolQueryBuilder getPropertyNameFilter(JSONObject obj, SearchOptions searchOptions) {
         try {
             String predicateString = obj.optString("predicate");
             String propertyName = obj.getString("propertyName");
             if ("has".equals(predicateString)) {
-                graphQuery.and(GeQueryBuilders.exists(propertyName));
+                return boolQuery().and(GeQueryBuilders.exists(propertyName));
             } else if ("hasNot".equals(predicateString)) {
-                graphQuery.andNot(GeQueryBuilders.exists(propertyName));
+                return boolQuery().andNot(GeQueryBuilders.exists(propertyName));
             } else if ("in".equals(predicateString)) {
                 JSONArray arr = obj.getJSONArray("values");
                 Value valueArr = convertJsonArray(arr);
-                graphQuery.and(hasFilter(propertyName, Contains.IN, valueArr));
+                return boolQuery().and(hasFilter(propertyName, Contains.IN, valueArr));
             } else {
                 PropertyType propertyDataType = PropertyType.convert(obj.optString("propertyDataType"));
                 JSONArray values = obj.getJSONArray("values");
                 Object value0 = jsonValueToObject(values, propertyDataType, 0);
 
                 if (PropertyType.STRING.equals(propertyDataType) && (predicateString == null || "~".equals(predicateString) || "".equals(predicateString))) {
-                    graphQuery.and(hasFilter(propertyName, TextPredicate.CONTAINS, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, TextPredicate.CONTAINS, (Value) value0));
                 } else if (PropertyType.DATETIME.equals(propertyDataType) || PropertyType.DATE.equals(propertyDataType) || PropertyType.LOCAL_DATE.equals(propertyDataType) || PropertyType.LOCAL_DATETIME.equals(propertyDataType)) {
-                    applyDateToQuery(graphQuery, obj, predicateString, values, searchOptions, propertyDataType);
+                    return applyDateToQuery(obj, predicateString, values, searchOptions, propertyDataType);
                 } else if (PropertyType.BOOLEAN.equals(propertyDataType)) {
-                    graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
                 } else if (PropertyType.GEO_LOCATION.equals(propertyDataType)) {
                     GeoCompare geoComparePredicate = GeoCompare.valueOf(predicateString.toUpperCase());
-                    graphQuery.and(hasFilter(propertyName, geoComparePredicate, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, geoComparePredicate, (Value) value0));
                 } else if ("<".equals(predicateString)) {
-                    graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, Compare.LESS_THAN, (Value) value0));
                 } else if ("<=".equals(predicateString)) {
-                    graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, (Value) value0));
                 } else if (">".equals(predicateString)) {
-                    graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, Compare.GREATER_THAN, (Value) value0));
                 } else if (">=".equals(predicateString)) {
-                    graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, (Value) value0));
+                    return boolQuery().and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, (Value) value0));
                 } else if ("range".equals(predicateString)) {
                     Object value1 = jsonValueToObject(values, propertyDataType, 1);
                     if (value0 instanceof DateTimeValue && value1 instanceof DateTimeValue) {
                         ZonedDateTime start = ((DateTimeValue) value0).asObjectCopy();
                         ZonedDateTime end = ((DateTimeValue) value1).asObjectCopy();
-                        graphQuery.and(hasFilter(propertyName, Compare.RANGE,
+                        return boolQuery().and(hasFilter(propertyName, Compare.RANGE,
                                 Values.of(new Range<>(start, true, end, false))));
                     } else {
                         throw new IllegalArgumentException("Range query must have DateTimeValue values");
                     }
                 } else if ("=".equals(predicateString) || "equal".equals(predicateString)) {
                     if (PropertyType.DOUBLE.equals(propertyDataType)) {
-                        applyDoubleEqualityToQuery(graphQuery, obj, value0);
+                        return applyDoubleEqualityToQuery(obj, value0);
                     } else {
-                        graphQuery.and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
+                        return boolQuery().and(hasFilter(propertyName, Compare.EQUAL, (Value) value0));
                     }
                 } else {
                     throw new BcException("unhandled query\n" + obj.toString(2));
@@ -519,26 +713,26 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    private void updateQueryWithDataTypeFilter(BoolQueryBuilder graphQuery, JSONObject obj, User user, SearchOptions searchOptions) {
+    private BoolQueryBuilder getDataTypeFilter(JSONObject obj) {
         String dataType = obj.getString("dataType");
         String predicateString = obj.optString("predicate");
         PropertyType propertyType = PropertyType.valueOf(dataType);
 
         try {
             if ("has".equals(predicateString)) {
-                graphQuery.and(exists(graph, PropertyType.getTypeClass(propertyType)));
+                return boolQuery().and(exists(graph, PropertyType.getTypeClass(propertyType)));
             } else if ("hasNot".equals(predicateString)) {
-                graphQuery.andNot(exists(graph, PropertyType.getTypeClass(propertyType)));
+                return boolQuery().andNot(exists(graph, PropertyType.getTypeClass(propertyType)));
             } else if ("in".equals(predicateString)) {
                 JSONArray values = obj.getJSONArray("values");
                 Value valueArr = convertJsonArray(values);
-                graphQuery.and(hasFilter(graph, PropertyType.getTypeClass(propertyType), Contains.IN, Values.of(valueArr)));
+                return boolQuery().and(hasFilter(graph, PropertyType.getTypeClass(propertyType), Contains.IN, Values.of(valueArr)));
             } else {
                 JSONArray values = obj.getJSONArray("values");
                 Object value0 = jsonValueToObject(values, propertyType, 0);
                 if (PropertyType.GEO_LOCATION.equals(propertyType)) {
                     GeoCompare geoComparePredicate = GeoCompare.valueOf(predicateString.toUpperCase());
-                    graphQuery.and(hasFilter(graph, GeoShapeValue.class, geoComparePredicate, (Value) value0));
+                    return boolQuery().and(hasFilter(graph, GeoShapeValue.class, geoComparePredicate, (Value) value0));
                 } else {
                     throw new UnsupportedOperationException("Data type queries are not yet supported for type: " + dataType);
                 }
@@ -547,11 +741,6 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
             throw new BcException("Could not update query with filter:\n" + obj.toString(2), ex);
         }
     }
-
-    protected void applyLogicalOperatorsToQuery(BoolQueryBuilder currentQuery, String logicalSourceString) {
-        // TODO: implement
-    }
-
 
     protected JSONArray getFilterJson(SearchOptions searchOptions, String workspaceId) {
         JSONArray filterJson = searchOptions.getRequiredParameter("filter", JSONArray.class);
@@ -567,7 +756,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         return filterJson;
     }
 
-    protected String getSourceLogicalOperator(SearchOptions searchOptions) {
+    protected String getLogicalOperators(SearchOptions searchOptions) {
         return searchOptions.getOptionalParameter("logicalSourceString", String.class);
     }
 
@@ -665,7 +854,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         }
     }
 
-    private void applyDoubleEqualityToQuery(BoolQueryBuilder graphQuery, JSONObject obj, Object value0) throws ParseException {
+    private BoolQueryBuilder applyDoubleEqualityToQuery(JSONObject obj, Object value0) throws ParseException {
         String propertyName = obj.getString("propertyName");
         JSONObject metadata = obj.has("metadata") ? obj.getJSONObject("metadata") : null;
 
@@ -676,43 +865,46 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
             double upperBound = Precision.equals(doubleParam, lowerBound, Precision.EPSILON) ? lowerBound + Math.pow(10, -inputPrecision) :
                     Precision.round(doubleParam, inputPrecision, BigDecimal.ROUND_UP);
 
-            graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, doubleValue(lowerBound - Precision.EPSILON)));
-            graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN, doubleValue(upperBound + Precision.EPSILON)));
+            return boolQuery()
+                    .and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, doubleValue(lowerBound - Precision.EPSILON)))
+                    .and(hasFilter(propertyName, Compare.LESS_THAN, doubleValue(upperBound + Precision.EPSILON)));
         } else {
-            graphQuery.and(hasFilter(propertyName, Compare.EQUAL, Values.of(value0)));
+            return boolQuery().and(hasFilter(propertyName, Compare.EQUAL, Values.of(value0)));
         }
     }
 
-    private void applyDateToQuery(BoolQueryBuilder graphQuery, JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions, PropertyType type) throws ParseException {
+    private BoolQueryBuilder applyDateToQuery(JSONObject obj, String predicate, JSONArray values, SearchOptions searchOptions, PropertyType type) throws ParseException {
         String propertyName = obj.getString("propertyName");
         SchemaProperty property = schemaRepository.getPropertyByName(propertyName, searchOptions.getWorkspaceId());
 
         if (property != null && values.length() > 0) {
             if (predicate == null || predicate.equals("equal") || predicate.equals("=")) {
                 TemporalValue<?, ?> value = convertToTemporalValue(values, 0, type);
-                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, value));
-                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, value));
+                return boolQuery().and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, value))
+                        .and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, value));
             } else if (predicate.equals("range")) {
                 if (values.length() > 1) {
                     TemporalValue<?, ?> startDate = convertToTemporalValue(values, 0, type);
                     TemporalValue<?, ?> endDate = convertToTemporalValue(values, 1, type);
                     int compare = COMPARATOR.compare(startDate, endDate);
                     if (compare < 0) {
-                        graphQuery.and(hasFilter(propertyName, Compare.RANGE,
+                        return boolQuery().and(hasFilter(propertyName, Compare.RANGE,
                                 Values.of(new Range<>(startDate.asObjectCopy(), true, endDate.asObjectCopy(), false))));
                     } else {
-                        graphQuery.and(hasFilter(propertyName, Compare.RANGE,
+                        return boolQuery().and(hasFilter(propertyName, Compare.RANGE,
                                 Values.of(new Range<>(endDate.asObjectCopy(), true, startDate.asObjectCopy(), false))));
                     }
                 }
             } else if (predicate.equals("<")) {
                 TemporalValue<?, ?> value = convertToTemporalValue(values, 0, type);
-                graphQuery.and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, value));
+                return boolQuery().and(hasFilter(propertyName, Compare.LESS_THAN_EQUAL, value));
             } else if (predicate.equals(">")) {
                 TemporalValue<?, ?> value = convertToTemporalValue(values, 0, type);
-                graphQuery.and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, value));
+                return boolQuery().and(hasFilter(propertyName, Compare.GREATER_THAN_EQUAL, value));
             }
         }
+
+        throw new BcException("Could not find property with name: "+propertyName);
     }
 
     TemporalValue<?, ?> convertToTemporalValue(JSONArray values, int index, PropertyType type) throws ParseException {

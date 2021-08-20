@@ -40,6 +40,10 @@ public class BoolQueryBuilder extends GeQueryBuilder {
         return this;
     }
 
+    public boolean isEmpty() {
+        return andClauses.isEmpty() && orClauses.isEmpty() && notClauses.isEmpty();
+    }
+
     public List<GeQueryBuilder> getAndClauses() {
         return andClauses;
     }

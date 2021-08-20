@@ -58,6 +58,9 @@ public class BoolQueryBuilder extends GeQueryBuilder {
 
     @Override
     public boolean matches(GeObject geObject, Authorizations authorizations) {
+        if (isEmpty())
+            return true;
+
         List<Boolean> andClauseResults = new ArrayList<>();
         List<Boolean> orClauseResults = new ArrayList<>();
         for (GeQueryBuilder andClause : andClauses) {

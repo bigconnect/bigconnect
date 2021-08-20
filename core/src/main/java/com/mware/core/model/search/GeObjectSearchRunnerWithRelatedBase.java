@@ -47,6 +47,7 @@ import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.*;
 import com.mware.ge.query.builder.BoolQueryBuilder;
 import com.mware.ge.query.builder.GeQueryBuilders;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -99,6 +100,9 @@ public abstract class GeObjectSearchRunnerWithRelatedBase extends GeObjectSearch
                     filterJson.toString(2)
             );
         }
+
+        if (StringUtils.isEmpty(queryStringParam))
+            queryStringParam = "*";
 
         BoolQueryBuilder queryBuilder = GeQueryBuilders.boolQuery()
                 .and(GeQueryBuilders.search(queryStringParam));

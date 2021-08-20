@@ -2,6 +2,7 @@ package com.mware.ge.query.builder;
 
 import com.mware.ge.*;
 import com.mware.ge.values.storable.StreamingPropertyValue;
+import org.apache.commons.lang3.StringUtils;
 
 public class SearchQueryBuilder extends GeQueryBuilder {
     private final String queryString;
@@ -16,6 +17,9 @@ public class SearchQueryBuilder extends GeQueryBuilder {
 
     @Override
     public boolean matches(GeObject geObject, Authorizations authorizations) {
+        if (StringUtils.isEmpty(queryString) || "*".equals(queryString))
+            return true;
+
         if (geObject instanceof Element || geObject instanceof ExtendedDataRow) {
             for (Property property : geObject.getProperties()) {
                 if (evaluateQueryStringOnValue(property.getValue())) {

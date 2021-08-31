@@ -39,9 +39,6 @@ package com.mware.core.watcher;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Dan on 12/8/2016.
- */
 public class EmailValidator {
 
     private static EmailValidator INSTANCE = null;

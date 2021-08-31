@@ -39,9 +39,6 @@ package com.mware.core.watcher;
 import com.mware.ge.Edge;
 import com.mware.ge.event.*;
 
-/**
- * Created by Dan on 12/22/2016.
- */
 public class EdgeEvent {
     public static final String ADD_EDGE_EVENT_TYPE = "Add Relationship";
     public static final String SOFT_DELETE_EDGE_EVENT_TYPE = "Soft Delete Relationship";

@@ -39,9 +39,6 @@ package com.mware.core.watcher;
 import com.mware.ge.Element;
 import com.mware.ge.event.*;
 
-/**
- * Created by Dan on 12/8/2016.
- */
 public class PropertyEvent {
     public static final String ADD_PROPERTY_EVENT_TYPE = "Add Property";
     public static final String DELETE_PROPERTY_EVENT_TYPE = "Delete Property";

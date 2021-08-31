@@ -39,14 +39,17 @@ package com.mware.core.model.watcher;
 import com.mware.core.orm.Entity;
 import com.mware.core.orm.Field;
 import com.mware.core.orm.Id;
+import lombok.Getter;
+import lombok.Setter;
 import org.json.JSONObject;
 
 import java.util.Date;
 import java.util.UUID;
 
 @Entity(tableName = "watchlist")
+@Getter
+@Setter
 public class Watch {
-
     @Id
     private String id;
 
@@ -74,52 +77,8 @@ public class Watch {
         this.elementTitle = elementTitle;
     }
 
-    protected Watch() {
-        super();
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getElementId() {
-        return elementId;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public void setElementId(String elementId) {
-        this.elementId = elementId;
-    }
-
-    public String getPropertyName() {
-        return propertyName;
-    }
-
-    public void setPropertyName(String propertyName) {
-        this.propertyName = propertyName;
-    }
-
-    public String getElementTitle() {
-        return elementTitle;
-    }
-
-    public void setElementTitle(String elementTitle) {
-        this.elementTitle = elementTitle;
-    }
-
     private static String createRowKey(Date date) {
-        return date.getTime() + ":" + UUID.randomUUID().toString();
+        return date.getTime() + ":" + UUID.randomUUID();
     }
 
     public JSONObject toJson() {

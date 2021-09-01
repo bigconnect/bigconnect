@@ -48,13 +48,20 @@ import com.mware.ge.values.storable.Values;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
@@ -67,6 +74,9 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
 
     private DataWorkerRunner dataWorkerRunner;
     private Authorizations AUTHS;
+
+    @Mock
+    private PluginStateRepository pluginStateRepository;
 
     @Before
     public void before() throws Exception {
@@ -84,7 +94,8 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
                 webQueueRepository,
                 configuration,
                 authorizationRepository,
-                graph
+                graph,
+                pluginStateRepository
         );
         runner.setGraph(graph);
         runner.setAuthorizations(AUTHS);
@@ -197,7 +208,7 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
     }
 
     private void testMultiElementMessage(int numMessages, int numProperties, DataWorkerMessage message) throws Exception {
-        TestCountingDWStub1 countingGPWStub = new TestCountingDWStub1();
+        TestCountingDWStub countingGPWStub = new TestCountingDWStub();
         runTests(countingGPWStub, message);
 
         long expectedNumProperties = (long) (numMessages * numProperties + numMessages);

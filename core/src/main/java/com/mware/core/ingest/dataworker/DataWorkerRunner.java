@@ -43,6 +43,7 @@ import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.WorkerBase;
+import com.mware.core.model.plugin.PluginStateRepository;
 import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.role.AuthorizationRepository;
 import com.mware.core.model.user.UserRepository;
@@ -65,6 +66,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static com.mware.core.model.workQueue.WorkQueueRepository.DW_DEFAULT_QUEUE_NAME;
 import static com.mware.ge.util.IterableUtils.toList;
@@ -84,6 +86,7 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
     private List<DataWorker> dataWorkers = Lists.newArrayList();
     private boolean prepareWorkersCalled;
     private final String queueName;
+    private final PluginStateRepository pluginStateRepository;
 
     @Inject
     public DataWorkerRunner(
@@ -91,11 +94,13 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
             WebQueueRepository webQueueRepository,
             Configuration configuration,
             AuthorizationRepository authorizationRepository,
-            Graph graph
+            Graph graph,
+            PluginStateRepository pluginStateRepository
     ) {
         super(workQueueRepository, webQueueRepository, configuration, graph.getMetricsRegistry());
         this.authorizationRepository = authorizationRepository;
         this.queueName = configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME);
+        this.pluginStateRepository = pluginStateRepository;
     }
 
     @Override
@@ -148,6 +153,15 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
                 InjectHelper.getInjector()
         );
         Collection<DataWorker> workers = getAvailableWorkers();
+        workers.forEach(worker -> {
+            LOGGER.debug("registering state for: %s", worker.getClass().getName());
+            pluginStateRepository.registerPlugin(worker.getClass().getName(), worker.systemPlugin(), user);
+        });
+
+        workers = workers.stream()
+                .filter(worker -> pluginStateRepository.isEnabled(worker.getClass().getName()))
+                .collect(Collectors.toList());
+
         for (DataWorker worker : workers) {
             try {
                 LOGGER.debug("verifying: %s", worker.getClass().getName());

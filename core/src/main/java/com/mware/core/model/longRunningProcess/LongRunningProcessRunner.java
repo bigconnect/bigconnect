@@ -41,6 +41,7 @@ import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.WorkerBase;
+import com.mware.core.model.plugin.PluginStateRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
@@ -55,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // Unlike many other injected classes, this is not a singleton
 public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorkerItem> {
@@ -64,15 +66,18 @@ public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorke
     private User user;
     private Configuration configuration;
     private List<LongRunningProcessWorker> workers = new ArrayList<>();
+    private final PluginStateRepository pluginStateRepository;
 
     @Inject
     public LongRunningProcessRunner(
             WorkQueueRepository workQueueRepository,
             WebQueueRepository webQueueRepository,
             Configuration configuration,
-            Graph graph
+            Graph graph,
+            PluginStateRepository pluginStateRepository
     ) {
         super(workQueueRepository, webQueueRepository, configuration, graph.getMetricsRegistry());
+        this.pluginStateRepository = pluginStateRepository;
     }
 
     public void prepare(Map map) {
@@ -96,6 +101,15 @@ public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorke
 
         Collection<LongRunningProcessWorker> injectedServices =
                 InjectHelper.getInjectedServices(LongRunningProcessWorker.class, configuration);
+
+        injectedServices.forEach(worker -> {
+            LOGGER.debug("registering state for: %s", worker.getClass().getName());
+            pluginStateRepository.registerPlugin(worker.getClass().getName(), worker.systemPlugin(), user);
+        });
+
+        injectedServices = injectedServices.stream()
+                .filter(worker -> pluginStateRepository.isEnabled(worker.getClass().getName()))
+                .collect(Collectors.toList());
 
         for (LongRunningProcessWorker worker : injectedServices) {
             try {

@@ -89,4 +89,8 @@ public abstract class LongRunningProcessWorker {
     public void setMetricRegistry(Graph graph) {
         this.metricRegistry = graph.getMetricsRegistry();
     }
+
+    public boolean systemPlugin() {
+        return false;
+    }
 }

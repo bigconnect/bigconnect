@@ -39,13 +39,13 @@ package com.mware.core.model.longRunningProcess;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
-import org.json.JSONObject;
 import com.mware.core.status.MetricsManager;
 import com.mware.core.status.StatusServer;
 import com.mware.core.status.model.LongRunningProcessRunnerStatus;
 import com.mware.core.status.model.Status;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import org.json.JSONObject;
 
 public abstract class LongRunningProcessWorker {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(LongRunningProcessWorker.class);
@@ -100,5 +100,9 @@ public abstract class LongRunningProcessWorker {
 
     public MetricsManager getMetricsManager() {
         return metricsManager;
+    }
+
+    public boolean systemPlugin() {
+        return false;
     }
 }

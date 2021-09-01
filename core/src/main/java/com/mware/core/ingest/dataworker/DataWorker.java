@@ -323,4 +323,8 @@ public abstract class DataWorker {
                 data.getPriority()
         );
     }
+
+    public boolean systemPlugin() {
+        return false;
+    }
 }

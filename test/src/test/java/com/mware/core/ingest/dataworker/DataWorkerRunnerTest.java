@@ -39,6 +39,7 @@ package com.mware.core.ingest.dataworker;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mware.core.config.Configuration;
+import com.mware.core.model.plugin.PluginStateRepository;
 import com.mware.core.model.role.AuthorizationRepository;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workQueue.WebQueueRepository;
@@ -47,7 +48,6 @@ import com.mware.core.status.JmxMetricsManager;
 import com.mware.core.status.MetricsManager;
 import com.mware.core.status.StatusRepository;
 import com.mware.ge.*;
-import com.mware.ge.values.storable.StringValue;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -98,6 +98,9 @@ public class DataWorkerRunnerTest {
     @Mock
     private StatusRepository statusRepository;
 
+    @Mock
+    private PluginStateRepository pluginStateRepository;
+
     @Before
     public void before() {
         testSubject = new DataWorkerRunner(
@@ -106,7 +109,8 @@ public class DataWorkerRunnerTest {
                 statusRepository,
                 configuration,
                 metricsManager,
-                authorizationRepository
+                authorizationRepository,
+                pluginStateRepository
         );
         graph = mock(Graph.class);
         testSubject.setGraph(graph);

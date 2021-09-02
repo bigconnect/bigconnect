@@ -75,9 +75,6 @@ import com.mware.ge.dependencies.DependencyResolver;
 import com.mware.ge.io.ResourceTracker;
 import com.mware.ge.mutation.*;
 import com.mware.ge.query.QueryResultsIterable;
-import com.mware.ge.search.IndexHint;
-import com.mware.ge.util.ConvertingIterable;
-import com.mware.ge.search.IndexHint;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.util.StreamUtils;
 import com.mware.ge.values.AnyValue;
@@ -591,7 +588,7 @@ public class GeCypherQueryContext {
 
     public ElementBuilder createEdge(String startVertex, String endVertex, String edgeLabel, Optional<AnyValue> id) {
         ElementBuilder builder;
-        if (id.isPresent()) {
+        if (id.isPresent() && !Values.NO_VALUE.eq(id.get())) {
             Value value = (Value) id.get();
             builder = graph.prepareEdge(value.asObjectCopy().toString(), startVertex, endVertex, edgeLabel, Visibility.EMPTY);
         } else {

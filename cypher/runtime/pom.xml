@@ -162,7 +162,7 @@
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
-            <version>${antlr4.version}</version>
+            <version>4.9.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

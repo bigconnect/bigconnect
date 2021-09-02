@@ -92,8 +92,8 @@ public class ElasticsearchResource extends ExternalResource {
 
     @Override
     protected void before() throws Throwable {
-        System.setProperty("REMOTE_ES_CLUSTER_NAME", "bdl");
-        System.setProperty("REMOTE_ES_ADDRESSES", "localhost");
+//        System.setProperty("REMOTE_ES_CLUSTER_NAME", "bdl");
+//        System.setProperty("REMOTE_ES_ADDRESSES", "localhost");
 
         buildRunner();
     }
@@ -191,6 +191,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + MAX_QUERY_STRING_TERMS, 2000);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, TestElasticsearch5ExceptionHandler.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, "30s");
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + SIDECAR, false);
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that

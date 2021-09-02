@@ -609,7 +609,7 @@ public class GeCypherQueryContext {
 
     public ElementBuilder createEdge(String startVertex, String endVertex, String edgeLabel, Optional<AnyValue> id) {
         ElementBuilder builder;
-        if (id.isPresent()) {
+        if (id.isPresent() && !Values.NO_VALUE.eq(id.get())) {
             Value value = (Value) id.get();
             builder = graph.prepareEdge(value.asObjectCopy().toString(), startVertex, endVertex, edgeLabel, Visibility.EMPTY);
         } else {

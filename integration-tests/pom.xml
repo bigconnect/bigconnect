@@ -19,6 +19,7 @@
         <scala.binary.version>2.11</scala.binary.version>
         <scala.target.vm>1.8</scala.target.vm>
         <scala.java.additional.args/>
+        <enforcer.skip>true</enforcer.skip>
     </properties>
 
     <dependencies>
@@ -75,7 +76,7 @@
         <dependency>
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
-            <version>${antlr4.version}</version>
+            <version>4.7.2</version>
             <scope>test</scope>
         </dependency>
 

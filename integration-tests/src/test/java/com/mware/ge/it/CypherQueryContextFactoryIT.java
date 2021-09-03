@@ -68,6 +68,7 @@ public class CypherQueryContextFactoryIT extends TestCypherQueryContextFactory  
     @Override
     public GeCypherExecutionEngine emptyGraph() throws Exception {
         if (graph != null) {
+            graph.drop();
             graph.shutdown();
             elasticsearchResource.dropIndices();
             graph = null;

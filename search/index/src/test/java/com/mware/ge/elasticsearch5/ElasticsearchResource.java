@@ -191,6 +191,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGING_LIMIT, TEST_QUERY_PAGING_LIMIT);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, TestElasticsearch5ExceptionHandler.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, "30s");
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + SIDECAR, false);
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that

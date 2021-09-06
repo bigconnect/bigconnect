@@ -22,15 +22,15 @@
  */
 package com.mware.ge.cypher.internal.runtime.interpreted.pipes
 
-import com.mware.ge.values.AnyValue
-import com.mware.ge.function.ThrowingBiConsumer
 import com.mware.ge.cypher.internal.runtime.interpreted._
 import com.mware.ge.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import com.mware.ge.cypher.internal.runtime.{LenientCreateRelationship, Operations, QueryContext}
-import com.mware.ge.values.storable.{Value, Values}
-import com.mware.ge.values.virtual.{NodeValue, RelationshipValue}
 import com.mware.ge.cypher.internal.util.attribution.Id
 import com.mware.ge.cypher.internal.util.{CypherTypeException, InternalException, InvalidSemanticsException}
+import com.mware.ge.function.ThrowingBiConsumer
+import com.mware.ge.values.AnyValue
+import com.mware.ge.values.storable.Values
+import com.mware.ge.values.virtual.{NodeValue, RelationshipValue}
 
 /**
   * Extends PipeWithSource with methods for setting properties and labels on entities.
@@ -65,6 +65,9 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                             value: AnyValue,
                             qtx: QueryContext,
                             ops: Operations[_]): Unit = {
+    if ("__id" == key)
+      return
+
     //do not set properties for null values
     if (value == Values.NO_VALUE) {
       handleNoValue(key)

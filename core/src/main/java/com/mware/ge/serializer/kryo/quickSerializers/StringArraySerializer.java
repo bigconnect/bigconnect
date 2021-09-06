@@ -36,12 +36,11 @@
  */
 package com.mware.ge.serializer.kryo.quickSerializers;
 
-import com.mware.ge.serializer.kryo.quickSerializers.QuickTypeSerializer;
 import com.mware.ge.util.UTF8;
 import com.mware.ge.values.storable.StringArray;
-import com.mware.ge.values.storable.StringValue;
 import com.mware.ge.values.storable.Values;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -77,8 +76,8 @@ class StringArraySerializer implements QuickTypeSerializer<StringArray> {
         String[] result = new String[arrayLength];
         for (int i = 0; i < arrayLength; i++) {
             int byteLength = buffer.getInt();
-            result[i] = UTF8.decode(buffer.array(), buffer.position(), byteLength);
-            buffer.position(buffer.position() + byteLength);
+            result[i] = UTF8.decode(buffer.array(), ((Buffer)buffer).position(), byteLength);
+            ((Buffer)buffer).position(((Buffer)buffer).position() + byteLength);
         }
         return (StringArray) Values.stringArray(result);
     }

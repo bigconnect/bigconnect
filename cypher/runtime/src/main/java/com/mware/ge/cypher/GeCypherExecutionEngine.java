@@ -39,16 +39,16 @@ import com.mware.ge.cypher.procedure.impl.CallableProcedure;
 import com.mware.ge.cypher.procedure.impl.Context;
 import com.mware.ge.cypher.procedure.impl.QualifiedName;
 import com.mware.ge.cypher.security.SecurityContext;
-import com.mware.ge.dependencies.Dependencies;
 import com.mware.ge.cypher.values.utils.ValueUtils;
+import com.mware.ge.dependencies.Dependencies;
 import com.mware.ge.dependencies.DependencyResolver;
-import com.mware.ge.values.virtual.MapValue;
 import com.mware.ge.io.CloseableResourceManager;
 import com.mware.ge.io.CpuClock;
 import com.mware.ge.io.HeapAllocation;
 import com.mware.ge.time.SystemNanoClock;
 import com.mware.ge.type.GeoPoint;
 import com.mware.ge.type.GeoShape;
+import com.mware.ge.values.virtual.MapValue;
 
 import java.nio.file.Paths;
 import java.time.Clock;
@@ -170,6 +170,7 @@ public class GeCypherExecutionEngine {
         procedures.registerBuiltInFunctions(DateFunctions.class);
         procedures.registerProcedure(JdbcProcedures.class);
         procedures.registerProcedure(DataWorkerProcedures.class);
+        procedures.registerProcedure(SchemaProcedures.class);
         registerTemporalFunctions(procedures, procedureConfig);
         registerGeoFunctions(procedures, procedureConfig);
         return procedures;

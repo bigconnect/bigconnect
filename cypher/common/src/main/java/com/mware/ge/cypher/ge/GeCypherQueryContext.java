@@ -422,52 +422,69 @@ public class GeCypherQueryContext {
             return PropertyType.STRING;
         else {
             Value _value = (Value) value;
-            if (Values.isArrayValue(_value)) {
-                ArrayValue _arayValue = (ArrayValue) _value;
-                if (_arayValue.length() > 0) {
-                    return bcTypeFromNeoValue(propertyName, _arayValue.value(0));
-                } else {
-                    LOGGER.warn("Could not determine BigConnect PropertyType for property '" + propertyName
-                            + "', because it's an empty Array. Defaulting to STRING");
-                    return PropertyType.STRING;
-                }
+            if (_value instanceof IntValue) {
+                return PropertyType.INTEGER;
+            } else if (_value instanceof IntArray) {
+                return PropertyType.INTEGER_ARRAY;
+            } else if (_value instanceof LongValue) {
+                return PropertyType.LONG;
+            } else if (_value instanceof LongArray) {
+                return PropertyType.LONG_ARRAY;
+            } else if (_value instanceof ShortValue) {
+                return PropertyType.SHORT;
+            } else if (_value instanceof ShortArray) {
+                return PropertyType.SHORT_ARRAY;
+            } else if (_value instanceof ByteValue) {
+                return PropertyType.BYTE;
+            } else if (_value instanceof ByteArray) {
+                return PropertyType.BYTE_ARRAY;
+            } else if (_value instanceof DoubleValue) {
+                return PropertyType.DOUBLE;
+            } else if (_value instanceof DoubleArray) {
+                return PropertyType.DOUBLE_ARRAY;
+            } else if (_value instanceof FloatValue) {
+                return PropertyType.FLOAT;
+            } else if (_value instanceof FloatArray) {
+                return PropertyType.FLOAT_ARRAY;
+            } else if (Values.isTextValue(_value)) {
+                return PropertyType.STRING;
+            } else if (_value instanceof TextArray) {
+                return PropertyType.STRING_ARRAY;
+            } else if (Values.isBooleanValue(_value)) {
+                return PropertyType.BOOLEAN;
+            } else if (_value instanceof BooleanArray) {
+                return PropertyType.BOOLEAN_ARRAY;
+            } else if (_value instanceof DateTimeValue) {
+                return PropertyType.DATETIME;
+            } else if (_value instanceof DateTimeArray) {
+                return PropertyType.DATETIME_ARRAY;
+            } else if (_value instanceof LocalDateTimeValue) {
+                return PropertyType.LOCAL_DATETIME;
+            } else if (_value instanceof LocalDateTimeArray) {
+                return PropertyType.LOCAL_DATETIME_ARRAY;
+            } else if (_value instanceof DateValue) {
+                return PropertyType.LOCAL_DATE;
+            } else if (_value instanceof DateArray) {
+                return PropertyType.LOCAL_DATE_ARRAY;
+            } else if (_value instanceof GeoPointValue) {
+                return PropertyType.GEO_LOCATION;
+            } else if (_value instanceof GeoLineValue) {
+                return PropertyType.GEO_LINE;
+            } else if (_value instanceof GeoRectValue) {
+                return PropertyType.GEO_RECT;
+            } else if (_value instanceof GeoPolygonValue) {
+                return PropertyType.GEO_POLYGON;
+            } else if (_value instanceof GeoCircleValue) {
+                return PropertyType.GEO_POLYGON;
+            } else if (_value instanceof StreamingPropertyValue) {
+                return PropertyType.STREAMING;
+            } else if (_value instanceof DurationValue) {
+                return PropertyType.DURATION;
+            } else if (_value instanceof DurationArray) {
+                return PropertyType.DURATION_ARRAY;
             } else {
-                if (_value instanceof IntValue) {
-                    return PropertyType.INTEGER;
-                } else if (_value instanceof LongValue) {
-                    return PropertyType.LONG;
-                } else if (_value instanceof ShortValue) {
-                    return PropertyType.SHORT;
-                } else if (_value instanceof ByteValue) {
-                    return PropertyType.BYTE;
-                } else if (_value instanceof DoubleValue) {
-                    return PropertyType.DOUBLE;
-                }  else if (_value instanceof FloatValue) {
-                    return PropertyType.FLOAT;
-                } else if (Values.isTextValue(_value)) {
-                    return PropertyType.STRING;
-                } else if (Values.isBooleanValue(_value)) {
-                    return PropertyType.BOOLEAN;
-                } else if (_value instanceof DateTimeValue) {
-                    return PropertyType.DATETIME;
-                } else if (_value instanceof LocalDateTimeValue) {
-                    return PropertyType.LOCAL_DATETIME;
-                } else if (_value instanceof DateValue) {
-                    return PropertyType.LOCAL_DATE;
-                } else if (_value instanceof GeoPointValue) {
-                    return PropertyType.GEO_LOCATION;
-                } else if (_value instanceof GeoLineValue) {
-                    return PropertyType.GEO_LINE;
-                } else if (_value instanceof GeoRectValue) {
-                    return PropertyType.GEO_RECT;
-                } else if (_value instanceof GeoPolygonValue) {
-                    return PropertyType.GEO_POLYGON;
-                } else if (_value instanceof GeoCircleValue) {
-                    return PropertyType.GEO_POLYGON;
-                } else {
-                    LOGGER.warn("Could not determine BigConnect PropertyType for property '" + propertyName + "', defaulting to STRING");
-                    return PropertyType.STRING;
-                }
+                LOGGER.warn("Could not determine BigConnect PropertyType for property '" + propertyName + "', defaulting to STRING");
+                return PropertyType.STRING;
             }
         }
     }

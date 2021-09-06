@@ -44,7 +44,6 @@ import com.mware.core.cache.InMemoryCacheService;
 import com.mware.core.util.StreamUtil;
 import com.mware.ge.*;
 import com.mware.ge.event.*;
-import com.mware.ge.id.IdentityNameSubstitutionStrategy;
 import com.mware.ge.id.NameSubstitutionStrategy;
 import com.mware.ge.id.SimpleNameSubstitutionStrategy;
 import com.mware.ge.mutation.*;
@@ -57,7 +56,10 @@ import com.mware.ge.store.mutations.ElementMutationBuilder;
 import com.mware.ge.store.mutations.StoreMutation;
 import com.mware.ge.store.util.StorableKeyHelper;
 import com.mware.ge.store.util.StreamingPropertyValueStorageStrategy;
-import com.mware.ge.util.*;
+import com.mware.ge.util.ConvertingIterable;
+import com.mware.ge.util.GeLogger;
+import com.mware.ge.util.GeLoggerFactory;
+import com.mware.ge.util.IncreasingTime;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.values.storable.StreamingPropertyValueRef;
 
@@ -195,7 +197,7 @@ public abstract class AbstractStorableGraph<V extends StorableVertex, E extends 
         if (graphMetadataEntry.getKey().equals(METADATA_GRAPH_VERSION_KEY)) {
             if (graphMetadataEntry.getValue() instanceof Integer) {
                 graphVersion = (Integer) graphMetadataEntry.getValue();
-                LOGGER.info("%s=%s", METADATA_GRAPH_VERSION_KEY, graphVersion);
+                LOGGER.debug("Metadata: %s=%s", METADATA_GRAPH_VERSION_KEY, graphVersion);
             } else {
                 throw new GeException("Invalid accumulo version in metadata. " + graphMetadataEntry);
             }

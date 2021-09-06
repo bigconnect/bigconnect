@@ -37,12 +37,12 @@
 package com.mware.core.config;
 
 import com.google.common.base.Throwables;
-import org.apache.log4j.xml.DOMConfigurator;
-import org.json.JSONObject;
 import com.mware.core.exception.BcException;
 import com.mware.core.exception.BcResourceNotFoundException;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import org.apache.log4j.xml.DOMConfigurator;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -175,8 +175,8 @@ public abstract class ConfigurationLoader {
             DOMConfigurator.configure(log4jFile.getAbsolutePath());
         }
         BcLogger logger = BcLoggerFactory.getLogger(BcLoggerFactory.class);
-        logger.info("Using ConfigurationLoader: %s", this.getClass().getName());
-        logger.info("Using log4j.xml: %s", log4jLocation);
+        logger.debug("Using ConfigurationLoader: %s", this.getClass().getName());
+        logger.info("log4j.xml config file: %s", log4jLocation);
     }
 
     public abstract File resolveFileName(String fileName);

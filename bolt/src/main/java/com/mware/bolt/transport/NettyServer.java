@@ -55,7 +55,7 @@ public class NettyServer {
         // These threads handle live channels. Each thread has a set of channels it is responsible for, and it will
         // continuously run a #select() loop to react to new events on these channels.
         selectorGroup = configurationProvider.createEventLoopGroup(NUM_SELECTOR_THREADS, tf);
-        LOGGER.info("NUM_SELECTOR_THREADS = %s", NUM_SELECTOR_THREADS);
+        LOGGER.debug("NUM_SELECTOR_THREADS = %s", NUM_SELECTOR_THREADS);
 
         try {
             ServerBootstrap serverBootstrap = createServerBootstrap(configurationProvider, protocolInitializer);

@@ -36,7 +36,6 @@
  */
 package com.mware.core.util;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
@@ -60,33 +59,27 @@ public class ServiceLoaderUtil {
 
     public static <T> Iterable<T> load(Class<T> clazz, Configuration configuration) {
         Iterable<Class<? extends T>> classes = loadClasses(clazz, configuration);
-        return Iterables.transform(classes, new Function<Class<? extends T>, T>() {
-            @Override
-            public T apply(Class<? extends T> serviceClass) {
-                try {
-                    return InjectHelper.getInstance(serviceClass);
-                } catch (Exception ex) {
-                    String errorMessage = String.format("Failed to load %s", serviceClass.getName());
-                    LOGGER.error("%s", errorMessage, ex);
-                    throw new BcException(errorMessage, ex);
-                }
+        return Iterables.transform(classes, serviceClass -> {
+            try {
+                return InjectHelper.getInstance(serviceClass);
+            } catch (Exception ex) {
+                String errorMessage = String.format("Failed to load %s", serviceClass.getName());
+                LOGGER.error("%s", errorMessage, ex);
+                throw new BcException(errorMessage, ex);
             }
         });
     }
 
     public static <T> Iterable<T> loadWithoutInjecting(Class<T> clazz, Configuration configuration) {
         Iterable<Class<? extends T>> classes = loadClasses(clazz, configuration);
-        return Iterables.transform(classes, new Function<Class<? extends T>, T>() {
-            @Override
-            public T apply(Class<? extends T> serviceClass) {
-                try {
-                    Constructor<? extends T> constructor = serviceClass.getConstructor();
-                    return constructor.newInstance();
-                } catch (Exception ex) {
-                    String errorMessage = String.format("Failed to load %s", serviceClass.getName());
-                    LOGGER.error("%s", errorMessage, ex);
-                    throw new BcException(errorMessage, ex);
-                }
+        return Iterables.transform(classes, serviceClass -> {
+            try {
+                Constructor<? extends T> constructor = serviceClass.getConstructor();
+                return constructor.newInstance();
+            } catch (Exception ex) {
+                String errorMessage = String.format("Failed to load %s", serviceClass.getName());
+                LOGGER.error("%s", errorMessage, ex);
+                throw new BcException(errorMessage, ex);
             }
         });
     }
@@ -158,7 +151,7 @@ public class ServiceLoaderUtil {
 
     private static <T> Class<? extends T> loadClass(URL config, String className) {
         try {
-            LOGGER.info("Loading %s from %s", className, config.toString());
+            LOGGER.debug("Loading %s from %s", className, config.toString());
             return ClassUtil.forName(className);
         } catch (Throwable t) {
             String errorMessage = String.format("Failed to load %s from %s", className, config.toString());

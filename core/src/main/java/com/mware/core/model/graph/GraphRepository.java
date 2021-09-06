@@ -38,10 +38,8 @@ package com.mware.core.model.graph;
 
 import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
-import com.mware.core.exception.BcException;
 import com.mware.core.exception.BcResourceNotFoundException;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
-import com.mware.core.model.PropertyJustificationMetadata;
 import com.mware.core.model.clientapi.dto.ClientApiSourceInfo;
 import com.mware.core.model.clientapi.dto.SandboxStatus;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
@@ -62,14 +60,11 @@ import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.values.storable.Value;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GraphRepository {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(GraphRepository.class);
-    public static final String BC_VERSION_KEY = "bc.version";
-    public static final int BC_VERSION = 4;
     private final Graph graph;
     private final VisibilityTranslator visibilityTranslator;
     private final TermMentionRepository termMentionRepository;
@@ -93,35 +88,6 @@ public class GraphRepository {
         this.workQueueRepository = workQueueRepository;
         this.webQueueRepository = webQueueRepository;
         this.autoPublish = configuration.getBoolean(WORKSPACE_AUTO_PUBLISH_KEY, false);
-    }
-
-    public void verifyVersion() {
-        verifyVersion(BC_VERSION);
-    }
-
-    public void verifyVersion(int requiredVersion) {
-        Object version = graph.getMetadata(BC_VERSION_KEY);
-        if (version == null) {
-            writeVersion();
-            return;
-        }
-        if (!(version instanceof Integer)) {
-            throw new BcException("Invalid " + BC_VERSION_KEY + " found. Expected Integer, found " + version.getClass().getName());
-        }
-        Integer versionInt = (Integer) version;
-        if (versionInt != requiredVersion) {
-            throw new BcException("Incompatible graph version (" + BC_VERSION_KEY + ") found. Expected " + requiredVersion + ", found " + versionInt);
-        }
-        LOGGER.info("BigConnect graph version verified: %d", versionInt);
-    }
-
-    public void writeVersion() {
-        writeVersion(BC_VERSION);
-    }
-
-    public void writeVersion(int version) {
-        graph.setMetadata(BC_VERSION_KEY, version);
-        LOGGER.info("Wrote %s: %d", BC_VERSION_KEY, version);
     }
 
     public <T extends Element> VisibilityAndElementMutation<T> updateElementVisibilitySource(

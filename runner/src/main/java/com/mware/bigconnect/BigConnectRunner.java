@@ -40,7 +40,6 @@ import com.mware.bolt.BoltServer;
 import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.cmdline.CommandLineTool;
 import com.mware.core.ingest.video.VideoFrameInfo;
-import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
 import com.mware.core.model.notification.SystemNotificationService;
 import com.mware.core.model.schema.SchemaRepository;
@@ -54,9 +53,6 @@ import com.mware.core.process.ExternalResourceRunnerProcess;
 import com.mware.core.process.LongRunningProcessRunnerProcess;
 import com.mware.core.process.SystemNotificationProcess;
 import com.mware.core.security.BcVisibility;
-import com.mware.core.util.VersionUtil;
-import com.mware.ge.cypher.connection.DefaultNetworkConnectionTracker;
-import com.mware.ge.cypher.connection.NetworkConnectionTracker;
 import com.mware.ge.metric.DropWizardMetricRegistry;
 
 import java.util.concurrent.ExecutorService;
@@ -75,7 +71,6 @@ public class BigConnectRunner extends CommandLineTool {
             return t;
         });
 
-        verifyGraphVersion();
         setupGraphAuthorizations();
 
         InjectHelper.getInstance(WorkQueueRepository.class);
@@ -87,18 +82,11 @@ public class BigConnectRunner extends CommandLineTool {
         InjectHelper.getInstance(SystemNotificationService.class);
         InjectHelper.getInstance(WebServer.class);
 
-        VersionUtil.printVersion();
-
         // start metric registry
         new DropWizardMetricRegistry();
 
         executorService.awaitTermination(10000, TimeUnit.DAYS);
         return 0;
-    }
-
-    private void verifyGraphVersion() {
-        GraphRepository graphRepository = InjectHelper.getInstance(GraphRepository.class);
-        graphRepository.verifyVersion();
     }
 
     private void setupGraphAuthorizations() {

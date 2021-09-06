@@ -148,6 +148,7 @@
         <kryo-shaded.version>4.0.2</kryo-shaded.version>
         <jna.version>4.1.0</jna.version>
         <h2.version>1.4.191</h2.version>
+        <netty-version>4.1.22.Final</netty-version>
 
         <!-- used by: elasticsearch5 geo_shape type -->
         <jts.version>1.15.0</jts.version>

@@ -42,7 +42,6 @@ import com.mware.core.config.Configuration;
 import com.mware.core.config.HashMapConfigurationLoader;
 import com.mware.core.ingest.video.VideoFrameInfo;
 import com.mware.core.lifecycle.LifeSupportService;
-import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
 import com.mware.core.model.notification.SystemNotificationService;
 import com.mware.core.model.schema.SchemaRepository;
@@ -83,7 +82,6 @@ public abstract class TestBaseWithInjector {
         configuration = configLoader.createConfiguration();
         InjectHelper.inject(this, BcBootstrap.bootstrapModuleMaker(configuration), configuration);
 
-        verifyGraphVersion();
         setupGraphAuthorizations();
 
         InjectHelper.getInstance(SystemNotificationService.class);
@@ -94,11 +92,6 @@ public abstract class TestBaseWithInjector {
     @After
     public void after() {
         InjectHelper.getInstance(LifeSupportService.class).shutdown();
-    }
-
-    private void verifyGraphVersion() {
-        GraphRepository graphRepository = InjectHelper.getInstance(GraphRepository.class);
-        graphRepository.verifyVersion();
     }
 
     private void setupGraphAuthorizations() {

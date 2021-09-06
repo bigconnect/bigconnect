@@ -36,10 +36,14 @@
  */
 package com.mware.ge.store.util;
 
-import com.mware.ge.*;
+import com.mware.ge.ElementType;
+import com.mware.ge.ExtendedDataRowId;
+import com.mware.ge.GeException;
+import com.mware.ge.IdRange;
 import com.mware.ge.id.NameSubstitutionStrategy;
 import com.mware.ge.mutation.ExtendedDataMutationBase;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -156,8 +160,10 @@ public class StorableKeyHelper {
                 .put(name).put(KeyBase.VALUE_SEPARATOR)
                 .put(key).put(KeyBase.VALUE_SEPARATOR)
                 .put(visibilityString).put(KeyBase.VALUE_SEPARATOR)
-                .put(metadataKey)
-                .flip();
+                .put(metadataKey);
+
+        // to be compatible with Java 8, we have to cast to buffer because of different return types
+        ((Buffer)qualifierChars).flip();
 
         CharsetEncoder encoder = ENCODER_FACTORY.get();
         encoder.reset();

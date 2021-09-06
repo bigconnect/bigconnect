@@ -39,6 +39,7 @@
 package com.mware.ge.elasticsearch5.utils;
 
 import java.math.BigDecimal;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -175,7 +176,9 @@ public class Ascii85 {
             }
         }
 
-        bytebuff.flip();
+        // to be compatible with Java 8, we have to cast to buffer because of different return types
+        ((Buffer)bytebuff).flip();
+
         return Arrays.copyOf(bytebuff.array(), bytebuff.limit());
     }
 

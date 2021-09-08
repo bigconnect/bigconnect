@@ -464,7 +464,7 @@ public class GeQueryBuilderTransformer {
                         String[] terms = splitStringIntoTerms((String) value);
                         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
                         for (String term : terms) {
-                            boolQueryBuilder.must(QueryBuilders.termQuery(propertyName, term));
+                            boolQueryBuilder.must(QueryBuilders.wildcardQuery(propertyName, "*"+term+"*"));
                         }
                         filters.add(boolQueryBuilder);
                     } else {
@@ -723,6 +723,11 @@ public class GeQueryBuilderTransformer {
                     throw new GeException("STARTS_WITH may only be used to query String values");
                 }
                 return QueryBuilders.prefixQuery(propertyName, (String) convertedValue);
+            case ENDS_WITH:
+                if (!(convertedValue instanceof String)) {
+                    throw new GeException("ENDS_WITH may only be used to query String values");
+                }
+                return QueryBuilders.wildcardQuery(propertyName, "*"+convertedValue);
             case RANGE:
                 if (!(convertedValue instanceof ZonedDateTime[]) && !(convertedValue instanceof LocalDateTime[]) && !(convertedValue instanceof LocalDate[])) {
                     throw new GeException("RANGE may only be used to query Temporal[] values");
@@ -779,6 +784,8 @@ public class GeQueryBuilderTransformer {
             return ((DateValue) value).asObjectCopy();
         } else if (value instanceof DateTimeValue) {
             return  ((DateTimeValue) value).asObjectCopy();
+        } else if (value instanceof LocalDateTimeValue) {
+            return ((LocalDateTimeValue)value).asObjectCopy();
         } else if (value instanceof IntArray) {
             int[] array = ((IntArray) value).asObjectCopy();
             return IntStream.of(array).boxed().toArray(Integer[]::new);

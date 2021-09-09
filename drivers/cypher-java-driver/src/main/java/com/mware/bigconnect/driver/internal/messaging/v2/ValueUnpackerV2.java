@@ -27,11 +27,10 @@ import com.mware.bigconnect.driver.internal.types.TypeConstructor;
 
 import java.io.IOException;
 import java.time.*;
-import java.util.Date;
 
-import static java.time.ZoneOffset.UTC;
 import static com.mware.bigconnect.driver.Values.*;
 import static com.mware.bigconnect.driver.internal.messaging.v2.MessageFormatV2.*;
+import static java.time.ZoneOffset.UTC;
 
 public class ValueUnpackerV2 extends ValueUnpackerV1
 {
@@ -80,7 +79,7 @@ public class ValueUnpackerV2 extends ValueUnpackerV1
     private Value unpackDate() throws IOException
     {
         long epochDay = unpacker.unpackLong();
-        return value( new Date( epochDay ) );
+        return value( LocalDate.ofEpochDay( epochDay ) );
     }
 
     private Value unpackTime() throws IOException

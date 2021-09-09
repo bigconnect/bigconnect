@@ -597,6 +597,13 @@ public final class Values {
             // no need to copy here, since the durationArray(...) method will perform copying as appropriate
             return durationArray((TemporalAmount[]) value);
         }
+        if (value.length > 0) {
+            // try to guess the type of array based on the first element
+            Class<?> etype = value[0].getClass();
+            Object o = Array.newInstance(etype, value.length);
+            copy(value, o);
+            return arrayValue((Object[]) o);
+        }
         return null;
     }
 

@@ -57,16 +57,15 @@ package com.mware.ge.csv;
 
 /**
  * Provides information about a source of data.
- *
+ * <p>
  * An example usage would be reading a text file where {@link #sourceDescription()} would say the name of the file,
  * and {@link #position()} the byte offset the reader is currently at.
- *
+ * <p>
  * Another example could be reading from a relationship db table where {@link #sourceDescription()} would
  * say the name of the database and table and {@link #position()} some sort of absolute position saying
  * the byte offset to the field.
  */
-public interface SourceTraceability
-{
+public interface SourceTraceability {
     /**
      * @return description of the source being read from.
      */
@@ -77,20 +76,16 @@ public interface SourceTraceability
      */
     long position();
 
-    abstract class Adapter implements SourceTraceability
-    {
+    abstract class Adapter implements SourceTraceability {
         @Override
-        public long position()
-        {
+        public long position() {
             return 0;
         }
     }
 
-    SourceTraceability EMPTY = new Adapter()
-    {
+    SourceTraceability EMPTY = new Adapter() {
         @Override
-        public String sourceDescription()
-        {
+        public String sourceDescription() {
             return "EMPTY";
         }
     };

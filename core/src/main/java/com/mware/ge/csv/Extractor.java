@@ -59,24 +59,24 @@ package com.mware.ge.csv;
 /**
  * Extracts a value from a part of a {@code char[]} into any type of value, f.ex. a {@link Extractors#string()},
  * {@link Extractors#long_() long} or {@link Extractors#intArray()}.
- *
+ * <p>
  * An {@link Extractor} is mutable for the single purpose of ability to reuse its value instance. Consider extracting
  * a primitive int -
- *
+ * <p>
  * Sub-interfaces and implementations can and should specify specific accessors for the purpose
  * of performance and less garbage, f.ex. where an IntExtractor could have an accessor method for
  * getting the extracted value as primitive int, to avoid auto-boxing which would arise from calling {@link #value()}.
  *
  * @see Extractors for a collection of very common extractors.
  */
-public interface Extractor<T> extends Cloneable
-{
+public interface Extractor<T> extends Cloneable {
     /**
      * Extracts value of type {@code T} from the given character data.
-     * @param data characters in a buffer.
-     * @param offset offset into the buffer where the value starts.
-     * @param length number of characters from the offset to extract.
-     * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
+     *
+     * @param data         characters in a buffer.
+     * @param offset       offset into the buffer where the value starts.
+     * @param length       number of characters from the offset to extract.
+     * @param hadQuotes    whether or not there were skipped characters, f.ex. quotation.
      * @param optionalData optional data to be used for spatial or temporal values or null if csv header did not use it
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */
@@ -84,9 +84,10 @@ public interface Extractor<T> extends Cloneable
 
     /**
      * Extracts value of type {@code T} from the given character data.
-     * @param data characters in a buffer.
-     * @param offset offset into the buffer where the value starts.
-     * @param length number of characters from the offset to extract.
+     *
+     * @param data      characters in a buffer.
+     * @param offset    offset into the buffer where the value starts.
+     * @param length    number of characters from the offset to extract.
      * @param hadQuotes whether or not there were skipped characters, f.ex. quotation.
      * @return {@code true} if a value was extracted, otherwise {@code false}.
      */

@@ -34,61 +34,25 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.ge.collection;
+package com.mware.core.model;
 
-public abstract class Tuple3<T1, T2, T3> {
-    Tuple3() {
-        // package private, limited number of subclasses
+import com.mware.core.time.TimeRepository;
+
+import java.util.Date;
+
+public class MockTimeRepository extends TimeRepository {
+    private Date now;
+
+    public Date getNow() {
+        return now;
     }
 
-    public static <T1, T2, T3> Tuple3<T1, T2, T3> of(final T1 first, final T2 second, final T3 third) {
-        return new Tuple3<T1, T2, T3>() {
-            @Override
-            public T1 first() {
-                return first;
-            }
-
-            @Override
-            public T2 second() {
-                return second;
-            }
-
-            @Override
-            public T3 third() {
-                return third;
-            }
-        };
-    }
-
-    public abstract T1 first();
-    public abstract T2 second();
-    public abstract T3 third();
-
-    @Override
-    public int hashCode() {
-        return (31 * hashCode(first())) | hashCode(second()) | hashCode(third());
+    public void setNow(Date now) {
+        this.now = now;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj instanceof Tuple3) {
-            @SuppressWarnings("rawtypes")
-            Tuple3 that = (Tuple3) obj;
-            return equals(this.third(), that.third())
-                    && equals(this.second(), that.second())
-                    && equals(this.first(), that.first());
-        }
-        return false;
-    }
-
-    static int hashCode(Object obj) {
-        return obj == null ? 0 : obj.hashCode();
-    }
-
-    static boolean equals(Object obj1, Object obj2) {
-        return (obj1 == obj2) || (obj1 != null && obj1.equals(obj2));
+    public long currentTimeMillis() {
+        return getNow().getTime();
     }
 }

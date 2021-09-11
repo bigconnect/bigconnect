@@ -59,7 +59,6 @@ import com.mware.ge.function.Predicates;
 import com.mware.ge.function.ThrowingConsumer;
 import com.mware.ge.helpers.Exceptions;
 import com.mware.ge.io.Resource;
-import com.mware.ge.io.ResourceIterable;
 import org.eclipse.collections.api.list.ImmutableList;
 import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.impl.list.immutable.ImmutableListFactoryImpl;
@@ -793,12 +792,5 @@ public final class Iterables {
         if (exception != null) {
             throw exception;
         }
-    }
-
-    public static <T> ResourceIterable<T> asResourceIterable(final Iterable<T> iterable) {
-        if (iterable instanceof ResourceIterable<?>) {
-            return (ResourceIterable<T>) iterable;
-        }
-        return () -> Iterators.asResourceIterator(iterable.iterator());
     }
 }

@@ -55,8 +55,6 @@
  */
 package com.mware.ge.collection;
 
-import com.mware.ge.collection.PrefetchingIterator;
-
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -66,38 +64,30 @@ import java.util.Iterator;
  *
  * @param <T> the type of items in the iteration.
  */
-public class CombiningIterator<T> extends PrefetchingIterator<T>
-{
+public class CombiningIterator<T> extends PrefetchingIterator<T> {
     private Iterator<? extends Iterator<T>> iterators;
     private Iterator<T> currentIterator;
 
-    public CombiningIterator(Iterable<? extends Iterator<T>> iterators )
-    {
-        this( iterators.iterator() );
+    public CombiningIterator(Iterable<? extends Iterator<T>> iterators) {
+        this(iterators.iterator());
     }
 
-   public CombiningIterator(Iterator<? extends Iterator<T>> iterators )
-   {
+    public CombiningIterator(Iterator<? extends Iterator<T>> iterators) {
         this.iterators = iterators;
-   }
+    }
 
-    public CombiningIterator(T first, Iterator<T> rest )
-    {
-        this( Collections.emptyList() );
+    public CombiningIterator(T first, Iterator<T> rest) {
+        this(Collections.emptyList());
         this.hasFetchedNext = true;
         this.nextObject = first;
         this.currentIterator = rest;
     }
 
     @Override
-    protected T fetchNextOrNull()
-    {
-        if ( currentIterator == null || !currentIterator.hasNext() )
-        {
-            while ( (currentIterator = nextIteratorOrNull()) != null )
-            {
-                if ( currentIterator.hasNext() )
-                {
+    protected T fetchNextOrNull() {
+        if (currentIterator == null || !currentIterator.hasNext()) {
+            while ((currentIterator = nextIteratorOrNull()) != null) {
+                if (currentIterator.hasNext()) {
                     break;
                 }
             }
@@ -105,17 +95,14 @@ public class CombiningIterator<T> extends PrefetchingIterator<T>
         return currentIterator != null && currentIterator.hasNext() ? currentIterator.next() : null;
     }
 
-    protected Iterator<T> nextIteratorOrNull()
-    {
-        if ( iterators.hasNext() )
-        {
+    protected Iterator<T> nextIteratorOrNull() {
+        if (iterators.hasNext()) {
             return iterators.next();
         }
         return null;
     }
 
-    protected Iterator<T> currentIterator()
-    {
+    protected Iterator<T> currentIterator() {
         return currentIterator;
     }
 }

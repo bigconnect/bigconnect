@@ -59,8 +59,7 @@ package com.mware.ge.io;
  * Enriches AutoCloseable with isClosed(). This method can be used to query whether a resource was closed or
  * to make sure that it is only closed once.
  */
-public interface AutoCloseablePlus extends AutoCloseable
-{
+public interface AutoCloseablePlus extends AutoCloseable {
     @Override
     void close();
 

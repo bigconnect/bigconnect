@@ -36,7 +36,7 @@
  */
 package com.mware.core.model.user;
 
-import com.mware.core.time.MockTimeRepository;
+import com.mware.core.model.MockTimeRepository;
 import org.junit.Before;
 import org.junit.Test;
 

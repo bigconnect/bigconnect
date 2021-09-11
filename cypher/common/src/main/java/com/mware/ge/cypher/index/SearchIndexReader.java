@@ -23,7 +23,6 @@ package com.mware.ge.cypher.index;
 import com.drew.lang.Iterables;
 import com.mware.ge.GeException;
 import com.mware.ge.cypher.ge.GeCypherQueryContext;
-import com.mware.ge.cypher.schema.IndexDescriptor;
 import com.mware.ge.cypher.util.NodeValueIndexCursor;
 import com.mware.ge.query.*;
 import com.mware.ge.query.builder.BoolQueryBuilder;
@@ -154,8 +153,7 @@ public class SearchIndexReader {
         assert predicates.length == 1 : "composite indexes not yet supported for this operation";
     }
 
-    class GeNodeValueIndexCursor implements NodeValueIndexCursor, NodeValueClient {
-        private boolean needsValues;
+    class GeNodeValueIndexCursor implements NodeValueIndexCursor {
         private boolean closed;
         private QueryResultsIterable<String> iterable;
         private Iterator<String> iterator;
@@ -165,11 +163,6 @@ public class SearchIndexReader {
             this.iterable = results;
             this.closed = false;
             this.iterator = Iterables.toSet(this.iterable).iterator();
-        }
-
-        @Override
-        public void initialize(IndexDescriptor descriptor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues) {
-            this.needsValues = needsValues;
         }
 
         @Override
@@ -213,11 +206,6 @@ public class SearchIndexReader {
         @Override
         public boolean isClosed() {
             return this.closed;
-        }
-
-        @Override
-        public boolean needsValues() {
-            return needsValues;
         }
     }
 }

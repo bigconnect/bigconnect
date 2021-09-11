@@ -55,11 +55,9 @@
  */
 package com.mware.ge.csv;
 
-public class MissingEndQuoteException extends FormatException
-{
-    public MissingEndQuoteException( SourceTraceability source, int startingLine, char quoteChar )
-    {
-        super( source, "Missing end for quote (" + quoteChar + ") which started on line " +
-                startingLine );
+public class MissingEndQuoteException extends FormatException {
+    public MissingEndQuoteException(SourceTraceability source, int startingLine, char quoteChar) {
+        super(source, "Missing end for quote (" + quoteChar + ") which started on line " +
+                startingLine);
     }
 }

@@ -66,8 +66,7 @@ import java.io.IOException;
  * next chunk from the stream. This design allows for efficient reuse of chunks when there are multiple concurrent
  * processors, each processing chunks of data.
  */
-public interface Chunker extends Closeable
-{
+public interface Chunker extends Closeable {
     /**
      * @return a new allocated {@link Chunk} which is to be later passed into {@link #nextChunk(Chunk)}
      * to fill it with data. When a {@link Chunk} has been fully processed then it can be passed into

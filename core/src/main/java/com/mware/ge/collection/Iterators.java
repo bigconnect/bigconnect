@@ -607,13 +607,6 @@ public final class Iterators {
         }
     }
 
-    public static <T> ResourceIterator<T> asResourceIterator(final Iterator<T> iterator) {
-        if (iterator instanceof ResourceIterator<?>) {
-            return (ResourceIterator<T>) iterator;
-        }
-        return new WrappingResourceIterator<>(iterator);
-    }
-
     public static <T> ResourceIterator<T> resourceIterator(final Iterator<T> iterator, final Resource resource) {
         return new PrefetchingResourceIterator<T>() {
             @Override
@@ -672,10 +665,6 @@ public final class Iterators {
     @SuppressWarnings("unchecked")
     public static <T> Iterator<T> concat(Iterator<? extends T>... iterators) {
         return concat(Arrays.asList((Iterator<T>[]) iterators).iterator());
-    }
-
-    public static <T> ResourceIterator<T> concatResourceIterators(Iterator<ResourceIterator<T>> iterators) {
-        return new CombiningResourceIterator<>(iterators);
     }
 
     public static <T> Iterator<T> concat(Iterator<Iterator<T>> iterators) {

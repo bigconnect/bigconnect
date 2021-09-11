@@ -55,8 +55,6 @@
  */
 package com.mware.ge.collection;
 
-import com.mware.ge.collection.RawIterator;
-
 import java.util.NoSuchElementException;
 
 public abstract class PrefetchingRawIterator<T, EXCEPTION extends Exception> implements RawIterator<T, EXCEPTION>

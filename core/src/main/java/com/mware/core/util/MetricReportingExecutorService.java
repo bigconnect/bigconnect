@@ -48,12 +48,12 @@ public class MetricReportingExecutorService extends ThreadPoolExecutor {
     private FixedSizeCircularLinkedList<AtomicInteger> maxWaiting;
 
     public MetricReportingExecutorService(BcLogger logger, int nThreads) {
-        super(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+        super(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
         this.logger = logger;
 
-        executionCount = new FixedSizeCircularLinkedList<AtomicInteger>(16, AtomicInteger.class);
-        maxActive = new FixedSizeCircularLinkedList<AtomicInteger>(16, AtomicInteger.class);
-        maxWaiting = new FixedSizeCircularLinkedList<AtomicInteger>(16, AtomicInteger.class);
+        executionCount = new FixedSizeCircularLinkedList<>(16, AtomicInteger.class);
+        maxActive = new FixedSizeCircularLinkedList<>(16, AtomicInteger.class);
+        maxWaiting = new FixedSizeCircularLinkedList<>(16, AtomicInteger.class);
 
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         scheduledExecutorService.scheduleAtFixedRate(new Runnable() {

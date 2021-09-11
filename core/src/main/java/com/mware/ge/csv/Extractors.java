@@ -251,8 +251,7 @@ public class Extractors {
         return doubleArray;
     }
 
-    public PointExtractor point()
-    {
+    public PointExtractor point() {
         return point;
     }
 

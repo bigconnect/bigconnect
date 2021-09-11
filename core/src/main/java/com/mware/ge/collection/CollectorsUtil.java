@@ -60,10 +60,6 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public class CollectorsUtil {
-    public static <K, V> Collector<Map.Entry<K, V>, ?, Map<K, V>> entriesToMap() {
-        return Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue);
-    }
-
     public static <K, V> Collector<Pair<K, V>, ?, Map<K, V>> pairsToMap() {
         return Collectors.toMap(Pair::first, Pair::other);
     }

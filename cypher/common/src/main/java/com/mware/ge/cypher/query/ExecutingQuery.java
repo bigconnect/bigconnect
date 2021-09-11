@@ -26,15 +26,14 @@ import com.mware.ge.cypher.ExecutionPlanDescription;
 import com.mware.ge.io.CpuClock;
 import com.mware.ge.io.HeapAllocation;
 import com.mware.ge.time.SystemNanoClock;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import com.mware.ge.values.virtual.MapValue;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
 
 /**

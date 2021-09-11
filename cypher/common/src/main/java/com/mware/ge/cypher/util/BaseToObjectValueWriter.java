@@ -23,9 +23,8 @@
 package com.mware.ge.cypher.util;
 
 import com.mware.ge.Authorizations;
-import com.mware.ge.type.GeoPoint;
 import com.mware.ge.cypher.Path;
-import com.mware.ge.collection.ReverseArrayIterator;
+import com.mware.ge.type.GeoPoint;
 import com.mware.ge.values.AnyValueWriter;
 import com.mware.ge.values.VirtualValue;
 import com.mware.ge.values.storable.DurationValue;

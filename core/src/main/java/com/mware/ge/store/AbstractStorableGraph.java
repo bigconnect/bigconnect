@@ -112,17 +112,17 @@ public abstract class AbstractStorableGraph<V extends StorableVertex, E extends 
         this.historyInSeparateTable = config.isHistoryInSeparateTable();
         this.nameSubstitutionStrategy = new SimpleNameSubstitutionStrategy();
 
-        this.verticesTableName = getVerticesTableName(getConfiguration().getTableNamePrefix());
-        this.edgesTableName = getEdgesTableName(getConfiguration().getTableNamePrefix());
-        this.extendedDataTableName = getExtendedDataTableName(getConfiguration().getTableNamePrefix());
-        this.dataTableName = getDataTableName(getConfiguration().getTableNamePrefix());
-        this.metadataTableName = getMetadataTableName(getConfiguration().getTableNamePrefix());
+        verticesTableName = getVerticesTableName(getConfiguration().getTableNamePrefix());
+        edgesTableName = getEdgesTableName(getConfiguration().getTableNamePrefix());
+        extendedDataTableName = getExtendedDataTableName(getConfiguration().getTableNamePrefix());
+        dataTableName = getDataTableName(getConfiguration().getTableNamePrefix());
+        metadataTableName = getMetadataTableName(getConfiguration().getTableNamePrefix());
         if (isHistoryInSeparateTable()) {
-            this.historyVerticesTableName = getHistoryVerticesTableName(getConfiguration().getTableNamePrefix());
-            this.historyEdgesTableName = getHistoryEdgesTableName(getConfiguration().getTableNamePrefix());
+            historyVerticesTableName = getHistoryVerticesTableName(getConfiguration().getTableNamePrefix());
+            historyEdgesTableName = getHistoryEdgesTableName(getConfiguration().getTableNamePrefix());
         } else {
-            this.historyVerticesTableName = null;
-            this.historyEdgesTableName = null;
+            historyVerticesTableName = null;
+            historyEdgesTableName = null;
         }
 
         this.geSerializer = config.createSerializer(this);

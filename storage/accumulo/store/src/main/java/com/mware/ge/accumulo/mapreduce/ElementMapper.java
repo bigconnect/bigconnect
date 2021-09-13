@@ -62,8 +62,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
     @Override
     protected void setup(final Context context) throws IOException, InterruptedException {
         super.setup(context);
-        String configPrefix = context.getConfiguration().get(GRAPH_CONFIG_PREFIX, "");
-        AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(context.getConfiguration(), configPrefix);
+        AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(context.getConfiguration());
         String tableNamePrefix = accumuloGraphConfiguration.getTableNamePrefix();
         final Text edgesTableName = new Text(AccumuloGraph.getEdgesTableName(tableNamePrefix));
         final Text dataTableName = new Text(AccumuloGraph.getDataTableName(tableNamePrefix));

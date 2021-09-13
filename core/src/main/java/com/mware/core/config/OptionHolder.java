@@ -34,22 +34,37 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.core.util;
+package com.mware.core.config;
 
-import java.io.File;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-public class FileSizeUtil {
+public class OptionHolder {
+    protected Map<String, TypedOption<?, ?>> options;
 
-    public static Integer getSize(File file){
-        if (file == null){
-            return null;
+    public OptionHolder() {
+        this.options = new HashMap<>();
+    }
+
+    protected void registerOptions() {
+        for (Field field : this.getClass().getFields()) {
+            if (!TypedOption.class.isAssignableFrom(field.getType())) {
+                // Skip if not option
+                continue;
+            }
+            try {
+                TypedOption<?, ?> option = (TypedOption<?, ?>) field.get(this);
+                // Fields of subclass first, don't overwrite by superclass
+                this.options.putIfAbsent(option.name(), option);
+            } catch (Exception e) {
+                throw new ConfigException("Failed to register option: %s", field);
+            }
         }
+    }
 
-        Long length = file.length();
-        if (length <= Integer.MAX_VALUE) {
-            return length.intValue();
-        }
-
-        return null;
+    public Map<String, TypedOption<?, ?>> options() {
+        return Collections.unmodifiableMap(this.options);
     }
 }

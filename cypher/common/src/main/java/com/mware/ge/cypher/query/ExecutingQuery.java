@@ -49,32 +49,25 @@ public class ExecutingQuery {
     private final MapValue queryParameters;
     private final long startTimeNanos;
     private final long startTimestampMillis;
+    private long compilationCompletedNanos;
     /**
      * Uses write barrier of {@link #status}.
      */
-    private long compilationCompletedNanos;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
-    private final long threadExecutingTheQueryId;
     @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private final String threadExecutingTheQueryName;
-    private final LongSupplier activeLockCount;
-    private final long initialActiveLocks;
     private final SystemNanoClock clock;
-    private final CpuClock cpuClock;
-    private final HeapAllocation heapAllocation;
-    private final long cpuTimeNanosWhenQueryStarted;
-    private final long heapAllocatedBytesWhenQueryStarted;
     private final Map<String, Object> transactionAnnotationData;
     /**
      * Uses write barrier of {@link #status}.
      */
-    private CompilerInfo compilerInfo;
     private volatile ExecutingQueryStatus status = SimpleState.planning();
     /**
      * Updated through {@link #WAIT_TIME}
      */
     @SuppressWarnings("unused")
     private volatile long waitTimeNanos;
+    private CompilerInfo compilerInfo;
 
     public ExecutingQuery(
             long queryId,
@@ -90,7 +83,6 @@ public class ExecutingQuery {
             CpuClock cpuClock,
             HeapAllocation heapAllocation) {
         // Capture timestamps first
-        this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos(threadExecutingTheQueryId);
         this.startTimeNanos = clock.nanos();
         this.startTimestampMillis = clock.millis();
         // then continue with assigning fields
@@ -100,14 +92,8 @@ public class ExecutingQuery {
         this.queryText = queryText;
         this.queryParameters = queryParameters;
         this.transactionAnnotationData = transactionAnnotationData;
-        this.activeLockCount = activeLockCount;
-        this.initialActiveLocks = activeLockCount.getAsLong();
-        this.threadExecutingTheQueryId = threadExecutingTheQueryId;
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
-        this.cpuClock = cpuClock;
-        this.heapAllocation = heapAllocation;
         this.clock = clock;
-        this.heapAllocatedBytesWhenQueryStarted = heapAllocation.allocatedBytes(this.threadExecutingTheQueryId);
     }
 
     // update state

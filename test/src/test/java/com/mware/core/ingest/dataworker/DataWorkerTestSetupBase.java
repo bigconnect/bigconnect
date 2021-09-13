@@ -44,7 +44,6 @@ import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.user.InMemoryGraphAuthorizationRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.model.workspace.WorkspaceRepository;
-import com.mware.core.security.DirectVisibilityTranslator;
 import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.user.User;
 import com.mware.ge.Authorizations;
@@ -122,7 +121,7 @@ public abstract class DataWorkerTestSetupBase {
         visibilityJson = new VisibilityJson();
         visibilityJson.setSource(VISIBILITY_SOURCE);
         visibilityJson.addWorkspace(WORKSPACE_ID);
-        visibilityTranslator = new DirectVisibilityTranslator();
+        visibilityTranslator = new VisibilityTranslator();
         graphAuthorizationRepository = new InMemoryGraphAuthorizationRepository();
         termMentionRepository = new TermMentionRepository(graph, graphAuthorizationRepository);
 

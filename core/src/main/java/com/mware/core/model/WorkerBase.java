@@ -38,6 +38,7 @@ package com.mware.core.model;
 
 import com.codahale.metrics.Counter;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.WorkerTuple;
@@ -77,7 +78,7 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
         this.metricsManager = metricsManager;
         this.exitOnNextTupleFailure = configuration.getBoolean(getClass().getName() + ".exitOnNextTupleFailure", true);
         this.tupleQueueSize = configuration.getInt(getClass().getName() + ".tupleQueueSize", 10);
-        this.statusEnabled = configuration.getBoolean(Configuration.STATUS_ENABLED, Configuration.STATUS_ENABLED_DEFAULT);
+        this.statusEnabled = configuration.get(CoreOptions.STATUS_ENABLED);
         this.queueSizeMetricName = metricsManager.getNamePrefix(this) + "queue-size-" + Thread.currentThread().getId();
         this.queueSizeMetric = metricsManager.counter(queueSizeMetricName);
     }

@@ -36,6 +36,7 @@
  */
 package com.mware.ge;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.id.IdGenerator;
 import com.mware.ge.mutation.ElementMutation;
 import com.mware.ge.mutation.ExistingElementMutation;
@@ -274,7 +275,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     public String getBackupDir() {
-        return this.configuration.getString(GraphConfiguration.BACKUP_DIR, null);
+        return this.configuration.get(GraphOptions.BACKUP_DIR);
     }
 
     public GraphBackup getBackupTool(String outputFile) {

@@ -36,12 +36,15 @@
  */
 package com.mware.ge;
 
+import com.mware.core.config.Configuration;
+import com.mware.core.config.options.GraphOptions;
+
 import java.lang.reflect.Method;
 import java.util.Map;
 
 public class GraphFactory {
-    public Graph createGraph(Map<String, String> config) {
-        String graphClassName = config.get("");
+    public Graph createGraph(Configuration configuration) {
+        String graphClassName = configuration.get(GraphOptions.GRAPH_IMPL);
         if (graphClassName == null || graphClassName.length() == 0) {
             throw new GeException("missing graph configuration class");
         }
@@ -51,7 +54,7 @@ public class GraphFactory {
                 @SuppressWarnings("unchecked")
                 Method createMethod = graphClass.getDeclaredMethod("create", Map.class);
                 try {
-                    return (Graph) createMethod.invoke(null, config);
+                    return (Graph) createMethod.invoke(null, configuration.toMap());
                 } catch (Exception e) {
                     throw new GeException("Failed on " + createMethod + " on class " + graphClass.getName(), e);
                 }

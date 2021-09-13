@@ -51,8 +51,8 @@ import com.mware.ge.*;
 import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.query.Compare;
 import com.mware.ge.query.QueryResultsIterable;
-import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.query.builder.GeQueryBuilder;
+import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.values.storable.Values;
 
@@ -62,7 +62,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.mware.ge.util.IterableUtils.singleOrDefault;
 
-public class GeRegexRepository implements RegexRepository {
+public class GeRegexRepository {
+    public static final String VISIBILITY_STRING = "regex";
     private static final String GRAPH_REGEX_ID_PREFIX = "RGX_";
     public static final BcVisibility VISIBILITY = new BcVisibility(VISIBILITY_STRING);
 
@@ -88,7 +89,6 @@ public class GeRegexRepository implements RegexRepository {
 
     }
 
-    @Override
     public Iterable<Regex> getAllRegexes() {
         try (QueryResultsIterable<Vertex> vertices = graph.query(GeQueryBuilders.hasConceptType(RegexSchema.REGEX_CONCEPT_NAME), authorizations)
                 .vertices()) {
@@ -103,12 +103,10 @@ public class GeRegexRepository implements RegexRepository {
         }
     }
 
-    @Override
     public Regex findRegexById(String regexId) {
         return createRegexFromVertex(findByIdRegexVertex(regexId, graph.getDefaultFetchHints()));
     }
 
-    @Override
     public Regex findByName(String rgxName) {
         GeQueryBuilder qb = GeQueryBuilders.boolQuery()
                 .and(GeQueryBuilders.hasConceptType(RegexSchema.REGEX_CONCEPT_NAME))
@@ -124,7 +122,6 @@ public class GeRegexRepository implements RegexRepository {
     }
 
 
-    @Override
     public Regex createRegex(String name, String pattern, String concept) {
         name = StringUtils.trimIfNull(name);
         pattern = StringUtils.trimIfNull(pattern);
@@ -141,7 +138,6 @@ public class GeRegexRepository implements RegexRepository {
         return regex;
     }
 
-    @Override
     public void updateRegex(String id, String name, String pattern, String concept) {
         name = StringUtils.trimIfNull(name);
         pattern = StringUtils.trimIfNull(pattern);
@@ -156,7 +152,6 @@ public class GeRegexRepository implements RegexRepository {
         graph.flush();
     }
 
-    @Override
     public void deleteRegex(String id) {
         graph.deleteVertex(id, authorizations);
         graph.flush();
@@ -187,7 +182,6 @@ public class GeRegexRepository implements RegexRepository {
 
 
 
-    @Override
     public ClientApiRegexes toClientApi(Iterable<Regex> regexes) {
         ClientApiRegexes clientApi = new ClientApiRegexes();
         for(Regex regex : regexes)
@@ -196,7 +190,6 @@ public class GeRegexRepository implements RegexRepository {
         return clientApi;
     }
 
-    @Override
     public ClientApiRegex toClientApi(Regex regex) {
         ClientApiRegex clientApi = new ClientApiRegex();
         clientApi.setId(regex.getId());

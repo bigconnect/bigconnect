@@ -38,6 +38,7 @@ package com.mware.core.model.workQueue;
 
 import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.RabbitMqOptions;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.WorkerTuple;
@@ -52,7 +53,6 @@ import java.util.concurrent.TimeoutException;
 
 public class RabbitMQWorkQueueSpout extends WorkerSpout {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(RabbitMQWorkQueueSpout.class);
-    public static final int DEFAULT_RABBITMQ_PREFETCH_COUNT = 10;
     private final String queueName;
     private Channel channel;
     private QueueingConsumer consumer;
@@ -70,7 +70,7 @@ public class RabbitMQWorkQueueSpout extends WorkerSpout {
             this.channel = RabbitMQUtils.openChannel(this.connection);
             RabbitMQWorkQueueRepository.createQueue(channel, queueName);
             this.consumer = new QueueingConsumer(channel);
-            Integer prefetchCount = configuration.getInt(Configuration.RABBITMQ_PREFETCH_COUNT, DEFAULT_RABBITMQ_PREFETCH_COUNT);
+            Integer prefetchCount = configuration.get(RabbitMqOptions.RABBITMQ_PREFETCH_COUNT);
             this.channel.basicQos(prefetchCount, false);
             this.channel.basicConsume(this.queueName, false, consumer);
         } catch (IOException ex) {

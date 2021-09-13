@@ -36,6 +36,7 @@
  */
 package com.mware.ge.serializer.kryo.quickSerializers;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.GeException;
 import com.mware.ge.GraphConfiguration;
 import com.mware.ge.serializer.GeSerializer;
@@ -55,8 +56,6 @@ public class QuickKryoGeSerializer implements GeSerializer {
     private GeLogger LOGGER = GeLoggerFactory.getLogger(QuickKryoGeSerializer.class);
 
     private static final byte[] EMPTY = new byte[0];
-    public static final String CONFIG_COMPRESS = GraphConfiguration.SERIALIZER + ".enableCompression";
-    public static final boolean CONFIG_COMPRESS_DEFAULT = false;
     private final boolean enableCompression;
     private QuickTypeSerializer defaultQuickTypeSerializer = new KryoQuickTypeSerializer();
 
@@ -139,7 +138,7 @@ public class QuickKryoGeSerializer implements GeSerializer {
     }};
 
     public QuickKryoGeSerializer(GraphConfiguration config) {
-        this(config.getBoolean(CONFIG_COMPRESS, CONFIG_COMPRESS_DEFAULT));
+        this(config.get(GraphOptions.SERIALIZER_COMPRESSION));
     }
 
     public QuickKryoGeSerializer(boolean enableCompression) {

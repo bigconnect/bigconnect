@@ -38,23 +38,22 @@ package com.mware.core.status;
 
 import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
-import com.github.jknack.handlebars.io.StringTemplateSource;
+import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
+import com.mware.core.exception.BcException;
+import com.mware.core.model.Description;
+import com.mware.core.model.Name;
 import com.mware.core.model.clientapi.util.IOUtils;
 import com.mware.core.status.model.ProcessStatus;
 import com.mware.core.status.model.Status;
-import com.mware.core.util.JSONUtil;
+import com.mware.core.util.BcLogger;
+import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.ClientApiConverter;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.json.JSONObject;
-import com.mware.core.config.Configuration;
-import com.mware.core.exception.BcException;
-import com.mware.core.model.Description;
-import com.mware.core.model.Name;
-import com.mware.core.util.ClientApiConverter;
-import com.mware.core.util.BcLogger;
-import com.mware.core.util.BcLoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -84,7 +83,7 @@ public abstract class StatusServer {
         this.configuration = configuration;
         this.startTime = new Date();
 
-        String portRange = configuration.get(Configuration.STATUS_PORT_RANGE, Configuration.DEFAULT_STATUS_PORT_RANGE);
+        String portRange = configuration.get(CoreOptions.STATUS_PORT_RANGE);
         httpServer = startHttpServer(portRange);
 
         String url = getUrl();

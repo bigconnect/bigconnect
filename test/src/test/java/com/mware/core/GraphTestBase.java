@@ -77,7 +77,6 @@ import com.mware.core.model.workspace.WorkspaceRepository;
 import com.mware.core.orm.SimpleOrmSession;
 import com.mware.core.orm.inmemory.InMemorySimpleOrmSession;
 import com.mware.core.security.AuditService;
-import com.mware.core.security.DirectVisibilityTranslator;
 import com.mware.core.security.LoggingAuditService;
 import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.time.TimeRepository;
@@ -347,7 +346,6 @@ public abstract class GraphTestBase {
             schemaRepository = new GeSchemaRepository(
                     getGraph(),
                     getGraphRepository(),
-                    getVisibilityTranslator(),
                     getConfiguration(),
                     getGraphAuthorizationRepository(),
                     getCacheService()
@@ -372,7 +370,7 @@ public abstract class GraphTestBase {
         if (visibilityTranslator != null) {
             return visibilityTranslator;
         }
-        visibilityTranslator = new DirectVisibilityTranslator();
+        visibilityTranslator = new VisibilityTranslator();
         return visibilityTranslator;
     }
 
@@ -500,7 +498,6 @@ public abstract class GraphTestBase {
         }
         graphRepository = new GraphRepository(
                 getGraph(),
-                getVisibilityTranslator(),
                 getTermMentionRepository(),
                 getWorkQueueRepository(),
                 getWebQueueRepository(),

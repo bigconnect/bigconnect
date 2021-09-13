@@ -37,18 +37,15 @@
 package com.mware.ge.it;
 
 import com.mware.core.config.HashMapConfigurationLoader;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.core.model.graph.AccumuloGraphAuthorizationRepository;
 import com.mware.core.model.lock.SingleJvmLockRepository;
-import com.mware.ge.GraphConfiguration;
 import com.mware.ge.accumulo.AccumuloGraph;
-import com.mware.ge.accumulo.AccumuloGraphConfiguration;
 import com.mware.ge.accumulo.AccumuloResource;
 import com.mware.ge.cypher.GeCypherExecutionEngine;
 import com.mware.ge.cypher.TestCypherQueryContextFactory;
 import com.mware.ge.elasticsearch5.ElasticsearchResource;
-import com.mware.ge.id.SimpleNameSubstitutionStrategy;
 import com.mware.ge.id.UUIDIdGenerator;
-import com.mware.ge.serializer.kryo.quickSerializers.QuickKryoGeSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -56,9 +53,6 @@ import java.util.Map;
 public class CypherQueryContextFactoryIT extends TestCypherQueryContextFactory  {
     public static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource(CypherQueryContextFactoryIT.class.getName());
     public static final AccumuloResource accumuloResource = new AccumuloResource("accumulo-es-cypher-acceptance", new HashMap<String, String>() {{
-        put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
-        put(AccumuloGraphConfiguration.SERIALIZER, QuickKryoGeSerializer.class.getName());
-        put(AccumuloGraphConfiguration.AUTO_FLUSH, "false");
     }});
 
     public CypherQueryContextFactoryIT() throws Exception {
@@ -89,7 +83,7 @@ public class CypherQueryContextFactoryIT extends TestCypherQueryContextFactory  
         elasticsearchResource.buildRunner();
         Map config = accumuloResource.createConfig();
         config.putAll(elasticsearchResource.createConfig());
-        config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, UUIDIdGenerator.class.getName());
+        config.put(GraphOptions.ID_GENERATOR.name(), UUIDIdGenerator.class.getName());
         configuration = new HashMapConfigurationLoader(config).createConfiguration();
     }
 }

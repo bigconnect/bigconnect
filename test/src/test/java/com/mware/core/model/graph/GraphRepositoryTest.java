@@ -51,7 +51,7 @@ import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workQueue.TestWebQueueRepository;
 import com.mware.core.model.workQueue.TestWorkQueueRepository;
 import com.mware.core.security.BcVisibility;
-import com.mware.core.security.DirectVisibilityTranslator;
+import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.user.User;
 import com.mware.ge.*;
 import com.mware.ge.id.QueueIdGenerator;
@@ -69,7 +69,10 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import static com.mware.ge.util.IterableUtils.toList;
 import static com.mware.ge.values.storable.Values.stringValue;
@@ -98,7 +101,7 @@ public class GraphRepositoryTest {
     private TestWebQueueRepository webQueueRepository;
 
     private Authorizations defaultAuthorizations;
-    private DirectVisibilityTranslator visibilityTranslator;
+    private VisibilityTranslator visibilityTranslator;
 
     @Before
     public void setup() throws Exception {
@@ -108,7 +111,7 @@ public class GraphRepositoryTest {
 
         InMemoryGraphConfiguration graphConfig = new InMemoryGraphConfiguration(new HashMap<>());
         QueueIdGenerator idGenerator = new QueueIdGenerator();
-        visibilityTranslator = new DirectVisibilityTranslator();
+        visibilityTranslator = new VisibilityTranslator();
         graph = InMemoryGraph.create(graphConfig, idGenerator, new DefaultSearchIndex(graphConfig));
         defaultAuthorizations = graph.createAuthorizations();
         workQueueRepository = new TestWorkQueueRepository(graph, configuration);
@@ -116,7 +119,6 @@ public class GraphRepositoryTest {
 
         graphRepository = new GraphRepository(
                 graph,
-                visibilityTranslator,
                 termMentionRepository,
                 workQueueRepository,
                 webQueueRepository,

@@ -41,26 +41,25 @@ import com.google.common.collect.Lists;
 import com.mware.ge.*;
 import com.mware.ge.event.*;
 import com.mware.ge.id.IdGenerator;
-import com.mware.ge.id.UUIDIdGenerator;
 import com.mware.ge.inmemory.mutations.*;
 import com.mware.ge.mutation.*;
 import com.mware.ge.property.PropertyDescriptor;
-import com.mware.ge.values.storable.StreamingPropertyValue;
-import com.mware.ge.values.storable.StreamingPropertyValueRef;
 import com.mware.ge.search.IndexHint;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.util.*;
+import com.mware.ge.values.storable.StreamingPropertyValue;
+import com.mware.ge.values.storable.StreamingPropertyValueRef;
 import com.mware.ge.values.storable.Value;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static com.mware.ge.util.Preconditions.checkNotNull;
 import static com.mware.ge.util.StreamUtils.stream;
 
 public class InMemoryGraph extends GraphBaseWithSearchIndex {
-    protected static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION = new InMemoryGraphConfiguration(new HashMap<>());
     private final Set<String> validAuthorizations = new HashSet<>();
     private final InMemoryVertexTable verticesTable;
     private final InMemoryEdgeTable edgesTable;
@@ -121,8 +120,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @SuppressWarnings("unused")
     public static InMemoryGraph create() {
-        DEFAULT_CONFIGURATION.set(GraphConfiguration.IDGENERATOR_PROP_PREFIX, UUIDIdGenerator.class.getName());
-        return create(DEFAULT_CONFIGURATION);
+        return create(new InMemoryGraphConfiguration(new ConcurrentHashMap<>()));
     }
 
     public static InMemoryGraph create(InMemoryGraphConfiguration config) {

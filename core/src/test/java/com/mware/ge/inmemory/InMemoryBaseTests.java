@@ -36,9 +36,9 @@
  */
 package com.mware.ge.inmemory;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.core.model.schema.SchemaConstants;
 import com.mware.ge.GeTypeException;
-import com.mware.ge.GraphConfiguration;
 import com.mware.ge.Vertex;
 import com.mware.ge.base.GraphBaseTests;
 import com.mware.ge.base.GraphTestSetup;
@@ -59,9 +59,9 @@ public class InMemoryBaseTests extends GraphBaseTests implements GraphTestSetup 
 
     @Test
     public void testStrictTyping() {
-        Map<String, String> config = InMemoryGraphFactory.createConfig();
-        config.put(GraphConfiguration.STRICT_TYPING, "true");
-        InMemoryGraph g = InMemoryGraph.create((Map) config);
+        Map<String, Object> config = InMemoryGraphFactory.createConfig();
+        config.put(GraphOptions.STRICT_TYPING.name(), true);
+        InMemoryGraph g = InMemoryGraph.create(config);
 
         g.defineProperty("prop1").dataType(TextValue.class).define();
 

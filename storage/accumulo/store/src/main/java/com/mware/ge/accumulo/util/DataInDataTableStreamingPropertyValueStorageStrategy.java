@@ -66,7 +66,7 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
             throw new GeException("Expected " + AccumuloGraphConfiguration.class.getName() + " found " + configuration.getClass().getName());
         }
         AccumuloGraphConfiguration config = (AccumuloGraphConfiguration) configuration;
-        this.dataInDataTablePartSize = config.getInt(AccumuloGraphConfiguration.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX + ".partSize", DEFAULT_PART_SIZE);
+        this.dataInDataTablePartSize = DEFAULT_PART_SIZE;
     }
 
     @Override

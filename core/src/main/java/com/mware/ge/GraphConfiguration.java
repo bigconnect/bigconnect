@@ -36,44 +36,21 @@
  */
 package com.mware.ge;
 
+import com.mware.core.config.TypedConfiguration;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.id.IdGenerator;
-import com.mware.ge.id.LongIdGenerator;
 import com.mware.ge.metric.DropWizardMetricRegistry;
 import com.mware.ge.metric.GeMetricRegistry;
-import com.mware.ge.search.DefaultSearchIndex;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.serializer.GeSerializer;
-import com.mware.ge.serializer.kryo.quickSerializers.QuickKryoGeSerializer;
 import com.mware.ge.util.ConfigurationUtils;
 
 import java.time.Duration;
 import java.util.Map;
 
-public class GraphConfiguration {
-    public static final String IDGENERATOR_PROP_PREFIX = "idgenerator";
-    public static final String SEARCH_INDEX_PROP_PREFIX = "search";
-    public static final String AUTO_FLUSH = "autoFlush";
-
-    public static final String DEFAULT_IDGENERATOR = LongIdGenerator.class.getName();
-    public static final String DEFAULT_SEARCH_INDEX = DefaultSearchIndex.class.getName();
-    public static final boolean DEFAULT_AUTO_FLUSH = false;
-    public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
-    public static final String DEFAULT_TABLE_NAME_PREFIX = "bc";
-    public static final String SERIALIZER = "serializer";
-    public static final String DEFAULT_SERIALIZER = QuickKryoGeSerializer.class.getName();
-    public static final String METRICS_REGISTRY = "metricsRegistry";
-    public static final String DEFAULT_METRICS_REGISTRY = DropWizardMetricRegistry.class.getName();
-
-    public static final String STRICT_TYPING = "strictTyping";
-    public static final boolean DEFAULT_STRICT_TYPING = false;
-    public static final String CREATE_TABLES = "createTables";
-    public static final boolean DEFAULT_CREATE_TABLES = true;
-    public static final String BACKUP_DIR = "backupDir";
-
-    private final Map<String, Object> config;
-
-    public GraphConfiguration(Map<String, Object> config) {
-        this.config = config;
+public abstract class GraphConfiguration extends TypedConfiguration {
+    protected GraphConfiguration(Map<String, Object> config) {
+        super(config);
     }
 
     public void set(String key, Object value) {
@@ -94,23 +71,19 @@ public class GraphConfiguration {
     }
 
     public IdGenerator createIdGenerator(Graph graph) throws GeException {
-        return ConfigurationUtils.createProvider(graph, this, IDGENERATOR_PROP_PREFIX, DEFAULT_IDGENERATOR);
+        return ConfigurationUtils.createInstance(graph, this, GraphOptions.ID_GENERATOR);
     }
 
     public SearchIndex createSearchIndex(Graph graph) throws GeException {
-        return ConfigurationUtils.createProvider(graph, this, SEARCH_INDEX_PROP_PREFIX, DEFAULT_SEARCH_INDEX);
+        return ConfigurationUtils.createInstance(graph, this, GraphOptions.SEARCH_IMPL);
     }
 
     public GeSerializer createSerializer(Graph graph) throws GeException {
-        return ConfigurationUtils.createProvider(graph, this, SERIALIZER, DEFAULT_SERIALIZER);
+        return ConfigurationUtils.createInstance(graph, this, GraphOptions.SERIALIZER);
     }
 
     public GeSerializer createSerializer() throws GeException {
-        return ConfigurationUtils.createProvider(null, this, SERIALIZER, DEFAULT_SERIALIZER);
-    }
-
-    public GeMetricRegistry createMetricsRegistry() {
-        return ConfigurationUtils.createProvider(null, this, METRICS_REGISTRY, DEFAULT_METRICS_REGISTRY);
+        return ConfigurationUtils.createInstance(null, this, GraphOptions.SERIALIZER);
     }
 
     public boolean getBoolean(String configKey, boolean defaultValue) {
@@ -146,14 +119,22 @@ public class GraphConfiguration {
     }
 
     public String getTableNamePrefix() {
-        return getString(TABLE_NAME_PREFIX, DEFAULT_TABLE_NAME_PREFIX);
+        return get(GraphOptions.TABLE_NAME_PREFIX);
     }
 
     public boolean isStrictTyping() {
-        return getBoolean(STRICT_TYPING, DEFAULT_STRICT_TYPING);
+        return get(GraphOptions.STRICT_TYPING);
     }
 
     public boolean isCreateTables() {
-        return getBoolean(CREATE_TABLES, DEFAULT_CREATE_TABLES);
+        return get(GraphOptions.CREATE_TABLES);
+    }
+
+    public boolean isAutoFlush() {
+        return get(GraphOptions.AUTO_FLUSH);
+    }
+
+    public GeMetricRegistry createMetricsRegistry() {
+        return new DropWizardMetricRegistry();
     }
 }

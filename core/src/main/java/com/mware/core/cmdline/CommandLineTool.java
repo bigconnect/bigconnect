@@ -41,25 +41,26 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.inject.Inject;
 import com.mware.core.bootstrap.BcBootstrap;
-import com.mware.core.lifecycle.LifeSupportService;
-import com.mware.core.trace.TraceRepository;
-import com.mware.core.orm.SimpleOrmSession;
-import com.mware.ge.Authorizations;
-import com.mware.ge.Graph;
 import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
 import com.mware.core.config.ConfigurationLoader;
+import com.mware.core.config.options.CoreOptions;
+import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.model.lock.LockRepository;
-import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.model.role.AuthorizationRepository;
+import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.model.user.PrivilegeRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
+import com.mware.core.orm.SimpleOrmSession;
 import com.mware.core.security.VisibilityTranslator;
+import com.mware.core.trace.TraceRepository;
 import com.mware.core.user.User;
-import com.mware.core.util.VersionUtil;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.VersionUtil;
+import com.mware.ge.Authorizations;
+import com.mware.ge.Graph;
 
 public abstract class CommandLineTool {
     public static final String THREAD_NAME = "BigConnect CLI";
@@ -143,7 +144,7 @@ public abstract class CommandLineTool {
 
     protected void initializeFramework() {
         InjectHelper.inject(this, BcBootstrap.bootstrapModuleMaker(getConfiguration()), getConfiguration());
-        if(configuration.getBoolean(Configuration.TRACE_ENABLED, Configuration.DEFAULT_TRACE_ENABLED)) {
+        if(configuration.get(CoreOptions.TRACE_ENABLED)) {
             TraceRepository traceRepository = InjectHelper.getInstance(TraceRepository.class);
             traceRepository.enable();
         }

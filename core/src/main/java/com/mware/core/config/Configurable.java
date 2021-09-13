@@ -44,8 +44,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface Configurable {
-    static final String DEFAULT_NAME = "__DEFAULT__";
-    static final String DEFAULT_VALUE = "__FAIL__";
+    String DEFAULT_NAME = "__DEFAULT__";
+    String DEFAULT_VALUE = "__FAIL__";
 
     String name() default DEFAULT_NAME;
 

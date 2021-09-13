@@ -65,7 +65,8 @@ import static com.mware.ge.cypher.procedure.impl.Neo4jTypes.*;
 @Singleton
 public class GeCypherExecutionEngine {
     private final BcLogger LOGGER = BcLoggerFactory.getLogger(GeCypherExecutionEngine.class);
-
+    
+    private final VisibilityTranslator visibilityTranslator = new VisibilityTranslator();
     private final CypherConfiguration cypherConfig;
     private final InternalCypherExecutionEngine executionEngine;
     private final Procedures procedures;
@@ -75,7 +76,6 @@ public class GeCypherExecutionEngine {
     private SchemaRepository schemaRepository;
     private final LifeSupportService lifeSupportService;
     private final UserRepository userRepository;
-    private final VisibilityTranslator visibilityTranslator;
     private TermMentionRepository termMentionRepository;
     private AuthorizationRepository authorizationRepository;
     private WorkQueueRepository workQueueRepository;
@@ -95,7 +95,6 @@ public class GeCypherExecutionEngine {
             WorkQueueRepository workQueueRepository,
             AuditService auditService,
             AuthTokenService authTokenService,
-            VisibilityTranslator visibilityTranslator,
             TermMentionRepository termMentionRepository,
             WorkspaceRepository workspaceRepository,
             GraphRepository graphRepository,
@@ -109,7 +108,6 @@ public class GeCypherExecutionEngine {
         this.workQueueRepository = workQueueRepository;
         this.auditService = auditService;
         this.authTokenService = authTokenService;
-        this.visibilityTranslator = visibilityTranslator;
         this.termMentionRepository = termMentionRepository;
         this.workspaceRepository = workspaceRepository;
         this.graphRepository = graphRepository;

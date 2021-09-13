@@ -37,9 +37,7 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.Graph;
-import com.mware.ge.GraphConfiguration;
 import com.mware.ge.GraphWithSearchIndex;
-import com.mware.ge.base.GraphBaseTests;
 import com.mware.ge.base.GraphHistoryTests;
 import com.mware.ge.base.GraphTestSetup;
 import com.mware.ge.base.TestGraphFactory;
@@ -64,7 +62,7 @@ public class ElasticHistoryTests extends GraphHistoryTests implements GraphTestS
     @Override
     public boolean disableEdgeIndexing(Graph graph) {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.INDEX_EDGES, "false");
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.INDEX_EDGES.name(), false);
         return true;
     }
 

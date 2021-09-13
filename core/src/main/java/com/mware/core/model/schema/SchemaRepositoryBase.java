@@ -46,6 +46,7 @@ import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.cache.CacheOptions;
 import com.mware.core.cache.CacheService;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.SchemaOptions;
 import com.mware.core.exception.BcAccessDeniedException;
 import com.mware.core.exception.BcException;
 import com.mware.core.exception.BcResourceNotFoundException;
@@ -63,14 +64,14 @@ import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.core.util.ExecutorServiceUtil;
 import com.mware.ge.*;
+import com.mware.ge.query.Query;
 import com.mware.ge.query.QueryResultsIterable;
 import com.mware.ge.query.builder.BoolQueryBuilder;
 import com.mware.ge.query.builder.GeQueryBuilders;
-import com.mware.ge.values.storable.*;
-import com.mware.ge.query.Query;
 import com.mware.ge.util.ConvertingIterable;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.util.StringUtil;
+import com.mware.ge.values.storable.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -89,8 +90,6 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(SchemaRepositoryBase.class);
     private static final String ONTOLOGY_CACHE_NAME = SchemaRepository.class.getName() + ".ontology";
     private static final String ONTOLOGY_VISIBLEPROPS_CACHE_NAME = SchemaRepository.class.getName() + ".ontologyVisibleProps";
-    private static final String CONFIG_ONTOLOGY_CACHE_MAX_SIZE = SchemaRepository.class.getName() + "ontologyCache.maxSize";
-    private static final long CONFIG_ONTOLOGY_CACHE_MAX_SIZE_DEFAULT = 1000L;
 
     public static final String TOP_OBJECT_PROPERTY_NAME = "topObjectProperty";
     public static final int MAX_DISPLAY_NAME = 50;
@@ -111,8 +110,8 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
         this.configuration = configuration;
         this.cacheService = cacheService;
         this.ontologyCacheOptions = new CacheOptions()
-                .setMaximumSize(configuration.getLong(CONFIG_ONTOLOGY_CACHE_MAX_SIZE, CONFIG_ONTOLOGY_CACHE_MAX_SIZE_DEFAULT))
-                .setExpireAfterWrite(new Long(5));
+                .setMaximumSize(configuration.get(SchemaOptions.CACHE_MAX_SIZE))
+                .setExpireAfterWrite(5L);
         this.graph = graph;
     }
 
@@ -167,7 +166,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
         if (glyphIconFileName != null) {
             File iconFile = new File(inDir, glyphIconFileName);
             if (!iconFile.exists()) {
-                throw new RuntimeException("Could not find icon file: " + iconFile.toString());
+                throw new RuntimeException("Could not find icon file: " + iconFile);
             }
             try (InputStream iconFileIn = new FileInputStream(iconFile)) {
                 StreamingPropertyValue value = new DefaultStreamingPropertyValue(iconFileIn, ByteArray.class);

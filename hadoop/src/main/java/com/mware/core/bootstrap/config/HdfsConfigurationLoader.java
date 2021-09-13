@@ -40,8 +40,6 @@ import com.google.common.base.Throwables;
 import com.mware.core.config.BcHadoopConfiguration;
 import com.mware.core.config.Configuration;
 import com.mware.core.config.ConfigurationLoader;
-import com.mware.core.util.BcLogger;
-import com.mware.core.util.BcLoggerFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -53,7 +51,6 @@ import java.util.Map;
 import java.util.Properties;
 
 public class HdfsConfigurationLoader extends ConfigurationLoader {
-    private static final BcLogger LOGGER = BcLoggerFactory.getLogger(HdfsConfigurationLoader.class);
     public static final String DEFAULT_HDFS_LOCATION = "/bigconnect/config/bc.properties";
 
     private FileSystem hdfs;
@@ -75,7 +72,9 @@ public class HdfsConfigurationLoader extends ConfigurationLoader {
             FSDataInputStream is = hdfs.open(new Path(DEFAULT_HDFS_LOCATION));
             Properties properties = new Properties();
             properties.load(is);
-            return new Configuration(this, properties);
+            Map<String, Object> configMap = new HashMap<>();
+            properties.forEach((k, v) -> configMap.put(k.toString(), v));
+            return new Configuration(this, configMap);
         } catch (Exception e) {
             Throwables.propagate(e);
         }

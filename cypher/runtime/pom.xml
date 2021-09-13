@@ -62,7 +62,7 @@
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <scope>test</scope>
-            <version>0.9.11</version>
+            <version>${reflections.version}</version>
         </dependency>
 
         <dependency>

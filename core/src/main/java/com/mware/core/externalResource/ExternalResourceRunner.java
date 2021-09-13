@@ -38,6 +38,7 @@ package com.mware.core.externalResource;
 
 import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.status.MetricEntry;
 import com.mware.core.status.StatusRepository;
 import com.mware.core.status.StatusServer;
@@ -90,7 +91,7 @@ public class ExternalResourceRunner {
 
     public Collection<RunningWorker> startAll() {
         runningWorkers = new ArrayList<>();
-        if (config.getBoolean(Configuration.STATUS_ENABLED, Configuration.STATUS_ENABLED_DEFAULT)) {
+        if (config.get(CoreOptions.STATUS_ENABLED)) {
             statusServer = startStatusServer(runningWorkers);
         }
 

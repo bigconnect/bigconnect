@@ -37,7 +37,6 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.Graph;
-import com.mware.ge.GraphConfiguration;
 import com.mware.ge.GraphWithSearchIndex;
 import com.mware.ge.Vertex;
 import com.mware.ge.base.GraphSortingScoringTests;
@@ -48,7 +47,6 @@ import com.mware.ge.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringSt
 import com.mware.ge.elasticsearch5.sorting.ElasticsearchLengthOfStringSortingStrategy;
 import com.mware.ge.query.QueryResultsIterable;
 import com.mware.ge.query.SortDirection;
-import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.query.builder.GeQueryBuilders;
 import com.mware.ge.scoring.ScoringStrategy;
 import com.mware.ge.sorting.SortingStrategy;
@@ -96,7 +94,7 @@ public class ElasticSortingScoringTests extends GraphSortingScoringTests impleme
     @Override
     public boolean disableEdgeIndexing(Graph graph) {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.INDEX_EDGES, "false");
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.INDEX_EDGES.name(), false);
         return true;
     }
 

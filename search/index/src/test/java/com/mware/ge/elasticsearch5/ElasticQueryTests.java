@@ -37,7 +37,6 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.*;
-import com.mware.ge.base.GraphMetadataTests;
 import com.mware.ge.base.GraphQueryTests;
 import com.mware.ge.base.GraphTestSetup;
 import com.mware.ge.base.TestGraphFactory;
@@ -187,7 +186,7 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
     @Test
     public void testQueryExecutionCountWhenScrollingApi() {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 1);
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.QUERY_PAGE_SIZE.name(), 1);
 
         graph.prepareVertex("v1", VISIBILITY_A, CONCEPT_TYPE_THING).save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A, CONCEPT_TYPE_THING).save(AUTHORIZATIONS_A);
@@ -200,7 +199,7 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
         assertEquals(startingNumQueries + 4, getNumQueries());
 
         searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.QUERY_PAGE_SIZE.name(), 2);
 
         graph.prepareVertex("v3", VISIBILITY_A, CONCEPT_TYPE_THING).save(AUTHORIZATIONS_A);
         graph.flush();
@@ -347,7 +346,7 @@ public class ElasticQueryTests extends GraphQueryTests implements GraphTestSetup
     @Override
     public boolean disableEdgeIndexing(Graph graph) {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.INDEX_EDGES, "false");
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.INDEX_EDGES.name(), false);
         return true;
     }
 

@@ -38,6 +38,7 @@ package com.mware.core.model.workQueue;
 
 import com.beust.jcommander.internal.Lists;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.RabbitMqOptions;
 import com.mware.core.exception.BcException;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
@@ -53,20 +54,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RabbitMQUtils {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(RabbitMQUtils.class);
-    public static final String RABBITMQ_ADDR_PREFIX = "rabbitmq.addr";
-    public static final String RABBITMQ_DELIVERY_MODE = "rabbitmq.deliveryMode";
-    public static final String RABBITMQ_USERNAME = "rabbitmq.username";
-    public static final String RABBITMQ_PASSWORD = "rabbitmq.password";
-
-    private static final int DEFAULT_PORT = 5672;
 
     public static Connection openConnection(Address[] addresses, Configuration configuration) throws IOException {
         if (addresses.length == 0) {
             throw new BcException("Could not configure RabbitMQ. No addresses specified. expecting configuration parameter 'rabbitmq.addr.0.host'.");
         }
 
-        String username = configuration.get(RABBITMQ_USERNAME, null);
-        String password = configuration.get(RABBITMQ_PASSWORD, null);
+        String username = configuration.get(RabbitMqOptions.RABBITMQ_USERNAME);
+        String password = configuration.get(RabbitMqOptions.RABBITMQ_PASSWORD);
 
         if (StringUtils.isEmpty(username) || StringUtils.isEmpty(password)) {
             throw new BcException("Could not configure RabbitMQ. Username or password is null. Expecting configuration parameters 'rabbitmq.username' and 'rabbitmq.password'.");
@@ -110,16 +105,16 @@ public class RabbitMQUtils {
     }
 
     public static Address[] getAddresses(Configuration configuration) {
-        List<Address> addresses = new ArrayList<Address>();
-        for (String key : configuration.getKeys(RABBITMQ_ADDR_PREFIX)) {
+        List<Address> addresses = new ArrayList<>();
+        for (String key : configuration.getKeys(RabbitMqOptions.RABBITMQ_ADDR_PREFIX)) {
             if (key.endsWith(".host")) {
                 String host = configuration.get(key, null);
                 checkNotNull(host, "Configuration " + key + " is required");
-                int port = configuration.getInt(key.replace(".host", ".port"), DEFAULT_PORT);
-                addresses.add(new Address(host, port));
+                String port = configuration.get(key.replace(".host", ".port"), RabbitMqOptions.DEFAULT_PORT);
+                addresses.add(new Address(host, Integer.parseInt(port)));
             }
         }
-        return addresses.toArray(new Address[addresses.size()]);
+        return addresses.toArray(new Address[0]);
     }
 
     private static Address[] createAddresses(String[] addresses) {

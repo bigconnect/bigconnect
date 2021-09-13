@@ -49,8 +49,6 @@ import com.mware.ge.util.GeLoggerFactory;
 import java.util.Map;
 
 public class RocksDBGraph extends KVStoreGraph {
-    private static final GeLogger LOGGER = GeLoggerFactory.getLogger(RocksDBGraph.class);
-
     public RocksDBGraph(RocksDBGraphConfiguration config) {
         super(config);
 

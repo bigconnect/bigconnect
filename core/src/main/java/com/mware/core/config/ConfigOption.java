@@ -34,60 +34,24 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.core.security;
+package com.mware.core.config;
 
-import com.mware.ge.Visibility;
-import com.mware.core.model.clientapi.dto.VisibilityJson;
+import com.google.common.base.Predicate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+public class ConfigOption<T> extends TypedOption<T, T> {
 
-public abstract class VisibilityTranslatorBase extends VisibilityTranslator {
-    @Override
-    public BcVisibility toVisibility(VisibilityJson visibilityJson) {
-        return new BcVisibility(toVisibilityNoSuperUser(visibilityJson));
+    public ConfigOption(String name, String desc, T value) {
+        this(name, desc, null, value);
     }
 
-    @Override
-    public BcVisibility toVisibility(String visibilitySource) {
-        return toVisibility(visibilitySourceToVisibilityJson(visibilitySource));
+    @SuppressWarnings("unchecked")
+    public ConfigOption(String name, String desc, Predicate<T> pred, T value) {
+        this(name, false, desc, pred, (Class<T>) value.getClass(), value);
     }
 
-    protected VisibilityJson visibilitySourceToVisibilityJson(String visibilitySource) {
-        return new VisibilityJson(visibilitySource);
-    }
-
-    @Override
-    public Visibility toVisibilityNoSuperUser(VisibilityJson visibilityJson) {
-        StringBuilder visibilityString = new StringBuilder();
-
-        List<String> required = new ArrayList<>();
-
-        String source = visibilityJson.getSource();
-        addSourceToRequiredVisibilities(required, source);
-
-        Set<String> workspaces = visibilityJson.getWorkspaces();
-        if (workspaces != null) {
-            required.addAll(workspaces);
-        }
-
-        for (String v : required) {
-            if (visibilityString.length() > 0) {
-                visibilityString.append("&");
-            }
-            visibilityString
-                    .append("(")
-                    .append(v)
-                    .append(")");
-        }
-        return new Visibility(visibilityString.toString());
-    }
-
-    protected abstract void addSourceToRequiredVisibilities(List<String> required, String source);
-
-    @Override
-    public Visibility getDefaultVisibility() {
-        return new Visibility("");
+    public ConfigOption(String name, boolean required, String desc,
+                        Predicate<T> pred, Class<T> type, T value) {
+        super(name, required, desc, pred, type, value);
     }
 }
+

@@ -22,23 +22,22 @@
  */
 package com.mware.ge.cypher
 
-import java.time.Clock
-
 import com.mware.core.util.BcLoggerFactory
 import com.mware.ge.collection.Pair
 import com.mware.ge.cypher.ge.GeCypherQueryContext
-import com.mware.ge.cypher.notification.Notification
 import com.mware.ge.cypher.internal.QueryCache.ParameterTypeMap
 import com.mware.ge.cypher.internal.compatibility.runtime.helpers.InternalWrapping.asKernelNotification
 import com.mware.ge.cypher.internal.compatibility.{CommunityRuntimeContextCreator, FallbackRuntime, RuntimeContext}
-import com.mware.ge.cypher.internal.planner.spi.GraphStatistics
 import com.mware.ge.cypher.internal.compiler.CypherPlannerConfiguration
+import com.mware.ge.cypher.internal.frontend.phases.RecordingNotificationLogger
 import com.mware.ge.cypher.internal.tracing.CompilationTracer
 import com.mware.ge.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import com.mware.ge.cypher.internal.frontend.phases.RecordingNotificationLogger
-import com.mware.ge.cypher.internal.{ExecutableQuery, _}
-import com.mware.ge.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, exceptionHandler}
+import com.mware.ge.cypher.internal._
+import com.mware.ge.cypher.notification.Notification
 import com.mware.ge.values.virtual.MapValue
+
+import java.time.Clock
+import java.util.function.Supplier
 
 class InternalCypherExecutionEngine(val executionEngine: GeCypherExecutionEngine,
                                     val tracer: CompilationTracer,
@@ -73,17 +72,14 @@ class InternalCypherExecutionEngine(val executionEngine: GeCypherExecutionEngine
     val queryTracer = tracer.compileQuery(query)
 
     try {
-      val start = System.currentTimeMillis();
       val preParsedQuery = preParser.preParseQuery(query, profile)
       val executableQuery = getOrCompile(context, preParsedQuery, queryTracer, params)
       if (preParsedQuery.executionMode.name != "explain") {
         checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
       }
       val combinedParams = params.updatedWith(executableQuery.extractedParams)
-      if (logger.isDebugEnabled)
-        logger.debug("Query compilation ("+ Thread.currentThread.getName +"): "+(System.currentTimeMillis() - start))
-      val result = executableQuery.execute(context, preParsedQuery, combinedParams, context.getAuthorizations)
-      result
+      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
+      executableQuery.execute(context, preParsedQuery, combinedParams, context.getAuthorizations)
     } catch {
       case t: Throwable =>
         throw t
@@ -102,6 +98,11 @@ class InternalCypherExecutionEngine(val executionEngine: GeCypherExecutionEngine
       }
     }
   }
+
+  private def supplier[T](t: => T): Supplier[T] =
+    new Supplier[T] {
+      override def get(): T = t
+    }
 
   private def getOrCompile(context: GeCypherQueryContext,
                            preParsedQuery: PreParsedQuery,

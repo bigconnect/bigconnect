@@ -39,6 +39,7 @@ package com.mware.ge.accumulo;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.*;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.*;
 import com.mware.ge.accumulo.iterator.*;
 import com.mware.ge.accumulo.iterator.model.ElementData;
@@ -165,7 +166,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
         try {
             if (!connector.tableOperations().exists(tableName)) {
                 if (!createTable) {
-                    throw new GeException("Table '" + tableName + "' does not exist and 'graph." + GraphConfiguration.CREATE_TABLES + "' is set to false");
+                    throw new GeException("Table '" + tableName + "' does not exist and 'graph." + GraphOptions.CREATE_TABLES.name() + "' is set to false");
                 }
                 NewTableConfiguration ntc = new NewTableConfiguration()
                         .setTimeType(TimeType.MILLIS)
@@ -1797,15 +1798,15 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
 
 
     private String getHadoopFS() {
-        return this.getConfiguration().getString(AccumuloGraphConfiguration.HDFS_ROOT_DIR, AccumuloGraphConfiguration.DEFAULT_HDFS_ROOT_DIR);
+        return this.getConfiguration().getHdfsRootDir();
     }
 
     private String getHadoopUser() {
-        return this.getConfiguration().getString(AccumuloGraphConfiguration.HDFS_USER, AccumuloGraphConfiguration.DEFAULT_HDFS_USER);
+        return this.getConfiguration().getHdfsUser();
     }
 
     public String getBackupDir() {
-        return this.getConfiguration().getString(AccumuloGraphConfiguration.BACKUP_DIR, "");
+        return this.getConfiguration().getBackupDir();
     }
 
     @Override

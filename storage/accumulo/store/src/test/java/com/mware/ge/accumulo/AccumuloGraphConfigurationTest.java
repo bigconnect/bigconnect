@@ -58,10 +58,10 @@ public class AccumuloGraphConfigurationTest {
         AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(configMap);
         BatchWriterConfig batchWriterConfig = accumuloGraphConfiguration.createBatchWriterConfig();
 
-        assertThat(batchWriterConfig.getMaxLatency(TimeUnit.MILLISECONDS), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_LATENCY));
-        assertThat(batchWriterConfig.getTimeout(TimeUnit.MILLISECONDS), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_TIMEOUT));
-        assertThat(batchWriterConfig.getMaxMemory(), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_MEMORY));
-        assertThat(batchWriterConfig.getMaxWriteThreads(), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_WRITE_THREADS));
+        assertThat(batchWriterConfig.getMaxLatency(TimeUnit.MILLISECONDS), is(AccumuloOptions.BATCHWRITER_MAX_LATENCY.defaultValue()));
+        assertThat(batchWriterConfig.getTimeout(TimeUnit.MILLISECONDS), is(AccumuloOptions.BATCHWRITER_TIMEOUT.defaultValue()));
+        assertThat(batchWriterConfig.getMaxMemory(), is(AccumuloOptions.BATCHWRITER_MAX_MEMORY.defaultValue()));
+        assertThat(batchWriterConfig.getMaxWriteThreads(), is(AccumuloOptions.BATCHWRITER_MAX_WRITE_THREADS.defaultValue()));
     }
 
     @Test
@@ -71,12 +71,12 @@ public class AccumuloGraphConfigurationTest {
         long maxMemory = 5;
         long maxLatency = 7;
 
-        Map configMap = Maps.newHashMap();
-        MapUtils.putAll(configMap, new String[]{
-                AccumuloGraphConfiguration.BATCHWRITER_MAX_LATENCY, "" + maxLatency,
-                AccumuloGraphConfiguration.BATCHWRITER_MAX_MEMORY, "" + maxMemory,
-                AccumuloGraphConfiguration.BATCHWRITER_MAX_WRITE_THREADS, "" + numThreads,
-                AccumuloGraphConfiguration.BATCHWRITER_TIMEOUT, "" + timeout});
+        Map<String, Object> configMap = Maps.newHashMap();
+        MapUtils.putAll(configMap, new Object[]{
+                AccumuloOptions.BATCHWRITER_MAX_LATENCY.name(), maxLatency,
+                AccumuloOptions.BATCHWRITER_MAX_MEMORY.name(), maxMemory,
+                AccumuloOptions.BATCHWRITER_MAX_WRITE_THREADS.name(), numThreads,
+                AccumuloOptions.BATCHWRITER_TIMEOUT.name(), timeout});
         AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(configMap);
         BatchWriterConfig batchWriterConfig = accumuloGraphConfiguration.createBatchWriterConfig();
 

@@ -36,11 +36,12 @@
  */
 package com.mware.ge.util;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.StrSubstitutor;
+import com.mware.core.config.TypedOption;
+import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.GraphConfiguration;
-import com.mware.ge.GeException;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.StrSubstitutor;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -61,17 +62,17 @@ import static com.mware.ge.util.Preconditions.checkNotNull;
 public class ConfigurationUtils {
     private static final GeLogger LOGGER = GeLoggerFactory.getLogger(ConfigurationUtils.class);
 
-    public static <T> T createProvider(Graph graph, GraphConfiguration config, String propPrefix, String defaultProvider) throws GeException {
-        String implClass = config.getString(propPrefix, defaultProvider);
-        checkNotNull(implClass, "createProvider could not find " + propPrefix + " configuration item");
-        return createProvider(implClass, graph, config);
+    public static <T> T createInstance(Graph graph, GraphConfiguration config, TypedOption<String, String> option) throws GeException {
+        String implClass = config.getString(option.name(), option.defaultValue());
+        checkNotNull(implClass, "createProvider could not find " + option.name() + " configuration item");
+        return createInstance(implClass, graph, config);
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T createProvider(String className, Graph graph, GraphConfiguration config) throws GeException {
+    public static <T> T createInstance(String className, Graph graph, GraphConfiguration config) throws GeException {
         checkNotNull(className, "className is required");
         className = className.trim();
-        LOGGER.debug("creating provider '%s'", className);
+        LOGGER.debug("creating instance of '%s'", className);
         Class<Graph> graphClass = Graph.class;
         Class<GraphConfiguration> graphConfigurationClass = GraphConfiguration.class;
         try {
@@ -117,14 +118,14 @@ public class ConfigurationUtils {
         }
     }
 
-    public static Map<String, String> loadConfig(List<String> configFileNames, String configPropertyPrefix) throws IOException {
-        Map<String, String> props = loadFiles(configFileNames);
+    public static Map<String, Object> loadConfig(List<String> configFileNames, String configPropertyPrefix) throws IOException {
+        Map<String, Object> props = loadFiles(configFileNames);
         props.putAll(System.getenv());
         resolvePropertyReferences(props);
         return stripPrefix(props, configPropertyPrefix);
     }
 
-    private static Map<String, String> loadFiles(List<String> configFileNames) throws IOException {
+    private static Map<String, Object> loadFiles(List<String> configFileNames) throws IOException {
         Properties props = new Properties();
         for (String configFileName : configFileNames) {
             File configFile = new File(configFileName);
@@ -139,12 +140,12 @@ public class ConfigurationUtils {
         return propertiesToMap(props);
     }
 
-    public static Map<String, String> stripPrefix(Map<String, String> propsMap, String configPropertyPrefix) {
-        Map<String, String> result = new HashMap<>();
+    public static Map<String, Object> stripPrefix(Map<String, Object> propsMap, String configPropertyPrefix) {
+        Map<String, Object> result = new HashMap<>();
         if (configPropertyPrefix == null) {
             result.putAll(propsMap);
         } else {
-            for (Map.Entry<String, String> p : propsMap.entrySet()) {
+            for (Map.Entry<String, Object> p : propsMap.entrySet()) {
                 if (p.getKey().startsWith(configPropertyPrefix + ".")) {
                     result.put(p.getKey().substring((configPropertyPrefix + ".").length()), p.getValue());
                 } else if (p.getKey().startsWith(configPropertyPrefix)) {
@@ -156,17 +157,17 @@ public class ConfigurationUtils {
         return result;
     }
 
-    private static Map<String, String> propertiesToMap(Properties props) {
-        Map<String, String> results = new HashMap<>();
+    private static Map<String, Object> propertiesToMap(Properties props) {
+        Map<String, Object> results = new HashMap<>();
         for (Map.Entry<Object, Object> entry : props.entrySet()) {
             results.put("" + entry.getKey(), "" + entry.getValue());
         }
         return results;
     }
 
-    private static void resolvePropertyReferences(Map<String, String> config) {
-        for (Map.Entry<String, String> entry : config.entrySet()) {
-            String entryValue = (String) ((Map.Entry) entry).getValue();
+    private static void resolvePropertyReferences(Map<String, Object> config) {
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            String entryValue = (String) entry.getValue();
             if (!StringUtils.isBlank(entryValue)) {
                 entry.setValue(StrSubstitutor.replace(entryValue, config));
             }
@@ -204,6 +205,10 @@ public class ConfigurationUtils {
 
     public static Duration getDuration(Map<String, Object> config, String key, String defaultValue) {
         String value = getString(config, key, defaultValue);
+        return parseDuration(value);
+    }
+
+    public static Duration parseDuration(String value) {
         try {
             return Duration.parse(value);
         } catch (DateTimeParseException ex) {

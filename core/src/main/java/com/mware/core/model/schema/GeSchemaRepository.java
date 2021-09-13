@@ -106,7 +106,6 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
     public GeSchemaRepository(
             Graph graph,
             GraphRepository graphRepository,
-            VisibilityTranslator visibilityTranslator,
             Configuration config,
             GraphAuthorizationRepository graphAuthorizationRepository,
             CacheService cacheService
@@ -115,7 +114,7 @@ public class GeSchemaRepository extends SchemaRepositoryBase {
         try {
             this.graph = graph;
             this.graphRepository = graphRepository;
-            this.visibilityTranslator = visibilityTranslator;
+            this.visibilityTranslator = new VisibilityTranslator();
 
             graphAuthorizationRepository.addAuthorizationToGraph(VISIBILITY_STRING);
             graphAuthorizationRepository.addAuthorizationToGraph(WorkspaceRepository.VISIBILITY_STRING);

@@ -76,14 +76,13 @@ public class GraphRepository {
     @Inject
     public GraphRepository(
             Graph graph,
-            VisibilityTranslator visibilityTranslator,
             TermMentionRepository termMentionRepository,
             WorkQueueRepository workQueueRepository,
             WebQueueRepository webQueueRepository,
             Configuration configuration
     ) {
         this.graph = graph;
-        this.visibilityTranslator = visibilityTranslator;
+        this.visibilityTranslator = new VisibilityTranslator();
         this.termMentionRepository = termMentionRepository;
         this.workQueueRepository = workQueueRepository;
         this.webQueueRepository = webQueueRepository;

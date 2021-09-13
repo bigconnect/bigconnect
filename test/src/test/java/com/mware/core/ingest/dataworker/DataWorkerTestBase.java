@@ -53,7 +53,6 @@ import com.mware.core.model.workQueue.*;
 import com.mware.core.model.worker.InMemoryDataWorkerTestBase;
 import com.mware.core.model.workspace.WorkspaceRepository;
 import com.mware.core.security.BcVisibility;
-import com.mware.core.security.DirectVisibilityTranslator;
 import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.user.User;
 import com.mware.ge.*;
@@ -99,7 +98,7 @@ public abstract class DataWorkerTestBase {
     private WebQueueRepository webQueueRepository;
     private GraphRepository graphRepository;
     private TermMentionRepository termMentionRepository;
-    private VisibilityTranslator visibilityTranslator = new DirectVisibilityTranslator();
+    private VisibilityTranslator visibilityTranslator = new VisibilityTranslator();
 
     @Mock
     protected SchemaRepository schemaRepository;
@@ -376,7 +375,6 @@ public abstract class DataWorkerTestBase {
         if (graphRepository == null) {
             graphRepository = new GraphRepository(
                     getGraph(),
-                    getVisibilityTranslator(),
                     getTermMentionRepository(),
                     getWorkQueueRepository(),
                     getWebQueueRepository(),

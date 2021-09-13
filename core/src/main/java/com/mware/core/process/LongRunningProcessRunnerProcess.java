@@ -38,8 +38,8 @@ package com.mware.core.process;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.mware.core.config.Configurable;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.lifecycle.LifecycleAdapter;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRunner;
@@ -54,29 +54,24 @@ import java.util.List;
 public class LongRunningProcessRunnerProcess extends LifecycleAdapter {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(LongRunningProcessRunnerProcess.class);
     private final Configuration configuration;
-    private final Config config;
     private final List<StoppableRunnable> stoppables = new ArrayList<>();
-
-    public static class Config {
-        @Configurable
-        public int threadCount;
-    }
+    private final int threadCount;
 
     @Inject
     public LongRunningProcessRunnerProcess(Configuration configuration, LifeSupportService lifeSupportService) {
         this.configuration = configuration;
-        this.config = configuration.setConfigurables(new Config(), LongRunningProcessRunnerProcess.class.getName());
+        this.threadCount = configuration.get(GraphOptions.LRP_RUNNER_THREAD_COUNT);
         lifeSupportService.add(this);
     }
 
     @Override
     public void start() {
-        if (config.threadCount <= 0) {
+        if (threadCount <= 0) {
             LOGGER.info("'threadCount' not configured or was 0");
             return;
         }
 
-        stoppables.addAll(LongRunningProcessRunner.startThreaded(config.threadCount, configuration));
+        stoppables.addAll(LongRunningProcessRunner.startThreaded(threadCount, configuration));
     }
 
     @Override

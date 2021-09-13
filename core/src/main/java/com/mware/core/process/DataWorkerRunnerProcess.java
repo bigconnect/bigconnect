@@ -38,8 +38,8 @@ package com.mware.core.process;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.mware.core.config.Configurable;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.core.ingest.dataworker.DataWorkerRunner;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.lifecycle.LifecycleAdapter;
@@ -54,32 +54,24 @@ import java.util.List;
 @Singleton
 public class DataWorkerRunnerProcess extends LifecycleAdapter {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(DataWorkerRunnerProcess.class);
-    private final Config config;
     private final List<StoppableRunnable> stoppables = new ArrayList<>();
+    public int threadCount;
 
-    public static class Config {
-        @Configurable
-        public int threadCount;
-    }
 
     @Inject
     public DataWorkerRunnerProcess(Configuration configuration, LifeSupportService lifeSupportService) {
-        this(configuration.setConfigurables(new Config(), DataWorkerRunnerProcess.class.getName()));
+        this.threadCount = configuration.get(GraphOptions.DW_RUNNER_THREAD_COUNT);
         lifeSupportService.add(this);
-    }
-
-    public DataWorkerRunnerProcess(Config config) {
-        this.config = config;
     }
 
     @Override
     public void start() {
-        if (config.threadCount <= 0) {
+        if (threadCount <= 0) {
             LOGGER.info("'threadCount' not configured or was 0");
             return;
         }
 
-        stoppables.addAll(DataWorkerRunner.startThreaded(config.threadCount, new SystemUser()));
+        stoppables.addAll(DataWorkerRunner.startThreaded(threadCount, new SystemUser()));
     }
 
     @Override

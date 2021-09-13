@@ -37,11 +37,10 @@
 package com.mware.core.email;
 
 import com.mware.core.config.Configurable;
-import com.mware.core.config.Configuration;
 import com.mware.core.config.PostConfigurationValidator;
 
 public class SmtpEmailConfiguration {
-    public static final String CONFIGURATION_PREFIX = Configuration.EMAIL_REPOSITORY + ".smtp";
+    public static final String CONFIGURATION_PREFIX = "mail.smtp";
 
     private String serverHostname;
     private int serverPort;

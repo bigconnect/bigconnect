@@ -37,20 +37,19 @@
 package com.mware.core.model.mr;
 
 import com.mware.core.bootstrap.BcBootstrap;
+import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.bootstrap.config.HdfsConfigurationLoader;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.ConfigurationLoader;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.trace.TraceRepository;
-import com.mware.ge.id.LongIdGenerator;
-import com.mware.ge.store.mutations.StoreMutation;
-import org.apache.accumulo.core.data.Mutation;
-import org.apache.hadoop.io.Text;
+import com.mware.core.util.BcLogger;
+import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.accumulo.mapreduce.ElementMapper;
 import com.mware.ge.id.IdGenerator;
 import com.mware.ge.id.UUIDIdGenerator;
-import com.mware.core.bootstrap.InjectHelper;
-import com.mware.core.config.ConfigurationLoader;
-import com.mware.core.util.BcLogger;
-import com.mware.core.util.BcLoggerFactory;
+import com.mware.ge.store.mutations.StoreMutation;
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
@@ -66,7 +65,7 @@ public abstract class BcElementMapperBase<KEYIN, VALUEIN> extends ElementMapper<
             System.setProperty(ConfigurationLoader.ENV_CONFIGURATION_LOADER, HdfsConfigurationLoader.class.getName());
             Configuration bcConfig = ConfigurationLoader.load();
             InjectHelper.inject(this, BcBootstrap.bootstrapModuleMaker(bcConfig), bcConfig);
-            if(bcConfig.getBoolean(com.mware.core.config.Configuration.TRACE_ENABLED, com.mware.core.config.Configuration.DEFAULT_TRACE_ENABLED)) {
+            if(bcConfig.get(CoreOptions.TRACE_ENABLED)) {
                 TraceRepository traceRepository = InjectHelper.getInstance(TraceRepository.class);
                 traceRepository.enable();
             }

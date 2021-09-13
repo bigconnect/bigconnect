@@ -40,15 +40,19 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.google.common.collect.Lists;
+import com.mware.core.config.Configuration;
 import com.mware.ge.Authorizations;
+import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.GraphFactory;
-import com.mware.ge.GeException;
 import com.mware.ge.util.ConfigurationUtils;
 
 import java.io.File;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Parameters(separators = "=")
@@ -78,10 +82,10 @@ public abstract class GraphToolBase {
     }
 
     protected void run(String[] args) throws Exception {
-        new JCommander(this, args);
+        new JCommander(this).parse(args);
         addConfigDirectoriesToConfigFileNames(configDirectories, configFileNames);
-        Map<String, String> config = ConfigurationUtils.loadConfig(configFileNames, configPropertyPrefix);
-        graph = new GraphFactory().createGraph(config);
+        Map<String, Object> config = ConfigurationUtils.loadConfig(configFileNames, configPropertyPrefix);
+        graph = new GraphFactory().createGraph(new Configuration(config));
     }
 
     private void addConfigDirectoriesToConfigFileNames(List<String> configDirectories, List<String> configFileNames) {

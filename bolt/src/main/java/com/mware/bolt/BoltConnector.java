@@ -21,94 +21,57 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.mware.bolt.util.ListenSocketAddress;
 import com.mware.core.config.Configuration;
-import com.mware.ge.util.ConfigurationUtils;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 import static java.util.Collections.singletonList;
 
 @Singleton
 public class BoltConnector {
-    public static final List<String> TLS_VERSION_DEFAULTS = singletonList( "TLSv1.2" );
+    public static final List<String> TLS_VERSION_DEFAULTS = singletonList("TLSv1.2");
     public static final List<String> CIPHER_SUITES_DEFAULTS = null;
 
     public static final String ID = "bolt";
 
-    // Address the connector should bind to
-    public static final String HOST = "host";
-    public static final String PORT = "port";
-    // The number of threads to keep in the thread pool bound to this connector, even if they are idle.
-    public static final String THREAD_POOL_MIN_SIZE = "threadPoolMinSize";
-    // The maximum number of threads allowed in the thread pool bound to this connector.
-    public static final String THREAD_POOL_MAX_SIZE = "threadPoolMaxSize";
-    // The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks.
-    public static final String THREAD_POOL_KEEPALIVE = "threadPoolKeepalive";
-    public static final String GRAPH_FETCH_BATCH_SIZE = "graphFetchBatchSize";
-
-    // Encryption level to require this connector to use
-    public static final String ENCRYPTION_LEVEL = "encryptionLevel";
-    public static final String SSL_PREFIX = "ssl";
-    // Directory for storing certificates
-    // Path to the X.509 public certificate file
-    public static final String SSL_CERTIFICATE_FILE = SSL_PREFIX+".tls_certificate_file";
-    // "Path to the X.509 private key file
-    public static final String SSL_KEY_FILE = SSL_PREFIX+".tls_key_file";
-
-    public static final String DEFAULT_HOST = "localhost";
-    public static final int DEFAULT_PORT = 10242;
-    public static final int DEFAULT_THREAD_POOL_MIN_SIZE = 5;
-    public static final int DEFAULT_THREAD_POOL_MAX_SIZE = 400;
-    public static final Duration DEFAULT_THREAD_POOL_KEEPALIVE = Duration.ofMinutes(5);
-    public static final int DEFAULT_GRAPH_FETCH_BATCH_SIZE = 1000;
-    public static final String DEFAULT_ENCRYPTION_LEVEL = EncryptionLevel.OPTIONAL.name();
-    public static final String DEFAULT_SSL_CERTIFICATE_FILE = "bolt.cert";
-    public static final String DEFAULT_SSL_KEY_FILE = "bolt.key";
-
-    private Map<String, Object> config;
+    private Configuration config;
 
     @Inject
     @SuppressWarnings("unchecked")
-    public BoltConnector(Configuration configuration) {
-        this.config = (Map) configuration.getSubset("bolt");
+    public BoltConnector(Configuration config) {
+        this.config = config;
     }
 
     public String getHost() {
-        return ConfigurationUtils.getString(config, HOST, DEFAULT_HOST);
+        return config.get(BoltOptions.BOLT_HOST);
     }
 
     public int getPort() {
-        return ConfigurationUtils.getInt(config, PORT, DEFAULT_PORT);
-    }
-
-    public int getGraphFetchBatchSize() {
-        return ConfigurationUtils.getInt(config, GRAPH_FETCH_BATCH_SIZE, DEFAULT_GRAPH_FETCH_BATCH_SIZE);
+        return config.get(BoltOptions.BOLT_PORT);
     }
 
     public int getThreadPoolMinSize() {
-        return ConfigurationUtils.getInt(config, THREAD_POOL_MIN_SIZE, DEFAULT_THREAD_POOL_MIN_SIZE);
+        return config.get(BoltOptions.THREAD_POOL_MIN_SIZE);
     }
 
     public int getThreadPoolMaxSize() {
-        return ConfigurationUtils.getInt(config, THREAD_POOL_MAX_SIZE, DEFAULT_THREAD_POOL_MAX_SIZE);
+        return config.get(BoltOptions.THREAD_POOL_MAX_SIZE);
     }
 
     public Duration getThreadPoolKeepalive() {
-        return ConfigurationUtils.getDuration(config, THREAD_POOL_KEEPALIVE, DEFAULT_THREAD_POOL_KEEPALIVE);
+        return config.get(BoltOptions.THREAD_POOL_KEEPALIVE);
     }
 
     public EncryptionLevel getEncryptionLevel() {
-        String encryptionLevel = ConfigurationUtils.getString(config, ENCRYPTION_LEVEL, DEFAULT_ENCRYPTION_LEVEL);
-        return EncryptionLevel.valueOf(encryptionLevel);
+        return EncryptionLevel.valueOf(config.get(BoltOptions.ENCRYPTION_LEVEL));
     }
 
     public String getSslCertificateFile() {
-        return ConfigurationUtils.getString(config, SSL_CERTIFICATE_FILE, DEFAULT_SSL_CERTIFICATE_FILE);
+        return config.get(BoltOptions.SSL_CERTIFICATE_FILE);
     }
 
     public String getSslKeyFile() {
-        return ConfigurationUtils.getString(config, SSL_KEY_FILE, DEFAULT_SSL_KEY_FILE);
+        return config.get(BoltOptions.SSL_KEY_FILE);
     }
 
     // The queue size of the thread pool bound to this connector (-1 for unbounded, 0 for direct handoff, > 0 for bounded)

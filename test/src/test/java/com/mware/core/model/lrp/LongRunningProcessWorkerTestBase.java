@@ -163,7 +163,6 @@ public class LongRunningProcessWorkerTestBase {
 
             graphRepository = new GraphRepository(
                     getGraph(),
-                    getVisibilityTranslator(),
                     getTermMentionRepository(),
                     getWorkQueueRepository(),
                     getWebQueueRepository(),

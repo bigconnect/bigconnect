@@ -5,24 +5,19 @@ import com.mware.core.cache.CacheService;
 import com.mware.core.cache.InMemoryCacheService;
 import com.mware.core.config.Configuration;
 import com.mware.core.config.HashMapConfigurationLoader;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.schema.GeSchemaRepository;
 import com.mware.core.model.schema.SchemaRepository;
-import com.mware.core.model.schema.inmemory.InMemorySchemaRepository;
 import com.mware.core.model.termMention.TermMentionRepository;
 import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.user.InMemoryGraphAuthorizationRepository;
-import com.mware.core.model.user.InMemoryUserRepository;
-import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.security.AuthTokenService;
-import com.mware.core.security.DirectVisibilityTranslator;
-import com.mware.core.security.VisibilityTranslator;
-import com.mware.ge.*;
+import com.mware.ge.Graph;
 import com.mware.ge.cypher.connection.NetworkConnectionTracker;
-import com.mware.ge.id.LongIdGenerator;
 import com.mware.ge.id.UUIDIdGenerator;
 import com.mware.ge.inmemory.InMemoryGraph;
 import com.mware.ge.search.DefaultSearchIndex;
@@ -34,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TestCypherQueryContextFactory implements CypherQueryContextFactory {
-    protected VisibilityTranslator visibilityTranslator = new DirectVisibilityTranslator();
     protected Configuration configuration;
     protected Graph graph;
 
@@ -54,7 +48,6 @@ public class TestCypherQueryContextFactory implements CypherQueryContextFactory 
 
         GraphRepository graphRepository = new GraphRepository(
                 graph,
-                visibilityTranslator,
                 Mockito.mock(TermMentionRepository.class),
                 Mockito.mock(WorkQueueRepository.class),
                 Mockito.mock(WebQueueRepository.class),
@@ -64,7 +57,6 @@ public class TestCypherQueryContextFactory implements CypherQueryContextFactory 
         SchemaRepository schemaRepository = new GeSchemaRepository(
                 graph,
                 graphRepository,
-                visibilityTranslator,
                 configuration,
                 authorizationRepository,
                 cacheService);
@@ -78,7 +70,6 @@ public class TestCypherQueryContextFactory implements CypherQueryContextFactory 
                 null,
                 null,
                 new AuthTokenService(configuration, null),
-                visibilityTranslator,
                 null,
                 null,
                 graphRepository,
@@ -91,8 +82,8 @@ public class TestCypherQueryContextFactory implements CypherQueryContextFactory 
         tmpDir.deleteOnExit();
 
         Map<String, Object> config = new HashMap<>();
-        config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, UUIDIdGenerator.class.getName());
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
+        config.put(GraphOptions.ID_GENERATOR.name(), UUIDIdGenerator.class.getName());
+        config.put(GraphOptions.SEARCH_IMPL.name(), DefaultSearchIndex.class.getName());
         config.put("search.inProcessNode", "false");
         config.put("search.shards", "1");
         config.put("search.replicas", "0");

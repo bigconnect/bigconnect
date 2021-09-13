@@ -39,13 +39,13 @@ package com.mware.ge.accumulo.mapreduce;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import com.mware.core.config.Configuration;
 import com.mware.ge.*;
 import com.mware.ge.accumulo.AccumuloGraph;
 import com.mware.ge.accumulo.iterator.model.ElementData;
 import com.mware.ge.accumulo.iterator.model.IteratorFetchHints;
 import com.mware.ge.accumulo.iterator.util.ByteSequenceUtils;
 import com.mware.ge.store.util.LazyMutableProperty;
-import com.mware.ge.util.MapUtils;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.mapreduce.AccumuloInputFormat;
@@ -107,7 +107,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
                 reader.initialize(inputSplit, ctx);
 
                 Map configurationMap = GeMRUtils.toMap(ctx.getConfiguration());
-                this.graph = (AccumuloGraph) new GraphFactory().createGraph(MapUtils.getAllWithPrefix(configurationMap, "graph"));
+                this.graph = (AccumuloGraph) new GraphFactory().createGraph(new Configuration(configurationMap));
                 this.authorizations = new Authorizations(ctx.getConfiguration().getStrings(GeMRUtils.CONFIG_AUTHORIZATIONS));
             }
 

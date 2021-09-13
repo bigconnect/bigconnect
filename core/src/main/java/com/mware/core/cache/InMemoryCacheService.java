@@ -37,7 +37,6 @@
 package com.mware.core.cache;
 
 import com.google.inject.Provider;
-import com.google.inject.Singleton;
 import org.cache2k.Cache;
 import org.cache2k.Cache2kBuilder;
 
@@ -47,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-@Singleton
 public class InMemoryCacheService implements CacheService {
     private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Map<String, Cache<?, ?>> caches = new HashMap<>();

@@ -37,8 +37,6 @@
 package com.mware.ge.elasticsearch5;
 
 import com.mware.ge.*;
-import com.mware.ge.util.GeLogger;
-import com.mware.ge.util.GeLoggerFactory;
 
 import java.util.Date;
 import java.util.EnumSet;
@@ -49,13 +47,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
-    private static final GeLogger LOGGER = GeLoggerFactory.getLogger(DefaultIndexSelectionStrategy.class);
-    public static final String CONFIG_INDEX_NAME = "indexName";
-    public static final String DEFAULT_INDEX_NAME = ".ge";
-    public static final String CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX = "extendedDataIndexNamePrefix";
-    public static final String DEFAULT_EXTENDED_DATA_INDEX_NAME_PREFIX = ".ge_extdata_";
-    public static final String CONFIG_SPLIT_EDGES_AND_VERTICES = "splitEdgesAndVertices";
-    public static final boolean DEFAULT_SPLIT_VERTICES_AND_EDGES = true;
     private static final long INDEX_UPDATE_MS = 5 * 60 * 1000;
     public static final String VERTICES_INDEX_SUFFIX_NAME = "-vertices";
     public static final String EDGES_INDEX_SUFFIX_NAME = "-edges";
@@ -67,27 +58,9 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     private long nextUpdateTime;
 
     public DefaultIndexSelectionStrategy(GraphConfiguration config) {
-        defaultIndexName = getDefaultIndexName(config);
-        extendedDataIndexNamePrefix = getExtendedDataIndexNamePrefix(config);
-        splitEdgesAndVertices = getSplitEdgesAndVertices(config);
-    }
-
-    private static String getDefaultIndexName(GraphConfiguration config) {
-        String defaultIndexName = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, DEFAULT_INDEX_NAME);
-        LOGGER.debug("Default index name: %s", defaultIndexName);
-        return defaultIndexName;
-    }
-
-    private static String getExtendedDataIndexNamePrefix(GraphConfiguration config) {
-        String prefix = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, DEFAULT_EXTENDED_DATA_INDEX_NAME_PREFIX);
-        LOGGER.debug("Extended data index name prefix: %s", prefix);
-        return prefix;
-    }
-
-    private static boolean getSplitEdgesAndVertices(GraphConfiguration config) {
-        boolean splitEdgesAndVertices = config.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_SPLIT_EDGES_AND_VERTICES, DEFAULT_SPLIT_VERTICES_AND_EDGES);
-        LOGGER.debug("Split edges and vertices: %s", splitEdgesAndVertices);
-        return splitEdgesAndVertices;
+        defaultIndexName = config.get(ElasticsearchOptions.SEARCH_INDEX_NAME);
+        extendedDataIndexNamePrefix = config.get(ElasticsearchOptions.SEARCH_EXTDATA_INDEX_NAME);
+        splitEdgesAndVertices = config.get(ElasticsearchOptions.SEARCH_SPLIT_EDGES_AND_VERTICES);
     }
 
     private void invalidateIndiciesToQueryCache() {

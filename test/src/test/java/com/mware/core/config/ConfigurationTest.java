@@ -86,7 +86,7 @@ public class ConfigurationTest {
 
     @Test
     public void testGetSubset() {
-        Map<String, String> subset = configuration.getSubset("rabbitmq.addr");
+        Map<String, Object> subset = configuration.getSubset("rabbitmq.addr");
         assertEquals(3, subset.size());
         assertTrue(subset.keySet().contains("0.host"));
         assertTrue(subset.keySet().contains("1.host"));
@@ -126,7 +126,7 @@ public class ConfigurationTest {
     @Test
     public void testSetConfigurables() {
         SetConfigurablesTestClass obj = new SetConfigurablesTestClass();
-        configuration.setConfigurables(obj, new HashMap<String, String>() {{
+        configuration.setConfigurables(obj, new HashMap<String, Object>() {{
             put("propWithDifferentNameDifferent", "propWithDifferentNameDifferentValue");
             put("propWithSetter", "propWithSetterValue");
             put("map.0.a", "0a");

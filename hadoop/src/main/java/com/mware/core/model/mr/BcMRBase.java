@@ -40,7 +40,18 @@ import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.mware.core.bootstrap.BcBootstrap;
+import com.mware.core.bootstrap.InjectHelper;
+import com.mware.core.config.BcHadoopConfiguration;
+import com.mware.core.config.ConfigurationLoader;
+import com.mware.core.config.options.CoreOptions;
+import com.mware.core.exception.BcException;
 import com.mware.core.trace.TraceRepository;
+import com.mware.core.util.BcLogger;
+import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.VersionUtil;
+import com.mware.ge.accumulo.AccumuloGraphConfiguration;
+import com.mware.ge.accumulo.mapreduce.AccumuloElementOutputFormat;
+import com.mware.ge.accumulo.mapreduce.ElementMapper;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -50,16 +61,6 @@ import org.apache.hadoop.mapreduce.CounterGroup;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.util.Tool;
-import com.mware.ge.accumulo.AccumuloGraphConfiguration;
-import com.mware.ge.accumulo.mapreduce.AccumuloElementOutputFormat;
-import com.mware.ge.accumulo.mapreduce.ElementMapper;
-import com.mware.core.bootstrap.InjectHelper;
-import com.mware.core.config.ConfigurationLoader;
-import com.mware.core.config.BcHadoopConfiguration;
-import com.mware.core.exception.BcException;
-import com.mware.core.util.VersionUtil;
-import com.mware.core.util.BcLogger;
-import com.mware.core.util.BcLoggerFactory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -99,9 +100,9 @@ public abstract class BcMRBase extends Configured implements Tool {
         if (conf == null) {
             return -1;
         }
-        accumuloGraphConfiguration = new AccumuloGraphConfiguration(conf, "graph.");
+        accumuloGraphConfiguration = new AccumuloGraphConfiguration(conf);
         InjectHelper.inject(this, BcBootstrap.bootstrapModuleMaker(bcConfig), bcConfig);
-        if(bcConfig.getBoolean(com.mware.core.config.Configuration.TRACE_ENABLED, com.mware.core.config.Configuration.DEFAULT_TRACE_ENABLED)) {
+        if(bcConfig.get(CoreOptions.TRACE_ENABLED)) {
             TraceRepository traceRepository = InjectHelper.getInstance(TraceRepository.class);
             traceRepository.enable();
         }

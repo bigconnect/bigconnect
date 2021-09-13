@@ -37,10 +37,7 @@
 package com.mware.ge.it;
 
 import com.google.common.base.Joiner;
-import com.mware.ge.accumulo.AccumuloGraphConfiguration;
 import com.mware.ge.accumulo.AccumuloResource;
-import com.mware.ge.id.SimpleNameSubstitutionStrategy;
-import com.mware.ge.serializer.kryo.quickSerializers.QuickKryoGeSerializer;
 
 import java.util.HashMap;
 
@@ -49,9 +46,6 @@ import static com.mware.ge.id.SimpleSubstitutionUtils.*;
 public class TestUtils {
     public static AccumuloResource createAccumuloResource() {
         return new AccumuloResource("accumulo-es-integration-test", new HashMap<String, String>() {{
-            put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
-            put(AccumuloGraphConfiguration.SERIALIZER, QuickKryoGeSerializer.class.getName());
-            put(AccumuloGraphConfiguration.AUTO_FLUSH, "false");
             put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", KEY_IDENTIFIER}), "k1");
             put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", VALUE_IDENTIFIER}), "k");
             put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "1", KEY_IDENTIFIER}), "author");

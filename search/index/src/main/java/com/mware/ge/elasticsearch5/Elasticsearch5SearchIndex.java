@@ -50,7 +50,9 @@ import com.mware.ge.elasticsearch5.sidecar.Sidecar;
 import com.mware.ge.metric.GeMetricRegistry;
 import com.mware.ge.mutation.*;
 import com.mware.ge.property.PropertyDescriptor;
-import com.mware.ge.query.*;
+import com.mware.ge.query.GraphQuery;
+import com.mware.ge.query.Query;
+import com.mware.ge.query.VertexQuery;
 import com.mware.ge.query.builder.GeQueryBuilder;
 import com.mware.ge.search.SearchIndex;
 import com.mware.ge.search.SearchIndexWithVertexPropertyCountByValue;
@@ -94,7 +96,9 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.*;
@@ -151,7 +155,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final BulkUpdateService bulkUpdateService;
     private final String geoShapePrecision;
-    private final String geoShapeErrorPct;
+    private final Double geoShapeErrorPct;
     private final IdStrategy idStrategy = new IdStrategy();
     private final IndexRefreshTracker indexRefreshTracker;
 
@@ -166,7 +170,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.indexRefreshTracker = new IndexRefreshTracker(graph.getMetricsRegistry());
         this.config = new ElasticsearchSearchIndexConfiguration(graph, config);
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
-        this.propertyNameVisibilitiesStore = this.config.createPropertyNameVisibilitiesStore(graph);
+        this.propertyNameVisibilitiesStore = new MetadataTablePropertyNameVisibilitiesStore();
         this.client = createClient(this.config);
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
@@ -232,17 +236,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     public static TransportClient createTransportClient(ElasticsearchSearchIndexConfiguration config) {
-        Settings settings = tryReadSettingsFromFile(config);
-        if (settings == null) {
-            Settings.Builder settingsBuilder = Settings.builder();
-            if (config.getClusterName() != null) {
-                settingsBuilder.put("cluster.name", config.getClusterName());
-            }
-            for (Map.Entry<String, String> esSetting : config.getEsSettings().entrySet()) {
-                settingsBuilder.put(esSetting.getKey(), esSetting.getValue());
-            }
-            settings = settingsBuilder.build();
+        Settings.Builder settingsBuilder = Settings.builder();
+        if (config.getClusterName() != null) {
+            settingsBuilder.put("cluster.name", config.getClusterName());
         }
+        for (Map.Entry<String, String> esSetting : config.getEsSettings().entrySet()) {
+            settingsBuilder.put(esSetting.getKey(), esSetting.getValue());
+        }
+        Settings settings = settingsBuilder.build();
 
         System.setProperty("es.set.netty.runtime.available.processors", "false");
         Collection<Class<? extends Plugin>> plugins = loadTransportClientPlugins(config);
@@ -282,21 +283,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     }
                 })
                 .collect(Collectors.toList());
-    }
-
-    private static Settings tryReadSettingsFromFile(ElasticsearchSearchIndexConfiguration config) {
-        File esConfigFile = config.getEsConfigFile();
-        if (esConfigFile == null) {
-            return null;
-        }
-        if (!esConfigFile.exists()) {
-            throw new GeException(esConfigFile.getAbsolutePath() + " does not exist");
-        }
-        try (FileInputStream fileIn = new FileInputStream(esConfigFile)) {
-            return Settings.builder().loadFromStream(esConfigFile.getAbsolutePath(), fileIn, false).build();
-        } catch (IOException e) {
-            throw new GeException("Could not read ES config file: " + esConfigFile.getAbsolutePath(), e);
-        }
     }
 
     public Set<String> getIndexNamesFromElasticsearch() {

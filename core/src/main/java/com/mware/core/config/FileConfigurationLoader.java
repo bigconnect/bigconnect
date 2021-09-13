@@ -39,12 +39,12 @@ package com.mware.core.config;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.commons.io.FilenameUtils;
 import com.mware.core.exception.BcException;
 import com.mware.core.exception.BcResourceNotFoundException;
-import com.mware.core.util.ProcessUtil;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.ProcessUtil;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -84,7 +84,7 @@ public class FileConfigurationLoader extends ConfigurationLoader {
     }
 
     public Configuration createConfiguration() {
-        final Map<String, String> properties = getDefaultProperties();
+        final Map<String, Object> properties = getDefaultProperties();
         List<File> configDirectories = getBcDirectoriesFromLeastPriority("config");
         if (configDirectories.size() == 0) {
             throw new BcException("Could not find any valid config directories.");
@@ -98,16 +98,14 @@ public class FileConfigurationLoader extends ConfigurationLoader {
         return new Configuration(this, properties);
     }
 
-    private Map<String, String> getDefaultProperties() {
-        Map<String, String> defaultProperties = new HashMap<>(getInitParameters());
+    private Map<String, Object> getDefaultProperties() {
+        Map<String, Object> defaultProperties = new HashMap<>(getInitParameters());
 
         List<File> configDirs = getBcDirectoriesFromMostPriority("config");
         if (configDirs.size() > 0) {
             String bcDir = configDirs.get(0).getParentFile().getAbsolutePath();
             defaultProperties.put(ENV_BC_DIR, bcDir);
         }
-
-        defaultProperties.putAll(System.getenv());
 
         return defaultProperties;
     }

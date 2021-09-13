@@ -36,6 +36,7 @@
  */
 package com.mware.ge.elasticsearch5;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.Graph;
 import com.mware.ge.GraphConfiguration;
 import com.mware.ge.GraphWithSearchIndex;
@@ -60,11 +61,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.mware.ge.GraphConfiguration.AUTO_FLUSH;
-import static com.mware.ge.GraphConfiguration.SEARCH_INDEX_PROP_PREFIX;
-import static com.mware.ge.elasticsearch5.DefaultIndexSelectionStrategy.CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX;
-import static com.mware.ge.elasticsearch5.DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME;
-import static com.mware.ge.elasticsearch5.ElasticsearchSearchIndexConfiguration.*;
+import static com.mware.ge.elasticsearch5.ElasticsearchOptions.ES_SETTINGS_CONFIG_PREFIX;
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 
 public class ElasticsearchResource extends ExternalResource {
@@ -171,27 +168,23 @@ public class ElasticsearchResource extends ExternalResource {
     @SuppressWarnings("unchecked")
     public Map createConfig() {
         Map configMap = new HashMap();
-        configMap.put(AUTO_FLUSH, false);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX, ElasticsearchSearchIndexWithSharedClient.class.getName());
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, ES_INDEX_NAME);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, ES_EXTENDED_DATA_INDEX_NAME_PREFIX);
+        configMap.put(GraphOptions.SEARCH_IMPL.name(), ElasticsearchSearchIndexWithSharedClient.class.getName());
+        configMap.put(ElasticsearchOptions.SEARCH_INDEX_NAME.name(), ES_INDEX_NAME);
+        configMap.put(ElasticsearchOptions.SEARCH_EXTDATA_INDEX_NAME.name(), ES_EXTENDED_DATA_INDEX_NAME_PREFIX);
         if (shouldUseRemoteElasticsearch()) {
-            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"));
-            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, System.getProperty("REMOTE_ES_ADDRESSES"));
+            configMap.put(ElasticsearchOptions.CLUSTER_NAME.name(), System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"));
+            configMap.put(ElasticsearchOptions.ES_LOCATIONS.name(), System.getProperty("REMOTE_ES_ADDRESSES"));
         } else {
-            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, clusterName);
-            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, getLocation());
+            configMap.put(ElasticsearchOptions.CLUSTER_NAME.name(), clusterName);
+            configMap.put(ElasticsearchOptions.ES_LOCATIONS.name(), getLocation());
         }
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + SIDECAR, false);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_SHARDS", "1")));
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_REPLICAS", "0")));
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, 10000);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGE_SIZE, TEST_QUERY_PAGE_SIZE);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGING_LIMIT, TEST_QUERY_PAGING_LIMIT);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, TestElasticsearch5ExceptionHandler.class.getName());
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, "30s");
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + SIDECAR, false);
+        configMap.put(ElasticsearchOptions.SIDECAR_ENABLED.name(), false);
+        configMap.put(ElasticsearchOptions.NUMBER_OF_SHARDS.name(), Integer.parseInt(System.getProperty("ES_NUMBER_OF_SHARDS", "1")));
+        configMap.put(ElasticsearchOptions.NUMBER_OF_REPLICAS.name(), Integer.parseInt(System.getProperty("ES_NUMBER_OF_REPLICAS", "0")));
+        configMap.put(ElasticsearchOptions.SEARCH_SPLIT_EDGES_AND_VERTICES.name(), true);
+        configMap.put(ElasticsearchOptions.LOG_REQUEST_SIZE_LIMIT.name(), 10000);
+        configMap.put(ElasticsearchOptions.QUERY_PAGING_LIMIT.name(), TEST_QUERY_PAGING_LIMIT);
+        configMap.put(ElasticsearchOptions.EXCEPTION_HANDLER.name(), TestElasticsearch5ExceptionHandler.class.getName());
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that
@@ -213,7 +206,7 @@ public class ElasticsearchResource extends ExternalResource {
 
     public boolean disableEdgeIndexing(Graph graph) {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_EDGES, "false");
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.INDEX_EDGES.name(), false);
         return true;
     }
 

@@ -36,18 +36,18 @@
  */
 package com.mware.core.orm.accumulo;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.core.orm.*;
-import org.apache.accumulo.core.client.*;
+import com.mware.ge.GraphConfiguration;
+import com.mware.ge.accumulo.AccumuloGraphConfiguration;
 import org.apache.accumulo.core.client.Scanner;
-import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
-import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.ColumnVisibility;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.io.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +59,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AccumuloSimpleOrmSession extends SimpleOrmSession {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloSimpleOrmSession.class);
-    public static final String ACCUMULO_INSTANCE_NAME = "simpleOrm.accumulo.instanceName";
-    public static final String ACCUMULO_USER = "simpleOrm.accumulo.username";
-    public static final String ACCUMULO_PASSWORD = "simpleOrm.accumulo.password";
-    public static final String ZK_SERVER_NAMES = "simpleOrm.accumulo.zookeeperServerNames";
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();
     private static final int ROW_DELETING_ITERATOR_PRIORITY = 7;
     private Connector connector;
@@ -72,34 +68,15 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
     private String tablePrefix;
 
     public AccumuloSimpleOrmSession() {
-
     }
 
-    public AccumuloSimpleOrmSession(Map<String, Object> properties) {
-        setTablePrefix(properties);
-    }
-
-    public void init(Map<String, Object> properties) {
+    // called by com.mware.ge.util.ConfigurationUtils.createInstance
+    @SuppressWarnings("unused")
+    public void init(GraphConfiguration configuration) {
         try {
-            String zkServerNames;
-            if (properties.get(ZK_SERVER_NAMES) instanceof Collection) {
-                zkServerNames = StringUtils.join((Collection) properties.get(ZK_SERVER_NAMES), ",");
-            } else {
-                zkServerNames = (String) properties.get(ZK_SERVER_NAMES);
-            }
-            checkNotNull(zkServerNames, "Could not find config: " + ZK_SERVER_NAMES);
-
-            String accumuloInstanceName = (String) properties.get(ACCUMULO_INSTANCE_NAME);
-            checkNotNull(accumuloInstanceName, "Could not find config: " + ACCUMULO_INSTANCE_NAME);
-            org.apache.commons.configuration.Configuration config = new ClientConfiguration(new ArrayList<org.apache.commons.configuration.Configuration>())
-                    .withInstance(accumuloInstanceName)
-                    .withZkHosts(zkServerNames);
-            ZooKeeperInstance zk = new ZooKeeperInstance(config);
-            String username = (String) properties.get(ACCUMULO_USER);
-            String password = (String) properties.get(ACCUMULO_PASSWORD);
-            connector = zk.getConnector(username, new PasswordToken(password));
-
-            setTablePrefix(properties);
+            connector = new AccumuloGraphConfiguration(configuration.toMap())
+                    .createConnector();
+            tablePrefix = configuration.get(GraphOptions.TABLE_NAME_PREFIX);
         } catch (Exception e) {
             throw new SimpleOrmException("Failed to init", e);
         }
@@ -121,13 +98,6 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
         }
     }
 
-    private void setTablePrefix(Map<String, Object> properties) {
-        tablePrefix = (String) properties.get(TABLE_PREFIX);
-        if (tablePrefix == null) {
-            tablePrefix = "";
-        }
-    }
-
     @Override
     public <T> Iterable<T> findAll(final Class<T> rowClass, SimpleOrmContext context) {
         try {
@@ -143,7 +113,7 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
         try {
             ModelMetadata<T> modelMetadata = ModelMetadata.getModelMetadata(rowClass);
             final Scanner scanner = createScanner(getTableName(modelMetadata), (AccumuloSimpleOrmContext) context);
-            scanner.setRange(new Range(startKey,true,endKey,true));
+            scanner.setRange(new Range(startKey, true, endKey, true));
             return scannerToRows(scanner, modelMetadata);
         } catch (TableNotFoundException e) {
             throw new SimpleOrmException("Could not find all in range", e);
@@ -153,7 +123,7 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
     @Override
     public <T> void delete(final Class<T> rowClass, String id, SimpleOrmContext context) {
         ModelMetadata<T> modelMetadata = ModelMetadata.getModelMetadata(rowClass);
-        LOGGER.trace("deleteRow called with parameters: tableName=?, id=?", getTableName(modelMetadata), id);
+        LOGGER.trace("deleteRow called with parameters: tableName=%s, id=%s", getTableName(modelMetadata), id);
         // In most instances (e.g., when reading is not necessary), the
         // RowDeletingIterator gives better performance than the deleting
         // mutation. This is due to the fact that Deleting mutations marks each
@@ -208,7 +178,7 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
     private <T> OrmCloseableIterable<T> scannerToRows(final Scanner scanner, final ModelMetadata<T> modelMetadata) {
         return new OrmCloseableIterable<T>() {
             @Override
-            public void close() throws IOException {
+            public void close() {
                 scanner.close();
             }
 
@@ -242,11 +212,10 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
         };
     }
 
-    private <T> T findByIdInRange (Class<T> rowClass, String id, SimpleOrmContext context, Range r) {
+    private <T> T findByIdInRange(Class<T> rowClass, String id, SimpleOrmContext context, Range r) {
         try {
             ModelMetadata<T> modelMetadata = ModelMetadata.getModelMetadata(rowClass);
-            Scanner scanner = createScanner(getTableName(modelMetadata), (AccumuloSimpleOrmContext) context);
-            try {
+            try (Scanner scanner = createScanner(getTableName(modelMetadata), (AccumuloSimpleOrmContext) context)) {
                 scanner.setRange(new Range(id));
                 Iterator<T> rows = scannerToRows(scanner, modelMetadata).iterator();
                 if (!rows.hasNext()) {
@@ -257,8 +226,6 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
                     throw new SimpleOrmException("Too many rows returned for a single row query (rowKey: " + id + ")");
                 }
                 return result;
-            } finally {
-                scanner.close();
             }
         } catch (TableNotFoundException e) {
             throw new SimpleOrmException("Could not find by id", e);
@@ -388,7 +355,7 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
     }
 
     private <T> String getTableName(ModelMetadata<T> modelMetadata) {
-        return tablePrefix + modelMetadata.getTableName();
+        return tablePrefix + "_" + modelMetadata.getTableName();
     }
 
     public <T> Mutation getMutationForObject(T obj, String visibility) {

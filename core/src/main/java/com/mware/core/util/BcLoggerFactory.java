@@ -38,8 +38,8 @@ package com.mware.core.util;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import org.slf4j.LoggerFactory;
 import com.mware.core.config.ConfigurationLoader;
+import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -123,12 +123,7 @@ public class BcLoggerFactory {
     private static void logEnv(BcLogger logger) {
         logger.info("environment:");
         ArrayList<Map.Entry<String, String>> entries = Lists.newArrayList(System.getenv().entrySet());
-        Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
-            @Override
-            public int compare(Map.Entry<String, String> o1, Map.Entry<String, String> o2) {
-                return o1.getKey().compareTo(o2.getKey());
-            }
-        });
+        Collections.sort(entries, Comparator.comparing(Map.Entry::getKey));
         for (final Map.Entry<String, String> entry : entries) {
             logger.info("  %s: %s", entry.getKey(), entry.getValue());
         }

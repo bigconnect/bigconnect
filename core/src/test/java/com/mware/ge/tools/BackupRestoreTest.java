@@ -36,17 +36,17 @@
  */
 package com.mware.ge.tools;
 
+import com.mware.core.config.Configuration;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.*;
 import com.mware.ge.base.GraphTestSetup;
 import com.mware.ge.id.LongIdGenerator;
-import com.mware.ge.id.UUIDIdGenerator;
 import com.mware.ge.inmemory.InMemoryGraph;
-import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.search.DefaultSearchIndex;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.util.LargeStringInputStream;
+import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.values.storable.StringValue;
-import com.mware.ge.values.storable.TextValue;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -82,13 +82,13 @@ public class BackupRestoreTest {
     protected Graph createGraph() {
         Map config = new HashMap();
         config.put("", InMemoryGraph.class.getName());
-        config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, LongIdGenerator.class.getName());
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
-        return new GraphFactory().createGraph(config);
+        config.put(GraphOptions.ID_GENERATOR.name(), LongIdGenerator.class.getName());
+        config.put(GraphOptions.SEARCH_IMPL.name(), DefaultSearchIndex.class.getName());
+        return new GraphFactory().createGraph(new Configuration(config));
     }
 
     @Test
-    public void testSaveAndLoad() throws IOException, ClassNotFoundException {
+    public void testSaveAndLoad() throws IOException {
         Graph graph = createGraph();
 
         Metadata prop1Metadata = Metadata.create();

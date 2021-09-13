@@ -57,9 +57,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.time.Duration;
-import java.time.temporal.ChronoField;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -70,9 +67,8 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
 
     private Connection connection;
     private Channel channel;
-    private Integer deliveryMode;
     private Address[] rabbitMqAddresses;
-    private Set<String> declaredQueues = new HashSet<>();
+    private final Set<String> declaredQueues = new HashSet<>();
 
     @Inject
     public RabbitMQWorkQueueRepository(
@@ -88,7 +84,6 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     public void start() throws Throwable {
         this.connection = RabbitMQUtils.openConnection(getConfiguration());
         this.channel = RabbitMQUtils.openChannel(this.connection);
-        this.deliveryMode = getConfiguration().getInt(RabbitMQUtils.RABBITMQ_DELIVERY_MODE, MessageProperties.PERSISTENT_BASIC.getDeliveryMode());
         this.rabbitMqAddresses = RabbitMQUtils.getAddresses(getConfiguration());
     }
 
@@ -97,9 +92,7 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
         try {
             ensureQueue(queueName);
             AMQP.BasicProperties.Builder propsBuilder = new AMQP.BasicProperties.Builder();
-            if (deliveryMode != null) {
-                propsBuilder.deliveryMode(deliveryMode);
-            }
+            propsBuilder.deliveryMode(MessageProperties.PERSISTENT_BASIC.getDeliveryMode());
             LOGGER.debug("enqueuing message to queue [%s]: %s", queueName, new String(data));
             propsBuilder.priority(toRabbitMQPriority(priority));
             channel.basicPublish("", queueName, propsBuilder.build(), data);

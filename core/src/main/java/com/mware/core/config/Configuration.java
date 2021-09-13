@@ -44,69 +44,42 @@ import com.mware.core.model.schema.Relationship;
 import com.mware.core.model.schema.SchemaProperty;
 import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.model.user.PrivilegeRepository;
-import com.mware.core.util.BcLogger;
-import com.mware.core.util.BcLoggerFactory;
-import com.mware.core.util.ClassUtil;
 import org.apache.commons.beanutils.ConvertUtilsBean;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.json.JSONObject;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static org.reflections.ReflectionUtils.*;
 
 /**
  * Responsible for parsing application configuration file and providing
  * configuration values to the application
  */
-public class Configuration {
-    private static final BcLogger LOGGER = BcLoggerFactory.getLogger(Configuration.class);
-    private static final String LINE_SEPARATOR = System.getProperty("line.separator");
-
-    public static final String BASE_URL = "base.url";
-
-    public static final String LOCK_REPOSITORY = "repository.lock";
-    public static final String TRACE_REPOSITORY = "repository.trace";
-    public static final String TRACE_ENABLED = "trace.enabled";
-    public static final String USER_REPOSITORY = "repository.user";
-    public static final String WORKSPACE_REPOSITORY = "repository.workspace";
-    public static final String GRAPH_AUTHORIZATION_REPOSITORY = "repository.graphAuthorization";
-    public static final String ONTOLOGY_REPOSITORY = "repository.ontology";
-    public static final String USER_SESSION_COUNTER_REPOSITORY = "repository.userSessionCounter";
-    public static final String WORK_QUEUE_REPOSITORY = "repository.workQueue";
-    public static final String WEB_QUEUE_REPOSITORY = "repository.webQueue";
-    public static final String LONG_RUNNING_PROCESS_REPOSITORY = "repository.longRunningProcess";
-    public static final String REGEX_REPOSITORY = "repository.regex";
-    public static final String SIMPLE_ORM_SESSION = "simpleOrmSession";
-    public static final String EMAIL_REPOSITORY = "repository.email";
-    public static final String STATUS_REPOSITORY = "repository.status";
+public class Configuration extends TypedConfiguration {
     public static final String ACL_PROVIDER_REPOSITORY = "repository.acl";
-    public static final String FILE_SYSTEM_REPOSITORY = "repository.fileSystem";
-    public static final String AUTHORIZATION_REPOSITORY = "repository.authorization";
-    public static final String PRIVILEGE_REPOSITORY = "repository.privilege";
-    public static final String CACHE_SERVICE = "service.cache";
-    public static final String AUDIT_SERVICE = "service.audit";
-    public static final String GRAPH_PROVIDER = "graph";
-    public static final String VISIBILITY_TRANSLATOR = "security.visibilityTranslator";
     public static final String WEB_CONFIGURATION_PREFIX = "web.ui.";
     public static final String WEB_GEOCODER_ENABLED = WEB_CONFIGURATION_PREFIX + "geocoder.enabled";
     public static final String DEV_MODE = "devMode";
     public static final boolean DEV_MODE_DEFAULT = true;
     public static final String DEFAULT_SEARCH_RESULT_COUNT = "search.defaultSearchCount";
     public static final String DEFAULT_TIME_ZONE = "default.timeZone";
-    public static final String RABBITMQ_PREFETCH_COUNT = "rabbitmq.prefetch.count";
 
     public static final String DW_QUEUE_PREFIX = "dw.queue";
     public static final String DW_QUEUE_NAME = "dw.queue.name";
     public static final String LRP_QUEUE_PREFIX = "lrp.queue";
     public static final String LRP_QUEUE_NAME = "lrp.queue.name";
 
-    public static final String STATUS_PORT_RANGE = "status.portRange";
-    public static final String DEFAULT_STATUS_PORT_RANGE = "40000-41000";
     public static final String COMMENTS_AUTO_PUBLISH = "comments.autoPublish";
     public static final boolean DEFAULT_COMMENTS_AUTO_PUBLISH = false;
     public static final String MULTIPART_LOCATION = "multipart.location";
@@ -117,11 +90,8 @@ public class Configuration {
     public static final long DEFAULT_MULTIPART_MAX_REQUEST_SIZE = 1024 * 1024 * 1024;
     public static final String MULTIPART_FILE_SIZE_THRESHOLD = "multiPart.fileSizeThreshold";
     public static final int DEFAULT_MULTIPART_FILE_SIZE_THRESHOLD = 0;
-    public static final boolean DEFAULT_TRACE_ENABLED = false;
     public static final String STATUS_REFRESH_INTERVAL_SECONDS = "status.refreshIntervalSeconds";
     public static final int STATUS_REFRESH_INTERVAL_SECONDS_DEFAULT = 10;
-    public static final String STATUS_ENABLED = "status.enabled";
-    public static final boolean STATUS_ENABLED_DEFAULT = true;
     public static final String SYSTEM_PROPERTY_PREFIX = "bc.";
     public static final String AUTH_TOKEN_PASSWORD = "auth.token.password";
     public static final String AUTH_TOKEN_SALT = "auth.token.salt";
@@ -134,32 +104,53 @@ public class Configuration {
     private PrivilegeRepository privilegeRepository;
     private SchemaRepository schemaRepository;
 
-    private Map<String, String> config = new HashMap<>();
+    public static final Map<String, Object> DEFAULTS = new HashMap<>();
 
-    public static final Map<String, String> DEFAULTS = new HashMap<>();
     static {
         DEFAULTS.put(AUTH_TOKEN_EXPIRATION_IN_MINS, "60");
         DEFAULTS.put(AUTH_TOKEN_EXPIRATION_TOLERANCE_IN_SECS, "60");
         DEFAULTS.put(WEB_RESPONSE_HEADER_X_FRAME_OPTIONS, "DENY");
+
+        // register all options
+        Set<Class<? extends OptionHolder>> optionHolders = new Reflections("", new SubTypesScanner())
+                .getSubTypesOf(OptionHolder.class);
+        optionHolders.forEach(optionHolder -> {
+            Set<Method> initMethod = getMethods(optionHolder, withModifier(Modifier.STATIC), withReturnType(optionHolder), withParameters());
+            if (!initMethod.isEmpty()) {
+                Method m = initMethod.iterator().next();
+                try {
+                    OptionHolder instance = (OptionHolder) m.invoke(null);
+                    OptionSpace.register(optionHolder.getSimpleName(), instance);
+                } catch (Exception e) {
+                    // do nothing
+                }
+            }
+        });
     }
 
     public static final Configuration EMPTY = new Configuration();
 
     private Configuration() {
+        super(new ConcurrentHashMap<>());
         this.configurationLoader = new HashMapConfigurationLoader("");
     }
 
-    public Configuration(final ConfigurationLoader configurationLoader, final Map<?, ?> config) {
+    public Configuration(final Map<String, Object> config) {
+        this(null, config);
+    }
+
+    public Configuration(final ConfigurationLoader configurationLoader, final Map<String, Object> config) {
+        super(new ConcurrentHashMap<>());
         this.configurationLoader = configurationLoader;
         addConfigMapEntries(config);
         addSystemProperties();
         resolvePropertyReferences();
     }
 
-    private void addConfigMapEntries(Map<?, ?> config) {
-        for (Map.Entry entry : config.entrySet()) {
+    private void addConfigMapEntries(Map<String, ?> config) {
+        for (Map.Entry<String, ?> entry : config.entrySet()) {
             if (entry.getValue() != null) {
-                set(entry.getKey().toString(), entry.getValue());
+                set(entry.getKey(), entry.getValue());
             }
         }
     }
@@ -176,77 +167,20 @@ public class Configuration {
     }
 
     private void resolvePropertyReferences() {
-        for (Map.Entry<String, String> entry : config.entrySet()) {
-            String entryValue = entry.getValue();
-            if (!StringUtils.isBlank(entryValue)) {
-                entry.setValue(StrSubstitutor.replace(entryValue, config));
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            Object entryValue = entry.getValue();
+            if (entryValue instanceof String && !StringUtils.isBlank((String) entryValue)) {
+                entry.setValue(StrSubstitutor.replace(entryValue, System.getenv()));
             }
         }
-    }
-
-    public String get(String propertyKey, String defaultValue) {
-        return config.containsKey(propertyKey) ? config.get(propertyKey) : defaultValue;
-    }
-
-    public boolean getBoolean(String propertyKey, boolean defaultValue) {
-        return Boolean.parseBoolean(get(propertyKey, Boolean.toString(defaultValue)));
-    }
-
-    public Integer getInt(String propertyKey, Integer defaultValue) {
-        return Integer.parseInt(get(propertyKey, defaultValue == null ? null : defaultValue.toString()));
-    }
-
-    public Integer getInt(String propertyKey) {
-        return getInt(propertyKey, null);
-    }
-
-    public Long getLong(String propertyKey, Long defaultValue) {
-        return Long.parseLong(get(propertyKey, defaultValue == null ? null : defaultValue.toString()));
-    }
-
-    public Long getLong(String propertyKey) {
-        return getLong(propertyKey, null);
-    }
-
-    public <T> Class<? extends T> getClass(String propertyKey) {
-        return getClass(propertyKey, null);
-    }
-
-    public <T> Class<? extends T> getClass(String propertyKey, Class<? extends T> defaultClass) {
-        String className = get(propertyKey, defaultClass == null ? null : defaultClass.getName());
-        if (className == null) {
-            throw new BcException("Could not find required property " + propertyKey);
-        }
-        className = className.trim();
-        try {
-            LOGGER.debug("found class \"%s\" for configuration \"%s\"", className, propertyKey);
-            return ClassUtil.forName(className);
-        } catch (BcException e) {
-            throw new BcException("Could not load class " + className + " for property " + propertyKey, e);
-        }
-    }
-
-    public Map<String, String> getSubset(String keyPrefix) {
-        Map<String, String> subset = new HashMap<>();
-        for (Map.Entry<String, String> entry : this.config.entrySet()) {
-            if (!entry.getKey().startsWith(keyPrefix + ".") && !entry.getKey().equals(keyPrefix)) {
-                continue;
-            }
-            String newKey = entry.getKey().substring(keyPrefix.length());
-            if (newKey.startsWith(".")) {
-                newKey = newKey.substring(1);
-            }
-            subset.put(newKey, entry.getValue());
-        }
-        return subset;
     }
 
     public <T> T setConfigurables(T o, String keyPrefix) {
-        Map<String, String> subset = getSubset(keyPrefix);
+        Map<String, Object> subset = getSubset(keyPrefix);
         return setConfigurables(o, subset);
     }
 
-    public static <T> T setConfigurables(T o, Map<String, String> config) {
+    public static <T> T setConfigurables(T o, Map<String, Object> config) {
         ConvertUtilsBean convertUtilsBean = new ConvertUtilsBean();
         Map<Method, PostConfigurationValidator> validatorMap = new HashMap<>();
 
@@ -289,7 +223,7 @@ public class Configuration {
 
     private static List<Field> getAllFields(Object o) {
         List<Field> fields = new ArrayList<>();
-        Class c = o.getClass();
+        Class<?> c = o.getClass();
         while (c != null) {
             Collections.addAll(fields, c.getDeclaredFields());
             c = c.getSuperclass();
@@ -297,7 +231,7 @@ public class Configuration {
         return fields;
     }
 
-    private static void setConfigurablesMethod(Object o, Method m, Map<String, String> config, ConvertUtilsBean convertUtilsBean) {
+    private static void setConfigurablesMethod(Object o, Method m, Map<String, Object> config, ConvertUtilsBean convertUtilsBean) {
         Configurable configurableAnnotation = m.getAnnotation(Configurable.class);
         if (configurableAnnotation == null) {
             return;
@@ -320,7 +254,7 @@ public class Configuration {
         });
     }
 
-    private static void setConfigurablesField(Object o, Field f, Map<String, String> config, ConvertUtilsBean convertUtilsBean) {
+    private static void setConfigurablesField(Object o, Field f, Map<String, Object> config, ConvertUtilsBean convertUtilsBean) {
         Configurable configurableAnnotation = f.getAnnotation(Configurable.class);
         if (configurableAnnotation == null) {
             return;
@@ -339,7 +273,7 @@ public class Configuration {
     }
 
     private static void setConfigurable(
-            Map<String, String> config,
+            Map<String, Object> config,
             Configurable configurableAnnotation,
             String propName,
             Class<?> propType,
@@ -353,12 +287,12 @@ public class Configuration {
         }
 
         if (Map.class.isAssignableFrom(propType)) {
-            SortedMap<String, Map<String, String>> values = getMultiValue(config.entrySet(), name);
+            SortedMap<String, Map<String, Object>> values = getMultiValue(config.entrySet(), name);
             setFunction.accept(values);
             return;
         }
 
-        String val;
+        Object val;
         if (config.containsKey(name)) {
             val = config.get(name);
         } else {
@@ -376,55 +310,6 @@ public class Configuration {
         }
         Object convertedValue = convertUtilsBean.convert(val, propType);
         setFunction.accept(convertedValue);
-    }
-
-    public Map toMap() {
-        return this.config;
-    }
-
-    public Iterable<String> getKeys() {
-        return this.config.keySet();
-    }
-
-    public Iterable<String> getKeys(String keyPrefix) {
-        getSubset(keyPrefix).keySet();
-        Set<String> keys = new TreeSet<>();
-        for (String key : getKeys()) {
-            if (key.startsWith(keyPrefix)) {
-                keys.add(key);
-            }
-        }
-        return keys;
-    }
-
-    public void set(String propertyKey, Object value) {
-        if (value == null) {
-            config.remove(propertyKey);
-        } else {
-            config.put(propertyKey, value.toString().trim());
-        }
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        SortedSet<String> keys = new TreeSet<>(this.config.keySet());
-
-        boolean first = true;
-        for (String key : keys) {
-            if (first) {
-                first = false;
-            } else {
-                sb.append(LINE_SEPARATOR);
-            }
-            if (key.toLowerCase().contains("password")) {
-                sb.append(key).append(": ********");
-            } else {
-                sb.append(key).append(": ").append(get(key, null));
-            }
-        }
-
-        return sb.toString();
     }
 
     public JSONObject toJSON(String workspaceId, ResourceBundle resourceBundle) {
@@ -494,34 +379,34 @@ public class Configuration {
      * Given the following configuration:
      * <p>
      * <pre><code>
-     * repository.ontology.owl.dev.iri=http://bigconnect/dev
-     * repository.ontology.owl.dev.dir=examples/ontology-dev/
+     * item.config.set1.key1=value1
+     * item.config.set1.key2=value2
      *
-     * repository.ontology.owl.csv.iri=http://bigconnect/csv
-     * repository.ontology.owl.csv.dir=storm/plugins/csv/ontology/
+     * item.config.set2.key1=value3
+     * item.config.set2.key2=value4
      * </pre></code>
-     *
+     * <p>
      * And the following class.
      *
      * <pre><code>
-     * class OwlItem {
+     * class ItemConfig {
      *   {@literal @}Configurable
-     *   public String iri;
+     *   public String key1;
      *
      *   {@literal @}Configurable
-     *   public String dir;
+     *   public String key2;
      * }
      * </core></pre>
-     *
-     * Would produce a map with two keys "dev" and "csv" mapped to an OwlItem object.
+     * <p>
+     * Would produce a map with two keys "set1" and "set2" mapped to an ItemConfig object.
      *
      * @param prefix           The configuration key prefix
      * @param configurableType The type of each configurable object to create instances of
      */
     public <T> Map<String, T> getMultiValueConfigurables(String prefix, Class<T> configurableType) {
-        Map<String, Map<String, String>> multiValues = getMultiValue(prefix);
+        Map<String, Map<String, Object>> multiValues = getMultiValue(prefix);
         Map<String, T> results = new HashMap<>();
-        for (Map.Entry<String, Map<String, String>> entry : multiValues.entrySet()) {
+        for (Map.Entry<String, Map<String, Object>> entry : multiValues.entrySet()) {
             T o;
             try {
                 o = configurableType.newInstance();
@@ -538,7 +423,7 @@ public class Configuration {
      * Similar to {@link Configuration#getMultiValue(java.lang.Iterable, java.lang.String)} but uses the internal
      * configuration state.
      */
-    public Map<String, Map<String, String>> getMultiValue(String prefix) {
+    public Map<String, Map<String, Object>> getMultiValue(String prefix) {
         return getMultiValue(this.config.entrySet(), prefix);
     }
 
@@ -546,29 +431,29 @@ public class Configuration {
      * Processing configuration items that looks like this:
      * <p></p>
      * <pre><code>
-     * repository.ontology.owl.dev.iri=http://bigconnect/dev
-     * repository.ontology.owl.dev.dir=examples/ontology-dev/
+     * item.config.set1.key1=value1
+     * item.config.set1.key2=value2
      *
-     * repository.ontology.owl.csv.iri=http://bigconnect/csv
-     * repository.ontology.owl.csv.dir=storm/plugins/csv/ontology/
+     * item.config.set2.key1=value3
+     * item.config.set2.key2=value4
      * </code></pre>
      * <p></p>
      * Into a hash like this:
      * <p></p>
-     * - dev
-     * - iri: http://bigconnect/dev
-     * - dir: examples/ontology-dev/
-     * - csv
-     * - iri: http://bigconnect/csv
-     * - dir: storm/plugins/csv/ontology/
+     * - set1
+     * - key1: value1
+     * - key2: value2
+     * - set2
+     * - key1: value3
+     * - key2: value4
      */
-    public static SortedMap<String, Map<String, String>> getMultiValue(Iterable<Map.Entry<String, String>> config, String prefix) {
+    public static SortedMap<String, Map<String, Object>> getMultiValue(Iterable<Map.Entry<String, Object>> config, String prefix) {
         if (!prefix.endsWith(".")) {
             prefix = prefix + ".";
         }
 
-        SortedMap<String, Map<String, String>> results = new TreeMap<>();
-        for (Map.Entry<String, String> item : config) {
+        SortedMap<String, Map<String, Object>> results = new TreeMap<>();
+        for (Map.Entry<String, Object> item : config) {
             if (item.getKey().startsWith(prefix)) {
                 String rest = item.getKey().substring(prefix.length());
                 int ch = rest.indexOf('.');
@@ -581,11 +466,7 @@ public class Configuration {
                     key = rest;
                     subkey = "";
                 }
-                Map<String, String> values = results.get(key);
-                if (values == null) {
-                    values = new HashMap<>();
-                    results.put(key, values);
-                }
+                Map<String, Object> values = results.computeIfAbsent(key, k -> new HashMap<>());
                 values.put(subkey, item.getValue());
             }
         }
@@ -593,7 +474,10 @@ public class Configuration {
     }
 
     public JSONObject getConfigurationInfo() {
-        return configurationLoader.getConfigurationInfo();
+        if (configurationLoader != null)
+            return configurationLoader.getConfigurationInfo();
+        else
+            return new JSONObject();
     }
 
     protected SchemaRepository getSchemaRepository() {

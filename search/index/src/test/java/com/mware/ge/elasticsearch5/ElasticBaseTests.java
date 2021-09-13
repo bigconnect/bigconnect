@@ -36,12 +36,13 @@
  */
 package com.mware.ge.elasticsearch5;
 
-import com.mware.ge.*;
+import com.mware.ge.Graph;
+import com.mware.ge.GraphWithSearchIndex;
+import com.mware.ge.Vertex;
 import com.mware.ge.base.GraphBaseTests;
 import com.mware.ge.base.GraphTestSetup;
 import com.mware.ge.base.TestGraphFactory;
 import com.mware.ge.query.QueryResultsIterable;
-import com.mware.ge.query.builder.GeQueryBuilders;
 import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -49,17 +50,13 @@ import org.junit.Test;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.mware.core.model.schema.SchemaConstants.CONCEPT_TYPE_THING;
 import static com.mware.ge.query.builder.GeQueryBuilders.hasFilter;
-import static com.mware.ge.util.CloseableUtils.closeQuietly;
 import static com.mware.ge.util.GeAssert.*;
 import static com.mware.ge.util.IterableUtils.count;
 import static com.mware.ge.util.IterableUtils.toList;
 import static com.mware.ge.values.storable.Values.stringValue;
-import static org.junit.Assume.assumeTrue;
 
 public class ElasticBaseTests extends GraphBaseTests implements GraphTestSetup {
     private int expectedTestElasticsearchExceptionHandlerNumberOfTimesCalled = 0;
@@ -339,7 +336,7 @@ public class ElasticBaseTests extends GraphBaseTests implements GraphTestSetup {
     @Override
     public boolean disableEdgeIndexing(Graph graph) {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
-        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.INDEX_EDGES, "false");
+        searchIndex.getConfig().getGraphConfiguration().set(ElasticsearchOptions.INDEX_EDGES.name(), false);
         return true;
     }
 

@@ -43,54 +43,43 @@ import com.google.inject.Scopes;
 import com.google.inject.matcher.Matchers;
 import com.mware.core.cache.CacheService;
 import com.mware.core.cache.InMemoryCacheService;
+import com.mware.core.config.ConfigOption;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.email.EmailRepository;
-import com.mware.core.email.NopEmailRepository;
 import com.mware.core.exception.BcException;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.lifecycle.LifecycleListener;
 import com.mware.core.lifecycle.LifecycleStatus;
 import com.mware.core.model.file.FileSystemRepository;
-import com.mware.core.model.file.LocalFileSystemRepository;
 import com.mware.core.model.lock.LockRepository;
-import com.mware.core.model.lock.SingleJvmLockRepository;
-import com.mware.core.model.longRunningProcess.GeLongRunningProcessRepository;
-import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
-import com.mware.core.model.regex.GeRegexRepository;
-import com.mware.core.model.regex.RegexRepository;
 import com.mware.core.model.role.AuthorizationRepository;
 import com.mware.core.model.role.GeAuthorizationRepository;
 import com.mware.core.model.schema.GeSchemaRepository;
 import com.mware.core.model.schema.SchemaRepository;
-import com.mware.core.model.search.GeSearchRepository;
-import com.mware.core.model.search.SearchRepository;
 import com.mware.core.model.user.*;
-import com.mware.core.model.workQueue.InMemoryWebQueueRepository;
-import com.mware.core.model.workQueue.InMemoryWorkQueueRepository;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.model.workspace.GeWorkspaceRepository;
 import com.mware.core.model.workspace.WorkspaceRepository;
 import com.mware.core.orm.SimpleOrmSession;
-import com.mware.core.orm.graph.GraphSimpleOrmSession;
 import com.mware.core.security.AuditService;
-import com.mware.core.security.DirectVisibilityTranslator;
-import com.mware.core.security.LoggingAuditService;
-import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.status.InMemoryStatusRepository;
 import com.mware.core.status.JmxMetricsManager;
 import com.mware.core.status.MetricsManager;
 import com.mware.core.status.StatusRepository;
-import com.mware.core.time.TimeRepository;
-import com.mware.core.trace.DefaultTraceRepository;
 import com.mware.core.trace.TraceRepository;
 import com.mware.core.trace.Traced;
 import com.mware.core.trace.TracedMethodInterceptor;
 import com.mware.core.user.User;
-import com.mware.core.util.*;
+import com.mware.core.util.BcLogger;
+import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.ServiceLoaderUtil;
+import com.mware.core.util.VersionUtil;
 import com.mware.core.watcher.WatcherGraphListener;
 import com.mware.ge.Graph;
 import com.mware.ge.GraphFactory;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -108,7 +97,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * cannot be instantiated, configuration of the Bootstrap Module will
  * fail and halt application initialization by throwing a BootstrapException.
  */
-public class BcBootstrap extends AbstractModule implements LifecycleListener  {
+public class BcBootstrap extends AbstractModule implements LifecycleListener {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(BcBootstrap.class);
     private static final String GRAPH_METADATA_GRAPH_VERSION_KEY = "graph.version";
     private static final Integer GRAPH_METADATA_GRAPH_VERSION = 3;
@@ -174,90 +163,80 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
         bindInterceptor(Matchers.any(), Matchers.annotatedWith(Traced.class), new TracedMethodInterceptor());
 
         bind(TraceRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.TRACE_REPOSITORY, DefaultTraceRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.TRACE_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(Graph.class)
-                .toProvider(getGraphProvider(configuration, Configuration.GRAPH_PROVIDER))
+                .toProvider(getGraphProvider(configuration))
                 .in(Scopes.SINGLETON);
         bind(LockRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.LOCK_REPOSITORY, SingleJvmLockRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.LOCK_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(WorkQueueRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.WORK_QUEUE_REPOSITORY, InMemoryWorkQueueRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.WORK_QUEUE_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(WebQueueRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.WEB_QUEUE_REPOSITORY, InMemoryWebQueueRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(LongRunningProcessRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.LONG_RUNNING_PROCESS_REPOSITORY, GeLongRunningProcessRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(VisibilityTranslator.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.VISIBILITY_TRANSLATOR, DirectVisibilityTranslator.class))
-                .in(Scopes.SINGLETON);
-        bind(UserRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.USER_REPOSITORY, GeUserRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.WEB_QUEUE_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(UserSessionCounterRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.USER_SESSION_COUNTER_REPOSITORY, InMemoryUserSessionCounterRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(WorkspaceRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.WORKSPACE_REPOSITORY, GeWorkspaceRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.USER_SESSION_COUNTER_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(GraphAuthorizationRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.GRAPH_AUTHORIZATION_REPOSITORY, InMemoryGraphAuthorizationRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(SchemaRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.ONTOLOGY_REPOSITORY, GeSchemaRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.GRAPH_AUTHORIZATION_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(SimpleOrmSession.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.SIMPLE_ORM_SESSION, GraphSimpleOrmSession.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.SIMPLE_ORM_SESSION))
                 .in(Scopes.SINGLETON);
         bind(EmailRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.EMAIL_REPOSITORY, NopEmailRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(StatusRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.STATUS_REPOSITORY, InMemoryStatusRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.EMAIL_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(FileSystemRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.FILE_SYSTEM_REPOSITORY, LocalFileSystemRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(AuthorizationRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.AUTHORIZATION_REPOSITORY, GeAuthorizationRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(PrivilegeRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.PRIVILEGE_REPOSITORY, UserPropertyPrivilegeRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.FILE_SYSTEM_REPOSITORY))
                 .in(Scopes.SINGLETON);
         bind(AuditService.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.AUDIT_SERVICE, LoggingAuditService.class))
-                .in(Scopes.SINGLETON);
-        bind(TimeRepository.class)
-                .toInstance(new TimeRepository());
-        bind(RegexRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.REGEX_REPOSITORY, GeRegexRepository.class))
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, CoreOptions.AUDIT_SERVICE))
                 .in(Scopes.SINGLETON);
         bind(CacheService.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.CACHE_SERVICE, InMemoryCacheService.class))
+                .toProvider(new StaticProvider<>(InMemoryCacheService.class))
                 .in(Scopes.SINGLETON);
-        bind(SearchRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, null, GeSearchRepository.class))
+
+        bind(UserRepository.class)
+                .toProvider(new StaticProvider<>(GeUserRepository.class))
+                .in(Scopes.SINGLETON);
+
+        bind(SchemaRepository.class)
+                .toProvider(new StaticProvider<>(GeSchemaRepository.class))
+                .in(Scopes.SINGLETON);
+
+        bind(PrivilegeRepository.class)
+                .toProvider(new StaticProvider<>(UserPropertyPrivilegeRepository.class))
+                .in(Scopes.SINGLETON);
+
+        bind(AuthorizationRepository.class)
+                .toProvider(new StaticProvider<>(GeAuthorizationRepository.class))
+                .in(Scopes.SINGLETON);
+
+        bind(StatusRepository.class)
+                .toProvider(new StaticProvider<>(InMemoryStatusRepository.class))
+                .in(Scopes.SINGLETON);
+
+        bind(WorkspaceRepository.class)
+                .toProvider(new StaticProvider<>(GeWorkspaceRepository.class))
                 .in(Scopes.SINGLETON);
 
         injectProviders();
     }
 
-    private Provider<? extends Graph> getGraphProvider(Configuration configuration, String configurationPrefix) {
-        final Map<String, String> configurationSubset = configuration.getSubset(configurationPrefix);
+    private Provider<? extends Graph> getGraphProvider(Configuration configuration) {
         return (Provider<Graph>) () -> {
             Graph g;
             try {
-                LOGGER.debug("creating graph");
-                g = new GraphFactory().createGraph(configurationSubset);
+                g = new GraphFactory().createGraph(configuration);
             } catch (Exception e) {
                 throw new RuntimeException("Could not create graph", e);
             }
 
             checkGraphVersion(g);
-            if (configuration.getBoolean("watcher.enabled", false)) {
+            if (configuration.get(CoreOptions.WATCHER_ENABLED)) {
                 g.addGraphEventListener(new WatcherGraphListener());
             }
 
@@ -307,13 +286,9 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
         bcBootstrap = null;
     }
 
-    public static <T> Provider<? extends T> getConfigurableProvider(final Configuration config, final String key, final String defaultClass) {
-        return getConfigurableProvider(config, key, ClassUtil.<T>forName(defaultClass));
-    }
-
-    public static <T> Provider<? extends T> getConfigurableProvider(final Configuration config, final String key, final Class<T> defaultClass) {
-        Class<? extends T> configuredClass = config.getClass(key, defaultClass);
-        return configuredClass != null ? new ConfigurableProvider<>(configuredClass, config, key, null) : new NullProvider<>();
+    public static <T> Provider<? extends T> getConfigurableProvider(final Configuration config, final ConfigOption<Class<? extends T>> configOption) {
+        Class<? extends T> configuredClass = config.get(configOption);
+        return configuredClass != null ? new ConfigurableProvider<>(configuredClass, config, configOption.name(), null) : new NullProvider<>();
     }
 
     @Override
@@ -331,6 +306,45 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
         @Override
         public T get() {
             return null;
+        }
+    }
+
+    public static class StaticProvider<T> implements Provider<T> {
+        private final Class<? extends T> clazz;
+
+        public StaticProvider(final Class<? extends T> clazz) {
+            this.clazz = clazz;
+        }
+
+        @Override
+        public T get() {
+            Throwable error;
+            try {
+                T impl;
+                if (InjectHelper.getInjector() != null) {
+                    impl = InjectHelper.getInstance(this.clazz);
+                } else {
+                    Constructor<? extends T> constructor = this.clazz.getConstructor();
+                    impl = constructor.newInstance();
+                }
+                return impl;
+            } catch (IllegalAccessException iae) {
+                LOGGER.error("Unable to access default constructor for %s", clazz.getName(), iae);
+                error = iae;
+            } catch (IllegalArgumentException iae) {
+                LOGGER.error("Unable to initialize instance of %s.", clazz.getName(), iae);
+                error = iae;
+            } catch (InvocationTargetException ite) {
+                LOGGER.error("Error initializing instance of %s.", clazz.getName(), ite);
+                error = ite;
+            } catch (NoSuchMethodException e) {
+                LOGGER.error("Could not find constructor for %s.", clazz.getName(), e);
+                error = e;
+            } catch (InstantiationException e) {
+                LOGGER.error("Could not create %s.", clazz.getName(), e);
+                error = e;
+            }
+            throw new BcException(String.format("Unable to initialize instance of %s", clazz.getName()), error);
         }
     }
 
@@ -398,7 +412,8 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
                 if (initMethod != null) {
                     initMethod.invoke(impl, initMethodArgs);
                 }
-                config.setConfigurables(impl, this.keyPrefix);
+                if (!StringUtils.isEmpty(keyPrefix))
+                    config.setConfigurables(impl, this.keyPrefix);
                 return impl;
             } catch (IllegalAccessException iae) {
                 LOGGER.error("Unable to access default constructor for %s", clazz.getName(), iae);

@@ -39,17 +39,58 @@ package com.mware.core.security;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
 import com.mware.ge.Visibility;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
-public abstract class VisibilityTranslator {
+public class VisibilityTranslator {
     public static final String JSON_SOURCE = "source";
     public static final String JSON_WORKSPACES = "workspaces";
 
-    public abstract BcVisibility toVisibility(VisibilityJson visibilityJson);
+    public BcVisibility toVisibility(VisibilityJson visibilityJson) {
+        return new BcVisibility(toVisibilityNoSuperUser(visibilityJson));
+    }
 
-    public abstract BcVisibility toVisibility(String visibilitySource);
+    public BcVisibility toVisibility(String visibilitySource) {
+        return toVisibility(visibilitySourceToVisibilityJson(visibilitySource));
+    }
 
-    public abstract Visibility toVisibilityNoSuperUser(VisibilityJson visibilityJson);
+    protected VisibilityJson visibilitySourceToVisibilityJson(String visibilitySource) {
+        return new VisibilityJson(visibilitySource);
+    }
 
-    public abstract Visibility getDefaultVisibility();
+    public Visibility toVisibilityNoSuperUser(VisibilityJson visibilityJson) {
+        StringBuilder visibilityString = new StringBuilder();
+
+        List<String> required = new ArrayList<>();
+
+        String source = visibilityJson.getSource();
+        addSourceToRequiredVisibilities(required, source);
+
+        Set<String> workspaces = visibilityJson.getWorkspaces();
+        if (workspaces != null) {
+            required.addAll(workspaces);
+        }
+
+        for (String v : required) {
+            if (visibilityString.length() > 0) {
+                visibilityString.append("&");
+            }
+            visibilityString
+                    .append("(")
+                    .append(v)
+                    .append(")");
+        }
+        return new Visibility(visibilityString.toString());
+    }
+
+    protected void addSourceToRequiredVisibilities(List<String> required, String source) {
+        if (source != null && source.trim().length() > 0) {
+            required.add(source.trim());
+        }
+    }
+
+    public Visibility getDefaultVisibility() {
+        return new Visibility("");
+    }
 }

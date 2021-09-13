@@ -36,6 +36,7 @@
  */
 package com.mware.ge.accumulo;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.GeException;
 import com.mware.ge.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
 import com.mware.ge.util.GeLogger;
@@ -110,7 +111,7 @@ public class AccumuloResource extends ExternalResource {
     public void resetAutorizations() throws Exception {
         Connector connector = getConnector();
         connector.securityOperations().changeUserAuthorizations(
-                AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
+                AccumuloOptions.ACCUMULO_USERNAME.defaultValue(),
                 new Authorizations(
                         VISIBILITY_A_STRING,
                         VISIBILITY_B_STRING,
@@ -148,26 +149,25 @@ public class AccumuloResource extends ExternalResource {
     }
 
     @SuppressWarnings("unchecked")
-    public Map createConfig() {
-        Map configMap = new HashMap();
+    public Map<String, Object> createConfig() {
+        Map<String, Object> configMap = new HashMap<>();
         if (shouldUseRemoteAccumulo()) {
-            configMap.put(AccumuloGraphConfiguration.ZOOKEEPER_SERVERS, System.getProperty("REMOTE_ACC_ZOOKEEPERS"));
-            configMap.put(AccumuloGraphConfiguration.ACCUMULO_INSTANCE_NAME, System.getProperty("REMOTE_ACC_INSTANCE", "accumulo"));
-            configMap.put(AccumuloGraphConfiguration.ACCUMULO_PASSWORD, System.getProperty("REMOTE_ACC_PASSWORD", ACCUMULO_PASSWORD));
+            configMap.put(GraphOptions.ZOOKEEPER_SERVERS.name(), System.getProperty("REMOTE_ACC_ZOOKEEPERS"));
+            configMap.put(AccumuloOptions.ACCUMULO_INSTANCE_NAME.name(), System.getProperty("REMOTE_ACC_INSTANCE", "accumulo"));
+            configMap.put(AccumuloOptions.ACCUMULO_PASSWORD.name(), System.getProperty("REMOTE_ACC_PASSWORD", ACCUMULO_PASSWORD));
 
         } else {
-            configMap.put(AccumuloGraphConfiguration.ZOOKEEPER_SERVERS, accumulo.getZooKeepers());
-            configMap.put(AccumuloGraphConfiguration.ACCUMULO_INSTANCE_NAME, accumulo.getInstanceName());
-            configMap.put(AccumuloGraphConfiguration.ACCUMULO_PASSWORD, ACCUMULO_PASSWORD);
+            configMap.put(GraphOptions.ZOOKEEPER_SERVERS.name(), accumulo.getZooKeepers());
+            configMap.put(AccumuloOptions.ACCUMULO_INSTANCE_NAME.name(), accumulo.getInstanceName());
+            configMap.put(AccumuloOptions.ACCUMULO_PASSWORD.name(), ACCUMULO_PASSWORD);
         }
-        configMap.put(AccumuloGraphConfiguration.ACCUMULO_USERNAME, ACCUMULO_USERNAME);
-        configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, AccumuloGraphConfiguration.DEFAULT_AUTO_FLUSH);
-        configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, LARGE_PROPERTY_VALUE_SIZE - 1);
-        configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
-        configMap.put(AccumuloGraphConfiguration.ACCUMULO_MAX_VERSIONS, 1);
-        configMap.put(AccumuloGraphConfiguration.HISTORY_IN_SEPARATE_TABLE, false);
-        configMap.put(AccumuloGraphConfiguration.COMPRESS_ITERATOR_TRANSFERS, false);
-        configMap.put(AccumuloGraphConfiguration.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX, DataInDataTableStreamingPropertyValueStorageStrategy.class.getName());
+        configMap.put(AccumuloOptions.ACCUMULO_USERNAME.name(), ACCUMULO_USERNAME);
+        configMap.put(AccumuloOptions.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE.name(), LARGE_PROPERTY_VALUE_SIZE - 1);
+        configMap.put(AccumuloOptions.HDFS_DATA_DIR.name(), "/tmp/");
+        configMap.put(AccumuloOptions.ACCUMULO_MAX_VERSIONS.name(), 1);
+        configMap.put(GraphOptions.HISTORY_IN_SEPARATE_TABLE.name(), false);
+        configMap.put(AccumuloOptions.COMPRESS_ITERATOR_TRANSFERS.name(), false);
+        configMap.put(GraphOptions.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY.name(), DataInDataTableStreamingPropertyValueStorageStrategy.class.getName());
 
         if (extraConfig != null) {
             configMap.putAll(extraConfig);

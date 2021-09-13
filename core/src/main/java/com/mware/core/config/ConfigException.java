@@ -34,29 +34,25 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.core.util;
+package com.mware.core.config;
 
-import com.mware.ge.Direction;
-import com.mware.ge.Edge;
-import com.mware.ge.Vertex;
+public class ConfigException extends RuntimeException {
 
-import java.util.*;
+    private static final long serialVersionUID = 1289748174932124L;
 
-public class GeUtil {
-    public static Map<String, Vertex> verticesToMapById(Iterable<Vertex> vertices) {
-        Map<String, Vertex> results = new HashMap<>();
-        for (Vertex vertex : vertices) {
-            results.put(vertex.getId(), vertex);
-        }
-        return results;
+    public ConfigException(String message) {
+        super(message);
     }
 
-    public static Set<String> getAllVertexIdsOnEdges(List<Edge> edges) {
-        Set<String> results = new HashSet<>();
-        for (Edge edge : edges) {
-            results.add(edge.getVertexId(Direction.IN));
-            results.add(edge.getVertexId(Direction.OUT));
-        }
-        return results;
+    public ConfigException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    public ConfigException(String message, Object... args) {
+        super(String.format(message, args));
+    }
+
+    public ConfigException(String message, Throwable cause, Object... args) {
+        super(String.format(message, args), cause);
     }
 }

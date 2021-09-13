@@ -36,8 +36,9 @@
  */
 package com.mware.ge.inmemory;
 
+import com.mware.core.config.Configuration;
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.Graph;
-import com.mware.ge.GraphConfiguration;
 import com.mware.ge.GraphFactory;
 import com.mware.ge.base.TestGraphFactory;
 import com.mware.ge.id.LongIdGenerator;
@@ -50,15 +51,14 @@ public class InMemoryGraphFactory implements TestGraphFactory {
 
     @Override
     public Graph createGraph() throws Exception {
-        Map<String, String> config = createConfig();
-        return new GraphFactory().createGraph(config);
+        return new GraphFactory().createGraph(new Configuration(createConfig()));
     }
 
-    protected static Map<String, String> createConfig() {
-        Map<String, String> config = new HashMap<>();
+    protected static Map<String, Object> createConfig() {
+        Map<String, Object> config = new HashMap<>();
         config.put("", InMemoryGraph.class.getName());
-        config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, LongIdGenerator.class.getName());
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
+        config.put(GraphOptions.ID_GENERATOR.name(), LongIdGenerator.class.getName());
+        config.put(GraphOptions.SEARCH_IMPL.name(), DefaultSearchIndex.class.getName());
         return config;
     }
 }

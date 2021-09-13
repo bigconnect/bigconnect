@@ -36,6 +36,7 @@
  */
 package com.mware.ge.store;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.GraphConfiguration;
@@ -50,25 +51,10 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 public abstract class StorableGraphConfiguration extends GraphConfiguration {
-    public static final String STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX = "streamingPropertyValueStorageStrategy";
-    public static final String DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY = FilesystemSPVStorageStrategy.class.getName();
-    public static final String ELEMENT_CACHE_ENABLED = "elementCacheEnabled";
-    public static final String ELEMENT_CACHE_SIZE = "elementCacheSize";
-    public static final String HISTORY_IN_SEPARATE_TABLE = "historyInSeparateTable";
-    public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
-
-    public static final String STREAMING_PROPERTY_VALUE_DATA_FOLDER = "spvFolder";
-    public static final String DEFAULT_STREAMING_PROPERTY_VALUE_DATA_FOLDER = "/data";
-    public static final boolean DEFAULT_ELEMENT_CACHE_ENABLED = false;
-    public static final int DEFAULT_ELEMENT_CACHE_SIZE = 1_000_000;
-    public static final boolean DEFAULT_HISTORY_IN_SEPARATE_TABLE = false;
-    public static final String DEFAULT_ZOOKEEPER_SERVERS = "localhost";
-
     protected final GeSerializer serializer;
 
     public StorableGraphConfiguration(Map<String, Object> config) {
         super(config);
-
         serializer = createSerializer();
     }
 
@@ -77,11 +63,11 @@ public abstract class StorableGraphConfiguration extends GraphConfiguration {
     }
 
     public StreamingPropertyValueStorageStrategy createStreamingPropertyValueStorageStrategy(Graph graph) {
-        return ConfigurationUtils.createProvider(graph, this, STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX, DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY);
+        return ConfigurationUtils.createInstance(graph, this, GraphOptions.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY);
     }
 
     public Path createSPVFolder() {
-        String folderPath = getString(STREAMING_PROPERTY_VALUE_DATA_FOLDER, DEFAULT_STREAMING_PROPERTY_VALUE_DATA_FOLDER);
+        String folderPath = get(GraphOptions.STREAMING_PROPERTY_VALUE_DATA_FOLDER);
         Path path = Paths.get(folderPath);
         if (!path.toFile().exists()) {
             try {
@@ -94,18 +80,18 @@ public abstract class StorableGraphConfiguration extends GraphConfiguration {
     }
 
     public boolean isElementCacheEnabled() {
-        return getBoolean(ELEMENT_CACHE_ENABLED, DEFAULT_ELEMENT_CACHE_ENABLED);
+        return get(GraphOptions.ELEMENT_CACHE_ENABLED);
     }
 
     public int getElementCacheSize() {
-        return getInteger(ELEMENT_CACHE_SIZE, DEFAULT_ELEMENT_CACHE_SIZE);
+        return get(GraphOptions.ELEMENT_CACHE_SIZE);
     }
 
     public boolean isHistoryInSeparateTable() {
-        return getBoolean(HISTORY_IN_SEPARATE_TABLE, DEFAULT_HISTORY_IN_SEPARATE_TABLE);
+        return get(GraphOptions.HISTORY_IN_SEPARATE_TABLE);
     }
 
     public String getZookeeperServers() {
-        return getString(ZOOKEEPER_SERVERS, DEFAULT_ZOOKEEPER_SERVERS);
+        return get(GraphOptions.ZOOKEEPER_SERVERS);
     }
 }

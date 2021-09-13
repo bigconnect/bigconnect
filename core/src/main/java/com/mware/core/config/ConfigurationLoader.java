@@ -120,9 +120,9 @@ public abstract class ConfigurationLoader {
     }
 
     private static void setSystemProperties(Configuration configuration) {
-        Map<String, String> systemProperties = configuration.getSubset("systemProperty");
-        for (Map.Entry<String, String> systemProperty : systemProperties.entrySet()) {
-            System.setProperty(systemProperty.getKey(), systemProperty.getValue());
+        Map<String, Object> systemProperties = configuration.getSubset("systemProperty");
+        for (Map.Entry<String, Object> systemProperty : systemProperties.entrySet()) {
+            System.setProperty(systemProperty.getKey(), (String) systemProperty.getValue());
         }
     }
 

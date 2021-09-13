@@ -15,6 +15,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.locations",
             "List of comma-separated Elasticsearch hosts",
             disallowEmpty(),
+            String.class,
             "localhost"
     );
 
@@ -22,6 +23,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.clusterName",
             "Name of the Elasticsearch cluster",
             disallowEmpty(),
+            String.class,
             "bdl"
     );
 
@@ -29,18 +31,21 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.port",
             "Elasticsearch port",
             positiveInt(),
+            Integer.class,
             9300
     );
 
     public static final ConfigOption<Boolean> SIDECAR_ENABLED = new ConfigOption<>(
             "graph.search.sidecar",
             "Start embedded Elasticsearch server",
+            Boolean.class,
             true
     );
 
     public static final ConfigOption<String> SIDECAR_PATH = new ConfigOption<>(
             "graph.search.sidecar.path",
             "Folder to store embedded Elasticsearch data",
+            String.class,
             ""
     );
 
@@ -48,6 +53,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.shards",
             "Number of shards to set on index creation (cannot be changed after)",
             positiveInt(),
+            Integer.class,
             Runtime.getRuntime().availableProcessors()
     );
 
@@ -55,6 +61,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.replicas",
             "Number of replicas to set on index creation",
             nonNegativeInt(),
+            Integer.class,
             1
     );
 
@@ -62,6 +69,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.indexName",
             "Index name for storing graph elements",
             disallowEmpty(),
+            String.class,
             ".ge"
     );
 
@@ -69,6 +77,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.extendedDataIndexNamePrefix",
             "Index name prefix for storing extended data",
             disallowEmpty(),
+            String.class,
             ".ge_extdata_"
     );
 
@@ -76,6 +85,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.splitEdgesAndVertices",
             "Whether to create separate indexes for storing edges and vertices",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
@@ -83,6 +93,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.indexEdges",
             "Enable edge indexing",
             disallowEmpty(),
+            Boolean.class,
             true
     );
 
@@ -90,6 +101,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.indexRefreshInterval",
             "Elasticsearch index refresh_interval setting",
             disallowEmpty(),
+            String.class,
             "1s"
     );
 
@@ -97,6 +109,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.termAggregation.shardSize",
             "The number of term buckets each shard will return to the coordinating node. The higher the shard size is, the more accurate the results are.",
             disallowEmpty(),
+            Integer.class,
             10
     );
 
@@ -104,6 +117,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.queryPageSize",
             "The number of search results to return in a page.",
             disallowEmpty(),
+            Integer.class,
             500
     );
 
@@ -111,6 +125,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.queryPagingLimit",
             "Maximum number of pages to switch to Elasticsearch scroll api",
             disallowEmpty(),
+            Integer.class,
             50
     );
 
@@ -118,6 +133,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.queryScrollKeepAlive",
             "Enable scrolling of the search request for the specified timeout",
             disallowEmpty(),
+            String.class,
             "5m"
     );
 
@@ -127,6 +143,7 @@ public class ElasticsearchOptions extends OptionHolder {
                     "For larger values please update elasticsearch.yml: " +
                     "   - index.query.bool.max_clause_count: NNNNN",
             positiveInt(),
+            Integer.class,
             1024
     );
 
@@ -136,6 +153,7 @@ public class ElasticsearchOptions extends OptionHolder {
                     "The value should be a number followed by an optional distance unit." +
                     "Valid distance units include: in, inch, yd, yard, mi, miles, km, kilometers, m,meters, cm,centimeters, mm, millimeters." +
             disallowEmpty(),
+            String.class,
             "50m"
     );
 
@@ -149,6 +167,7 @@ public class ElasticsearchOptions extends OptionHolder {
                     "To improve indexing performance (at the cost of query accuracy) explicitly define GEOSHAPE_PRECISION " +
                     "along with a reasonable GEOSHAPE_ERROR_PCT, noting that large shapes will have greater false positives.",
             rangeDouble(0.0D, 0.5D),
+            Double.class,
             0.025D
     );
 
@@ -156,6 +175,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.geocircleToPolygonSideLengthKm",
             "",
             rangeDouble(0.0D, Double.MAX_VALUE),
+            Double.class,
             1.0D
     );
 
@@ -163,6 +183,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.geocircleToPolygonMaxNumSides",
             "",
             positiveInt(),
+            Integer.class,
             1000
     );
 
@@ -170,6 +191,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.poolSize",
             "",
             positiveInt(),
+            Integer.class,
             10
     );
 
@@ -177,6 +199,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.backlogSize",
             "",
             positiveInt(),
+            Integer.class,
             100
     );
 
@@ -184,6 +207,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.maxBatchSize",
             "",
             positiveInt(),
+            Integer.class,
             1000
     );
 
@@ -191,6 +215,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.maxBatchSizeInBytes",
             "",
             positiveInt(),
+            Integer.class,
             10 * 1024 * 1024
     );
 
@@ -198,6 +223,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.batchWindowTime",
             "",
             disallowEmpty(),
+            Duration.class,
             Duration.ofMillis(1000)
     );
 
@@ -205,6 +231,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.maxFailCount",
             "",
             positiveInt(),
+            Integer.class,
             10
     );
 
@@ -212,6 +239,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.bulk.requestTimeout",
             "",
             disallowEmpty(),
+            Duration.class,
             Duration.ofMinutes(30)
     );
 
@@ -219,6 +247,7 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.refreshIndexOnFlush",
             "Perform an index refresh on flush",
             disallowEmpty(),
+            Boolean.class,
             true
     );
 
@@ -226,12 +255,14 @@ public class ElasticsearchOptions extends OptionHolder {
             "graph.search.logRequestSizeLimit",
             "Log requests that exceed the given size in bytes",
             nonNegativeInt(),
+            Integer.class,
             Integer.MAX_VALUE
     );
 
     public static final ConfigOption<String> EXCEPTION_HANDLER = new ConfigOption<>(
             "graph.search.exceptionHandler",
             "This is used for testing only",
+            String.class,
             ""
     );
 

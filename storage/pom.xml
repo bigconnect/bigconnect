@@ -16,7 +16,7 @@
 
     <modules>
         <module>accumulo</module>
-<!--        <module>rocksdb</module>-->
+        <module>rocksdb</module>
 <!--        <module>hbase</module>-->
     </modules>
 

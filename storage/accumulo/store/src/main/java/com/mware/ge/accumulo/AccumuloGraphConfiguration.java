@@ -36,9 +36,11 @@
  */
 package com.mware.ge.accumulo;
 
+import com.mware.core.config.ConfigOption;
 import com.mware.core.config.OptionSpace;
-import com.mware.core.config.TypedOption;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.config.options.GraphOptions;
+import com.mware.core.orm.accumulo.AccumuloSimpleOrmSession;
 import com.mware.ge.GeException;
 import com.mware.ge.Graph;
 import com.mware.ge.accumulo.util.OverflowIntoHdfsStreamingPropertyValueStorageStrategy;
@@ -88,10 +90,10 @@ public class AccumuloGraphConfiguration extends StorableGraphConfiguration {
     public AccumuloGraphConfiguration(Map<String, Object> config) {
         super(config);
 
-        OptionSpace.register("accumulo", AccumuloOptions.instance());
-
-        ((TypedOption<String, String>) OptionSpace.get(GraphOptions.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY.name()))
+        ((ConfigOption<String>) OptionSpace.get(GraphOptions.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY.name()))
                 .overrideDefaultValue(DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY);
+        ((ConfigOption<Class>) OptionSpace.get(CoreOptions.SIMPLE_ORM_SESSION.name()))
+                .overrideDefaultValue(AccumuloSimpleOrmSession.class);
     }
 
     private static Map<String, Object> toMap(Configuration configuration) {

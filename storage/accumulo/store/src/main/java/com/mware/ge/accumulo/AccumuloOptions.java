@@ -11,6 +11,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.accumuloInstanceName",
             "Username to connect to HDFS",
             disallowEmpty(),
+            String.class,
             "hdfs"
     );
 
@@ -18,6 +19,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.username",
             "Username to connect to Accumulo",
             disallowEmpty(),
+            String.class,
             "root"
     );
 
@@ -25,6 +27,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.password",
             "Password to connect to Accumulo",
             disallowEmpty(),
+            String.class,
             "secret"
     );
 
@@ -32,6 +35,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.maxVersions",
             "Maximum versions to store for an element",
             positiveInt(),
+            Integer.class,
             1
     );
 
@@ -39,6 +43,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.maxVersions",
             "Maximum versions to store for extended data element",
             positiveInt(),
+            Integer.class,
             1
     );
 
@@ -46,6 +51,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.maxStreamingPropertyValueTableDataSize",
             "Maximum length in bytes before doing an overflow to HDFS for streaming properties",
             positiveInt(),
+            Long.class,
             10 * 1024 * 1024L // 10 Mb
     );
 
@@ -53,24 +59,28 @@ public class AccumuloOptions extends OptionHolder {
             "graph.hdfs.user",
             "Username to connect to HDFS",
             disallowEmpty(),
+            String.class,
             "hdfs"
     );
 
     public static final ConfigOption<String> HADOOP_CONF_DIR = new ConfigOption<>(
             "graph.hdfs.confDir",
             "Location of Hadoop config files",
+            String.class,
             ""
     );
 
     public static final ConfigOption<String> HDFS_ROOT_DIR = new ConfigOption<>(
             "graph.hdfs.rootDir",
             "HDFS root folder",
+            String.class,
             ""
     );
 
     public static final ConfigOption<String> HDFS_DATA_DIR = new ConfigOption<>(
             "graph.hdfs.dataDir",
             "HDFS data folder",
+            String.class,
             "/bigconnect"
     );
 
@@ -78,6 +88,7 @@ public class AccumuloOptions extends OptionHolder {
     public static final ConfigOption<String> HDFS_CONTEXT_CLASSPATH = new ConfigOption<>(
             "graph.hdfsContextClasspath",
             "",
+            String.class,
             ""
     );
 
@@ -85,6 +96,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.batchwriter.maxMemory",
             "",
             positiveInt(),
+            Long.class,
             100 * 1024 * 1024L // 100 Mb
     );
 
@@ -92,6 +104,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.batchwriter.maxLatency",
             "",
             positiveInt(),
+            Long.class,
             2 * 60 * 1000L // 2 min
     );
 
@@ -99,6 +112,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.batchwriter.timeout",
             "",
             positiveInt(),
+            Long.class,
             Long.MAX_VALUE
     );
 
@@ -106,6 +120,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.batchwriter.maxWriteThreads",
             "",
             positiveInt(),
+            Integer.class,
             Runtime.getRuntime().availableProcessors()
     );
 
@@ -113,6 +128,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.numberOfQueryThreads",
             "",
             positiveInt(),
+            Integer.class,
             Runtime.getRuntime().availableProcessors()
     );
 
@@ -120,6 +136,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.largeValueErrorThreshold",
             "",
             positiveInt(),
+            Integer.class,
             500 * 1024 * 1024 // 500Mb
     );
 
@@ -127,6 +144,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.largeValueErrorThreshold",
             "",
             positiveInt(),
+            Integer.class,
             100 * 1024 * 1024 // 100Mb
     );
 
@@ -134,6 +152,7 @@ public class AccumuloOptions extends OptionHolder {
             "graph.compressIteratorTransfers",
             "",
             disallowEmpty(),
+            Boolean.class,
             true
     );
 

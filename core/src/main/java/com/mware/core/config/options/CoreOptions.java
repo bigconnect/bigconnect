@@ -60,75 +60,86 @@ import com.mware.core.trace.TraceRepository;
 import com.mware.ge.metric.DropWizardMetricRegistry;
 
 import static com.mware.core.config.OptionChecker.disallowEmpty;
+import static com.mware.core.config.OptionChecker.positiveInt;
 
 public class CoreOptions extends OptionHolder {
-    public static final ConfigOption<Class<? extends LockRepository>> LOCK_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends LockRepository>> LOCK_REPOSITORY = new ConfigOption(
             "repository.lock",
             "Implementation of LockRepository",
             disallowEmpty(),
+            Class.class,
             SingleJvmLockRepository.class
     );
 
-    public static final ConfigOption<Class<? extends TraceRepository>> TRACE_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends TraceRepository>> TRACE_REPOSITORY = new ConfigOption(
             "repository.trace",
             "Implementation of TraceRepository",
             disallowEmpty(),
+            Class.class,
             DefaultTraceRepository.class
     );
 
-    public static final ConfigOption<Class<? extends WorkQueueRepository>> WORK_QUEUE_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends WorkQueueRepository>> WORK_QUEUE_REPOSITORY = new ConfigOption(
             "repository.workQueue",
             "Implementation of WorkQueueRepository",
             disallowEmpty(),
+            Class.class,
             InMemoryWorkQueueRepository.class
     );
 
-    public static final ConfigOption<Class<? extends WebQueueRepository>> WEB_QUEUE_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends WebQueueRepository>> WEB_QUEUE_REPOSITORY = new ConfigOption(
             "repository.webQueue",
             "Implementation of WebQueueRepository",
             disallowEmpty(),
+            Class.class,
             InMemoryWebQueueRepository.class
     );
 
-    public static final ConfigOption<Class<? extends InMemoryUserSessionCounterRepository>> USER_SESSION_COUNTER_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends InMemoryUserSessionCounterRepository>> USER_SESSION_COUNTER_REPOSITORY = new ConfigOption(
             "repository.userSessionCounter",
             "Implementation of UserSessionCounterRepository",
             disallowEmpty(),
+            Class.class,
             InMemoryUserSessionCounterRepository.class
     );
 
-    public static final ConfigOption<Class<? extends GraphAuthorizationRepository>> GRAPH_AUTHORIZATION_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends GraphAuthorizationRepository>> GRAPH_AUTHORIZATION_REPOSITORY = new ConfigOption(
             "repository.graphAuthorization",
             "Implementation of GraphAuthorizationRepository",
             disallowEmpty(),
+            Class.class,
             InMemoryGraphAuthorizationRepository.class
     );
 
-    public static final ConfigOption<Class<? extends SimpleOrmSession>> SIMPLE_ORM_SESSION = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends SimpleOrmSession>> SIMPLE_ORM_SESSION = new ConfigOption(
             "simpleOrmSession",
             "Implementation of SimpleOrmSession",
             disallowEmpty(),
+            Class.class,
             GraphSimpleOrmSession.class
     );
 
-    public static final ConfigOption<Class<? extends EmailRepository>> EMAIL_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends EmailRepository>> EMAIL_REPOSITORY = new ConfigOption(
             "repository.email",
             "Implementation of EmailRepository",
             disallowEmpty(),
+            Class.class,
             NopEmailRepository.class
     );
 
-    public static final ConfigOption<Class<? extends FileSystemRepository>> FILE_SYSTEM_REPOSITORY = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends FileSystemRepository>> FILE_SYSTEM_REPOSITORY = new ConfigOption(
             "repository.fileSystem",
             "Implementation of FileSystemRepository",
             disallowEmpty(),
+            Class.class,
             LocalFileSystemRepository.class
     );
 
-    public static final ConfigOption<Class<? extends AuditService>> AUDIT_SERVICE = new ConfigOption<>(
+    public static final ConfigOption<Class<? extends AuditService>> AUDIT_SERVICE = new ConfigOption(
             "service.audit",
             "Implementation of AuditService",
             disallowEmpty(),
+            Class.class,
             NopAuditService.class
     );
 
@@ -136,6 +147,7 @@ public class CoreOptions extends OptionHolder {
             "watcher.enabled",
             "Enable property/relationship watches",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
@@ -143,6 +155,7 @@ public class CoreOptions extends OptionHolder {
             "status.enabled",
             "Enable status server for workers",
             disallowEmpty(),
+            Boolean.class,
             true
     );
 
@@ -150,6 +163,7 @@ public class CoreOptions extends OptionHolder {
             "status.portRange",
             "Range of ports where the status server should listen",
             disallowEmpty(),
+            String.class,
             "40000-41000"
     );
 
@@ -157,6 +171,7 @@ public class CoreOptions extends OptionHolder {
             "trace.enabled",
             "Enable method performance tracing",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
@@ -164,7 +179,32 @@ public class CoreOptions extends OptionHolder {
             "metricsRegistry",
             "Implementation for MetricsRegistry",
             disallowEmpty(),
+            String.class,
             DropWizardMetricRegistry.class.getName()
+    );
+
+    public static final ConfigOption<String> AUTH_TOKEN_PASSWORD = new ConfigOption<>(
+            "auth.token.password",
+            "",
+            disallowEmpty(),
+            String.class,
+            "4X5rWTCDKbbFoUy7TrxoaKTKQkBgnUB8d45jvABwHgo"
+    );
+
+    public static final ConfigOption<String> AUTH_TOKEN_SALT = new ConfigOption<>(
+            "auth.token.salt",
+            "",
+            disallowEmpty(),
+            String.class,
+            "jNQheYMYfNY8sLc61LuGEg"
+    );
+
+    public static final ConfigOption<Integer> AUTH_TOKEN_EXPIRATION_TOLERANCE_IN_SECS = new ConfigOption<>(
+            "auth.token.expiration_tolerance_seconds",
+            "",
+            positiveInt(),
+            Integer.class,
+            60
     );
 
     private CoreOptions() {

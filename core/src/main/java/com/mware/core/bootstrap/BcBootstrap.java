@@ -53,6 +53,8 @@ import com.mware.core.lifecycle.LifecycleListener;
 import com.mware.core.lifecycle.LifecycleStatus;
 import com.mware.core.model.file.FileSystemRepository;
 import com.mware.core.model.lock.LockRepository;
+import com.mware.core.model.longRunningProcess.GeLongRunningProcessRepository;
+import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
 import com.mware.core.model.role.AuthorizationRepository;
 import com.mware.core.model.role.GeAuthorizationRepository;
 import com.mware.core.model.schema.GeSchemaRepository;
@@ -221,6 +223,10 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener {
 
         bind(WorkspaceRepository.class)
                 .toProvider(new StaticProvider<>(GeWorkspaceRepository.class))
+                .in(Scopes.SINGLETON);
+
+        bind(LongRunningProcessRepository.class)
+                .toProvider(new StaticProvider<>(GeLongRunningProcessRepository.class))
                 .in(Scopes.SINGLETON);
 
         injectProviders();

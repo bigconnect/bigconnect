@@ -17,6 +17,7 @@ public class GraphOptions extends OptionHolder {
             "graph",
             "Graph store",
             disallowEmpty(),
+            String.class,
             "com.mware.ge.rocksdb.RocksDBGraph"
     );
 
@@ -24,6 +25,7 @@ public class GraphOptions extends OptionHolder {
             "graph.zookeeperServers",
             "Comma-separated list of server:port",
             disallowEmpty(),
+            String.class,
             "localhost"
     );
 
@@ -31,6 +33,7 @@ public class GraphOptions extends OptionHolder {
             "graph.tableNamePrefix",
             "Prefix to created graph store tables",
             disallowEmpty(),
+            String.class,
             "bc"
     );
 
@@ -38,6 +41,7 @@ public class GraphOptions extends OptionHolder {
             "graph.strictTyping",
             "Enforce strict type check when creating graph elements",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
@@ -45,6 +49,7 @@ public class GraphOptions extends OptionHolder {
             "graph.createTables",
             "Create graph store tables if they don't exist",
             disallowEmpty(),
+            Boolean.class,
             true
     );
 
@@ -52,6 +57,7 @@ public class GraphOptions extends OptionHolder {
             "graph.search",
             "Search index implementation",
             disallowEmpty(),
+            String.class,
             DefaultSearchIndex.class.getName()
     );
 
@@ -59,6 +65,7 @@ public class GraphOptions extends OptionHolder {
             "graph.serializer",
             "Value serializer implementation",
             disallowEmpty(),
+            String.class,
             QuickKryoGeSerializer.class.getName()
     );
 
@@ -66,6 +73,7 @@ public class GraphOptions extends OptionHolder {
             "graph.serializer.enableCompression",
             "Compress serialized values to optimize space (may reduce performance)",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
@@ -73,6 +81,7 @@ public class GraphOptions extends OptionHolder {
             "graph.elementCacheEnabled",
             "Enable memory caching of graph elements",
             disallowEmpty(),
+            Boolean.class,
             true
     );
 
@@ -80,6 +89,7 @@ public class GraphOptions extends OptionHolder {
             "graph.autoFlush",
             "Flush after saving each element",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
@@ -87,6 +97,7 @@ public class GraphOptions extends OptionHolder {
             "graph.elementCacheSize",
             "How many graph elements to cache",
             positiveInt(),
+            Integer.class,
             1_000_000
     );
 
@@ -94,6 +105,7 @@ public class GraphOptions extends OptionHolder {
             "graph.idgenerator",
             "Which ID generation method to use",
             disallowEmpty(),
+            String.class,
             LongIdGenerator.class.getName()
     );
 
@@ -101,6 +113,7 @@ public class GraphOptions extends OptionHolder {
             "graph.streamingPropertyValueStorageStrategy",
             "Strategy for storing StreamingPropertyValues",
             disallowEmpty(),
+            String.class,
             FilesystemSPVStorageStrategy.class.getName()
     );
 
@@ -108,6 +121,7 @@ public class GraphOptions extends OptionHolder {
             "graph.spvFolder",
             "Folder to store SPV StreamingPropertyValue data",
             disallowEmpty(),
+            String.class,
             "/bc_data"
     );
 
@@ -115,24 +129,28 @@ public class GraphOptions extends OptionHolder {
             "graph.historyInSeparateTable",
             "Keep history in seaparate data table",
             disallowEmpty(),
+            Boolean.class,
             false
     );
 
     public static final ConfigOption<String> BACKUP_DIR = new ConfigOption<>(
             "graph.backupDir",
             "Backup folder",
+            String.class,
             "/bigconnect/backup"
     );
 
     public static final ConfigOption<Integer> DW_RUNNER_THREAD_COUNT = new ConfigOption<>(
             DataWorkerRunnerProcess.class.getName()+".threadCount",
             "Number of threads for the processing DataWorker messages",
+            Integer.class,
             Runtime.getRuntime().availableProcessors()
     );
 
     public static final ConfigOption<Integer> LRP_RUNNER_THREAD_COUNT = new ConfigOption<>(
             LongRunningProcessRunnerProcess.class.getName()+".threadCount",
             "Number of threads for the processing LongRunningProcess messages",
+            Integer.class,
             Runtime.getRuntime().availableProcessors()
     );
 

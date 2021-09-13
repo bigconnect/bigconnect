@@ -10,6 +10,7 @@ public class SchemaOptions extends OptionHolder {
             "schema.cache.maxSize",
             "Maximum schema objects that should be kept in memory",
             rangeInt(0L, Long.MAX_VALUE),
+            Long.class,
             1000L
     );
 

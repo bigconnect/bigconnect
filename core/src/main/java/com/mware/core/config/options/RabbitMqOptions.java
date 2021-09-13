@@ -14,6 +14,7 @@ public class RabbitMqOptions extends OptionHolder {
             "rabbitmq.username",
             "Username to connect to RabbitMQ server",
             disallowEmpty(),
+            String.class,
             "admin"
     );
 
@@ -21,6 +22,7 @@ public class RabbitMqOptions extends OptionHolder {
             "rabbitmq.password",
             "Password to connect to RabbitMQ server",
             disallowEmpty(),
+            String.class,
             "admin"
     );
 
@@ -28,6 +30,7 @@ public class RabbitMqOptions extends OptionHolder {
             "rabbitmq.prefetch.count",
             "How many items should be fetched from the queue",
             positiveInt(),
+            Integer.class,
             10
     );
 

@@ -36,9 +36,9 @@
  */
 package com.mware.core.orm.accumulo;
 
+import com.mware.core.config.Configuration;
 import com.mware.core.config.options.GraphOptions;
 import com.mware.core.orm.*;
-import com.mware.ge.GraphConfiguration;
 import com.mware.ge.accumulo.AccumuloGraphConfiguration;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.*;
@@ -72,7 +72,7 @@ public class AccumuloSimpleOrmSession extends SimpleOrmSession {
 
     // called by com.mware.ge.util.ConfigurationUtils.createInstance
     @SuppressWarnings("unused")
-    public void init(GraphConfiguration configuration) {
+    public void init(Configuration configuration) {
         try {
             connector = new AccumuloGraphConfiguration(configuration.toMap())
                     .createConnector();

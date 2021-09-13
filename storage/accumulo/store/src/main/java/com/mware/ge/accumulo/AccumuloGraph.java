@@ -230,6 +230,7 @@ public class AccumuloGraph extends AbstractStorableGraph<StorableVertex, Storabl
         }
     }
 
+    // called from GraphFactory
     @SuppressWarnings("unchecked")
     public static AccumuloGraph create(Map config) {
         return create(new AccumuloGraphConfiguration(config));

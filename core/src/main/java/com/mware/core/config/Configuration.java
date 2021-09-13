@@ -67,7 +67,6 @@ import static org.reflections.ReflectionUtils.*;
  * configuration values to the application
  */
 public class Configuration extends TypedConfiguration {
-    public static final String ACL_PROVIDER_REPOSITORY = "repository.acl";
     public static final String WEB_CONFIGURATION_PREFIX = "web.ui.";
     public static final String WEB_GEOCODER_ENABLED = WEB_CONFIGURATION_PREFIX + "geocoder.enabled";
     public static final String DEV_MODE = "devMode";
@@ -93,26 +92,15 @@ public class Configuration extends TypedConfiguration {
     public static final String STATUS_REFRESH_INTERVAL_SECONDS = "status.refreshIntervalSeconds";
     public static final int STATUS_REFRESH_INTERVAL_SECONDS_DEFAULT = 10;
     public static final String SYSTEM_PROPERTY_PREFIX = "bc.";
-    public static final String AUTH_TOKEN_PASSWORD = "auth.token.password";
-    public static final String AUTH_TOKEN_SALT = "auth.token.salt";
-    public static final String AUTH_TOKEN_EXPIRATION_IN_MINS = WEB_CONFIGURATION_PREFIX + "auth.token.expiration_minutes";
-    public static final String AUTH_TOKEN_EXPIRATION_TOLERANCE_IN_SECS = "auth.token.expiration_tolerance_seconds";
     public static final String HTTP_GZIP_ENABLED = "http.gzipEnabled";
-    public static final String WEB_RESPONSE_HEADER_X_FRAME_OPTIONS = "web.response.header.X-Frame-Options";
 
     private final ConfigurationLoader configurationLoader;
     private PrivilegeRepository privilegeRepository;
     private SchemaRepository schemaRepository;
 
-    public static final Map<String, Object> DEFAULTS = new HashMap<>();
-
     static {
-        DEFAULTS.put(AUTH_TOKEN_EXPIRATION_IN_MINS, "60");
-        DEFAULTS.put(AUTH_TOKEN_EXPIRATION_TOLERANCE_IN_SECS, "60");
-        DEFAULTS.put(WEB_RESPONSE_HEADER_X_FRAME_OPTIONS, "DENY");
-
         // register all options
-        Set<Class<? extends OptionHolder>> optionHolders = new Reflections("", new SubTypesScanner())
+        Set<Class<? extends OptionHolder>> optionHolders = new Reflections("com.mware", new SubTypesScanner())
                 .getSubTypesOf(OptionHolder.class);
         optionHolders.forEach(optionHolder -> {
             Set<Method> initMethod = getMethods(optionHolder, withModifier(Modifier.STATIC), withReturnType(optionHolder), withParameters());

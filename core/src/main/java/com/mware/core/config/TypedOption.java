@@ -175,8 +175,7 @@ public class TypedOption<T, R> {
     }
 
     protected void check(Object value) {
-        Preconditions.checkNotNull(value, "value", this.name);
-        if (!this.dataType.isInstance(value)) {
+        if (value != null && !this.dataType.isInstance(value)) {
             throw new ConfigException(
                     "Invalid type of value '%s' for option '%s', " +
                             "expect type %s but got %s", value, this.name,

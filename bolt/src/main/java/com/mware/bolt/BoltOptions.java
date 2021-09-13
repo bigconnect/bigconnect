@@ -12,6 +12,7 @@ public class BoltOptions extends OptionHolder {
             "bolt.host",
             "Listen address for Bolt server",
             disallowEmpty(),
+            String.class,
             "localhost"
     );
 
@@ -19,6 +20,7 @@ public class BoltOptions extends OptionHolder {
             "bolt.port",
             "Listen port for Bolt server",
             rangeInt(1000, Integer.MAX_VALUE),
+            Integer.class,
             10242
     );
 
@@ -26,6 +28,7 @@ public class BoltOptions extends OptionHolder {
             "bolt.threadPoolMinSize",
             "Minimum number of listen threads to keep in the thread pool, even if they are idle",
             positiveInt(),
+            Integer.class,
             5
     );
 
@@ -33,6 +36,7 @@ public class BoltOptions extends OptionHolder {
             "bolt.threadPoolMaxSize",
             "Maximum number of listen threads to keep in the thread pool",
             positiveInt(),
+            Integer.class,
             400
     );
 
@@ -40,6 +44,7 @@ public class BoltOptions extends OptionHolder {
             "bolt.threadPoolKeepalive",
             "The maximum time an idle thread in the thread pool will wait for new tasks",
             disallowEmpty(),
+            Duration.class,
             Duration.ofMinutes(5)
     );
 
@@ -51,18 +56,21 @@ public class BoltOptions extends OptionHolder {
                     BoltConnector.EncryptionLevel.REQUIRED.name(),
                     BoltConnector.EncryptionLevel.DISABLED.name()
             ),
+            String.class,
             BoltConnector.EncryptionLevel.OPTIONAL.name()
     );
 
     public static final ConfigOption<String> SSL_CERTIFICATE_FILE = new ConfigOption<>(
             "bolt.ssl.tls_certificate_file",
             "Path to the X.509 public certificate file",
+            String.class,
             "bolt.cert"
     );
 
     public static final ConfigOption<String> SSL_KEY_FILE = new ConfigOption<>(
             "bolt.ssl.tls_key_file",
             "Path to the X.509 private key file",
+            String.class,
             "bolt.key"
     );
 

@@ -37,46 +37,31 @@
 package com.mware.ge.rocksdb;
 
 import com.mware.ge.store.StorableGraphConfiguration;
-import com.mware.ge.util.Preconditions;
 
 import java.util.Map;
 
 public class RocksDBGraphConfiguration extends StorableGraphConfiguration {
-    public static final String DATA_PATH = "dataPath";
-    public static final String WAL_PATH = "walPath";
-    public static final String OPTIMIZE_MODE = "optimizeMode";
-    public static final String LOG_LEVEL = "logLevel";
-    public static final String BULK_LOAD = "bulkLoad";
-
-    public static final boolean DEFAULT_OPTIMIZE_MODE = true;
-    public static final boolean DEFAULT_BULK_LOAD = false;
-    public static final String DEFAULT_LOG_LEVEL = "INFO";
-
     public RocksDBGraphConfiguration(Map<String, Object> config) {
         super(config);
     }
 
     public String getDataPath() {
-        String path = getString(DATA_PATH, null);
-        Preconditions.checkNotNull(path);
-        return path;
+        return get(RocksDBOptions.DATA_PATH);
     }
 
     public String getWalPath() {
-        String path = getString(WAL_PATH, null);
-        Preconditions.checkNotNull(path);
-        return path;
+        return get(RocksDBOptions.WAL_PATH);
     }
 
     public boolean isOptimizeMode() {
-        return getBoolean(OPTIMIZE_MODE, DEFAULT_OPTIMIZE_MODE);
+        return get(RocksDBOptions.OPTIMIZE_MODE);
     }
 
     public boolean isBulkLoad() {
-        return getBoolean(BULK_LOAD, DEFAULT_BULK_LOAD);
+        return get(RocksDBOptions.BULK_LOAD);
     }
 
     public String getLogLevel() {
-        return getString(LOG_LEVEL, DEFAULT_LOG_LEVEL);
+        return get(RocksDBOptions.LOG_LEVEL);
     }
 }

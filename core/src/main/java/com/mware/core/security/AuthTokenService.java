@@ -39,15 +39,12 @@ package com.mware.core.security;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.user.User;
 
 import javax.crypto.SecretKey;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.mware.core.config.Configuration.AUTH_TOKEN_PASSWORD;
-import static com.mware.core.config.Configuration.AUTH_TOKEN_SALT;
 
 @Singleton
 public class AuthTokenService {
@@ -57,11 +54,9 @@ public class AuthTokenService {
 
     @Inject
     public AuthTokenService(Configuration configuration, UserRepository userRepository) {
-        String keyPassword = configuration.get(Configuration.AUTH_TOKEN_PASSWORD, "4X5rWTCDKbbFoUy7TrxoaKTKQkBgnUB8d45jvABwHgo");
-        checkNotNull(keyPassword, "AtmosphereConfig init parameter '" + AUTH_TOKEN_PASSWORD + "' was not set.");
-        String keySalt = configuration.get(AUTH_TOKEN_SALT, "jNQheYMYfNY8sLc61LuGEg");
-        checkNotNull(keySalt, "AtmosphereConfig init parameter '" + AUTH_TOKEN_SALT + "' was not set.");
-        tokenExpirationToleranceInSeconds = configuration.getInt(Configuration.AUTH_TOKEN_EXPIRATION_TOLERANCE_IN_SECS, 0);
+        String keyPassword = configuration.get(CoreOptions.AUTH_TOKEN_PASSWORD);
+        String keySalt = configuration.get(CoreOptions.AUTH_TOKEN_SALT);
+        tokenExpirationToleranceInSeconds = configuration.get(CoreOptions.AUTH_TOKEN_EXPIRATION_TOLERANCE_IN_SECS);
 
         this.userRepository = userRepository;
 

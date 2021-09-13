@@ -36,6 +36,7 @@
  */
 package com.mware.ge.rocksdb;
 
+import com.mware.core.config.options.GraphOptions;
 import com.mware.ge.Graph;
 import com.mware.ge.base.TestGraphFactory;
 
@@ -47,7 +48,7 @@ import java.util.Map;
 public class RocksDBGraphFactory implements TestGraphFactory {
     @Override
     public Graph createGraph() throws Exception {
-        Map configMap = new HashMap();
+        Map<String, Object> configMap = new HashMap();
 
         Path spvPath = Files.createTempDirectory("bc_spv.");
         spvPath.toFile().deleteOnExit();
@@ -56,9 +57,9 @@ public class RocksDBGraphFactory implements TestGraphFactory {
         Path walPath = Files.createTempDirectory("bc_wal.");
         walPath.toFile().deleteOnExit();
 
-        configMap.put(RocksDBGraphConfiguration.STREAMING_PROPERTY_VALUE_DATA_FOLDER, spvPath.toString());
-        configMap.put(RocksDBGraphConfiguration.DATA_PATH, dataPath.toString());
-        configMap.put(RocksDBGraphConfiguration.WAL_PATH, walPath.toString());
+        configMap.put(GraphOptions.STREAMING_PROPERTY_VALUE_DATA_FOLDER.name(), spvPath.toString());
+        configMap.put(RocksDBOptions.DATA_PATH.name(), dataPath.toString());
+        configMap.put(RocksDBOptions.WAL_PATH.name(), walPath.toString());
 
         return RocksDBGraph.create(configMap);
     }

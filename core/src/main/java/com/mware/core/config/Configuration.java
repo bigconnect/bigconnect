@@ -68,31 +68,13 @@ import static org.reflections.ReflectionUtils.*;
  */
 public class Configuration extends TypedConfiguration {
     public static final String WEB_CONFIGURATION_PREFIX = "web.ui.";
-    public static final String WEB_GEOCODER_ENABLED = WEB_CONFIGURATION_PREFIX + "geocoder.enabled";
-    public static final String DEV_MODE = "devMode";
-    public static final boolean DEV_MODE_DEFAULT = true;
-    public static final String DEFAULT_SEARCH_RESULT_COUNT = "search.defaultSearchCount";
-    public static final String DEFAULT_TIME_ZONE = "default.timeZone";
 
     public static final String DW_QUEUE_PREFIX = "dw.queue";
     public static final String DW_QUEUE_NAME = "dw.queue.name";
     public static final String LRP_QUEUE_PREFIX = "lrp.queue";
     public static final String LRP_QUEUE_NAME = "lrp.queue.name";
 
-    public static final String COMMENTS_AUTO_PUBLISH = "comments.autoPublish";
-    public static final boolean DEFAULT_COMMENTS_AUTO_PUBLISH = false;
-    public static final String MULTIPART_LOCATION = "multipart.location";
-    public static final String DEFAULT_MULTIPART_LOCATION = System.getProperty("java.io.tmpdir");
-    public static final String MULTIPART_MAX_FILE_SIZE = "multipart.maxFileSize";
-    public static final long DEFAULT_MULTIPART_MAX_FILE_SIZE = 1024 * 1024 * 512;
-    public static final String MULTIPART_MAX_REQUEST_SIZE = "multipart.maxRequestSize";
-    public static final long DEFAULT_MULTIPART_MAX_REQUEST_SIZE = 1024 * 1024 * 1024;
-    public static final String MULTIPART_FILE_SIZE_THRESHOLD = "multiPart.fileSizeThreshold";
-    public static final int DEFAULT_MULTIPART_FILE_SIZE_THRESHOLD = 0;
-    public static final String STATUS_REFRESH_INTERVAL_SECONDS = "status.refreshIntervalSeconds";
-    public static final int STATUS_REFRESH_INTERVAL_SECONDS_DEFAULT = 10;
     public static final String SYSTEM_PROPERTY_PREFIX = "bc.";
-    public static final String HTTP_GZIP_ENABLED = "http.gzipEnabled";
 
     private final ConfigurationLoader configurationLoader;
     private PrivilegeRepository privilegeRepository;

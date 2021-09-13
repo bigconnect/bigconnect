@@ -37,6 +37,7 @@
 package com.mware.core.model.search;
 
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.clientapi.dto.PropertyType;
 import com.mware.core.model.properties.SearchSchema;
@@ -89,7 +90,7 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
     ) {
         this.schemaRepository = schemaRepository;
         this.graph = graph;
-        this.defaultSearchResultCount = configuration.getInt(Configuration.DEFAULT_SEARCH_RESULT_COUNT, 100);
+        this.defaultSearchResultCount = configuration.get(CoreOptions.DEFAULT_SEARCH_RESULT_COUNT);
     }
 
     @Override

@@ -207,6 +207,14 @@ public class CoreOptions extends OptionHolder {
             60
     );
 
+    public static final ConfigOption<Integer> DEFAULT_SEARCH_RESULT_COUNT = new ConfigOption<>(
+            "search.defaultSearchCount",
+            "",
+            positiveInt(),
+            Integer.class,
+            100
+    );
+
     private CoreOptions() {
         super();
     }

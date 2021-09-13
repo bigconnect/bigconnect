@@ -99,6 +99,8 @@ public class Configuration extends TypedConfiguration {
                 } catch (Exception e) {
                     // do nothing
                 }
+            } else {
+                LOGGER.warn("Skipping config option holder %s because it's missing a static instance() method.", optionHolder.getName());
             }
         });
     }

@@ -82,7 +82,12 @@ public class Configuration extends TypedConfiguration {
 
     static {
         // register all options
-        Set<Class<? extends OptionHolder>> optionHolders = new Reflections("com.mware", new SubTypesScanner())
+        registerOptionHolders("com.mware");
+        registerOptionHolders("io.bigconnect");
+    }
+
+    private static void registerOptionHolders(String packageName) {
+        Set<Class<? extends OptionHolder>> optionHolders = new Reflections(packageName, new SubTypesScanner())
                 .getSubTypesOf(OptionHolder.class);
         optionHolders.forEach(optionHolder -> {
             Set<Method> initMethod = getMethods(optionHolder, withModifier(Modifier.STATIC), withReturnType(optionHolder), withParameters());

@@ -5,7 +5,6 @@ import com.mware.core.util.ClassUtil;
 import com.mware.core.util.ServiceLoaderUtil;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
-import com.mware.ge.util.Preconditions;
 
 import java.util.*;
 
@@ -26,6 +25,9 @@ public abstract class TypedConfiguration {
     }
 
     public void set(String key, Object value) {
+        if (value == null)
+            return;
+
         if (!OptionSpace.containKey(key)) {
             if (!key.equals(FileConfigurationLoader.ENV_BC_DIR)
                     && !key.startsWith(ServiceLoaderUtil.CONFIG_DISABLE_PREFIX)
@@ -33,11 +35,12 @@ public abstract class TypedConfiguration {
                 LOGGER.warn("Encountered an undefined config property: %s", key);
             }
             config.put(key, value);
-        } else {
-            Preconditions.checkArgument(value instanceof String,
-                    "Invalid value for key '%s': %s", key, value);
+        } if (value instanceof String && OptionSpace.get(key) != null) {
+            // try to convert the value
             TypedOption<?, ?> typedOption = OptionSpace.get(key);
             config.put(key, typedOption.parseConvert((String) value));
+        } else {
+            config.put(key, value);
         }
     }
 

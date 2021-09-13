@@ -39,7 +39,7 @@ package com.mware.core.process;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.mware.core.config.Configuration;
-import com.mware.core.config.options.GraphOptions;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.lifecycle.LifecycleAdapter;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRunner;
@@ -60,7 +60,7 @@ public class LongRunningProcessRunnerProcess extends LifecycleAdapter {
     @Inject
     public LongRunningProcessRunnerProcess(Configuration configuration, LifeSupportService lifeSupportService) {
         this.configuration = configuration;
-        this.threadCount = configuration.get(GraphOptions.LRP_RUNNER_THREAD_COUNT);
+        this.threadCount = configuration.get(CoreOptions.LRP_RUNNER_THREAD_COUNT);
         lifeSupportService.add(this);
     }
 

@@ -53,6 +53,8 @@ import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.orm.SimpleOrmSession;
 import com.mware.core.orm.graph.GraphSimpleOrmSession;
+import com.mware.core.process.DataWorkerRunnerProcess;
+import com.mware.core.process.LongRunningProcessRunnerProcess;
 import com.mware.core.security.AuditService;
 import com.mware.core.security.NopAuditService;
 import com.mware.core.trace.DefaultTraceRepository;
@@ -213,6 +215,27 @@ public class CoreOptions extends OptionHolder {
             positiveInt(),
             Integer.class,
             100
+    );
+
+    public static final ConfigOption<Boolean> WORKSPACE_AUTO_PUBLISH = new ConfigOption<>(
+            "workspace.autopublish",
+            "",
+            Boolean.class,
+            false
+    );
+
+    public static final ConfigOption<Integer> DW_RUNNER_THREAD_COUNT = new ConfigOption<>(
+            DataWorkerRunnerProcess.class.getName()+".threadCount",
+            "Number of threads for the processing DataWorker messages",
+            Integer.class,
+            Runtime.getRuntime().availableProcessors()
+    );
+
+    public static final ConfigOption<Integer> LRP_RUNNER_THREAD_COUNT = new ConfigOption<>(
+            LongRunningProcessRunnerProcess.class.getName()+".threadCount",
+            "Number of threads for the processing LongRunningProcess messages",
+            Integer.class,
+            Runtime.getRuntime().availableProcessors()
     );
 
     private CoreOptions() {

@@ -36,8 +36,6 @@
  */
 package com.mware.ge.accumulo;
 
-import com.mware.core.config.ConfigOption;
-import com.mware.core.config.OptionSpace;
 import com.mware.core.config.options.CoreOptions;
 import com.mware.core.config.options.GraphOptions;
 import com.mware.core.orm.accumulo.AccumuloSimpleOrmSession;
@@ -90,10 +88,8 @@ public class AccumuloGraphConfiguration extends StorableGraphConfiguration {
     public AccumuloGraphConfiguration(Map<String, Object> config) {
         super(config);
 
-        ((ConfigOption<String>) OptionSpace.get(GraphOptions.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY.name()))
-                .overrideDefaultValue(DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY);
-        ((ConfigOption<Class>) OptionSpace.get(CoreOptions.SIMPLE_ORM_SESSION.name()))
-                .overrideDefaultValue(AccumuloSimpleOrmSession.class);
+        set(GraphOptions.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY.name(), DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY);
+        set(CoreOptions.SIMPLE_ORM_SESSION.name(), AccumuloSimpleOrmSession.class);
     }
 
     private static Map<String, Object> toMap(Configuration configuration) {

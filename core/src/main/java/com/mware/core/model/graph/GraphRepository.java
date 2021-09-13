@@ -38,6 +38,7 @@ package com.mware.core.model.graph;
 
 import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.exception.BcResourceNotFoundException;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.model.clientapi.dto.ClientApiSourceInfo;
@@ -71,7 +72,6 @@ public class GraphRepository {
     private final WorkQueueRepository workQueueRepository;
     private final WebQueueRepository webQueueRepository;
     private final Boolean autoPublish;
-    public static final String WORKSPACE_AUTO_PUBLISH_KEY = "workspace.autopublish";
 
     @Inject
     public GraphRepository(
@@ -86,7 +86,7 @@ public class GraphRepository {
         this.termMentionRepository = termMentionRepository;
         this.workQueueRepository = workQueueRepository;
         this.webQueueRepository = webQueueRepository;
-        this.autoPublish = configuration.getBoolean(WORKSPACE_AUTO_PUBLISH_KEY, false);
+        this.autoPublish = configuration.get(CoreOptions.WORKSPACE_AUTO_PUBLISH);
     }
 
     public <T extends Element> VisibilityAndElementMutation<T> updateElementVisibilitySource(

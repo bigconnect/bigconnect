@@ -112,6 +112,8 @@ public class Configuration extends TypedConfiguration {
     public Configuration(final ConfigurationLoader configurationLoader, final Map<String, Object> config) {
         super(new ConcurrentHashMap<>());
         this.configurationLoader = configurationLoader;
+        // set default values
+        OptionSpace.keys().forEach(k -> set(k, OptionSpace.get(k).defaultValue()));
         addConfigMapEntries(config);
         addSystemProperties();
         resolvePropertyReferences();

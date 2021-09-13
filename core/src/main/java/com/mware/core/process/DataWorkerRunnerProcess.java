@@ -39,7 +39,7 @@ package com.mware.core.process;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.mware.core.config.Configuration;
-import com.mware.core.config.options.GraphOptions;
+import com.mware.core.config.options.CoreOptions;
 import com.mware.core.ingest.dataworker.DataWorkerRunner;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.lifecycle.LifecycleAdapter;
@@ -60,7 +60,7 @@ public class DataWorkerRunnerProcess extends LifecycleAdapter {
 
     @Inject
     public DataWorkerRunnerProcess(Configuration configuration, LifeSupportService lifeSupportService) {
-        this.threadCount = configuration.get(GraphOptions.DW_RUNNER_THREAD_COUNT);
+        this.threadCount = configuration.get(CoreOptions.DW_RUNNER_THREAD_COUNT);
         lifeSupportService.add(this);
     }
 

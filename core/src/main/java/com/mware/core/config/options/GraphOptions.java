@@ -2,8 +2,6 @@ package com.mware.core.config.options;
 
 import com.mware.core.config.ConfigOption;
 import com.mware.core.config.OptionHolder;
-import com.mware.core.process.DataWorkerRunnerProcess;
-import com.mware.core.process.LongRunningProcessRunnerProcess;
 import com.mware.ge.id.LongIdGenerator;
 import com.mware.ge.search.DefaultSearchIndex;
 import com.mware.ge.serializer.kryo.quickSerializers.QuickKryoGeSerializer;
@@ -138,20 +136,6 @@ public class GraphOptions extends OptionHolder {
             "Backup folder",
             String.class,
             "/bigconnect/backup"
-    );
-
-    public static final ConfigOption<Integer> DW_RUNNER_THREAD_COUNT = new ConfigOption<>(
-            DataWorkerRunnerProcess.class.getName()+".threadCount",
-            "Number of threads for the processing DataWorker messages",
-            Integer.class,
-            Runtime.getRuntime().availableProcessors()
-    );
-
-    public static final ConfigOption<Integer> LRP_RUNNER_THREAD_COUNT = new ConfigOption<>(
-            LongRunningProcessRunnerProcess.class.getName()+".threadCount",
-            "Number of threads for the processing LongRunningProcess messages",
-            Integer.class,
-            Runtime.getRuntime().availableProcessors()
     );
 
     private GraphOptions() {

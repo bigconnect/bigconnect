@@ -16,11 +16,13 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -56,7 +58,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
     DiskManager diskMan;
     Lock rollbackLock = new ReentrantLock();
 
-    OutputStream outputStream;
+    RandomAccessFile raf;
 
     public static FileBasedWal getWal(String dir, FileBasedWalInfo info, FileBasedWalPolicy policy, PreProcessor preProcessor, DiskManager diskMan) {
         return new FileBasedWal(dir, info, policy, preProcessor, diskMan);
@@ -90,7 +92,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
             this.lastLogId = info.lastId();
             this.lastLogTerm = info.lastTerm();
             try {
-                outputStream = new FileOutputStream(info.path(), true);
+                raf = new RandomAccessFile(info.path(), policy.sync ? "rws" : "rw");
                 ccurrInfo = info;
             } catch (FileNotFoundException e) {
                 throw new GeException("Could not open WAL file " + info.path() + ": " + e.getMessage());
@@ -126,7 +128,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
             try {
                 BasicFileAttributes attr = Files.readAttributes(fn.toPath(), BasicFileAttributes.class);
                 info.setSize(attr.size());
-                info.setMtime(attr.lastModifiedTime().toMillis());
+                info.setMtime(attr.lastModifiedTime().toInstant().getEpochSecond());
             } catch (IOException e) {
                 LOGGER.error("Could not get file attributes. Skipping file: %s", fn.getName());
                 continue;
@@ -289,16 +291,27 @@ public class FileBasedWal implements Wal, AutoCloseable {
                 }
 
                 // Read the term Id
-                raf.seek(pos + Long.BYTES);
-                term = raf.readLong();
-
+                try {
+                    raf.seek(pos + Long.BYTES);
+                    term = raf.readLong();
+                } catch (EOFException ex) {
+                    break;
+                }
 
                 // Read the message length
-                raf.seek(pos + Long.BYTES + Long.BYTES);
-                head = raf.readInt();
+                try {
+                    raf.seek(pos + Long.BYTES + Long.BYTES);
+                    head = raf.readInt();
+                } catch (EOFException ex) {
+                    break;
+                }
 
-                raf.seek(pos + Long.BYTES + Long.BYTES + Integer.BYTES + Long.BYTES + head);
-                foot = raf.readInt();
+                try {
+                    raf.seek(pos + Long.BYTES + Long.BYTES + Integer.BYTES + Long.BYTES + head);
+                    foot = raf.readInt();
+                } catch (EOFException ex) {
+                    break;
+                }
 
                 if (head != foot) {
                     LOGGER.error("Message size doen't match: %d != %d", head, foot);
@@ -406,7 +419,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
         byte[] buf = strBuf.array();
 
         // Prepare the WAL file if it's not opened
-        if (outputStream == null) {
+        if (raf == null) {
             prepareNewFile(id);
         } else if (ccurrInfo.size() + buf.length > policy.fileSize) {
             // Need to roll over
@@ -421,10 +434,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
         }
 
         try {
-            outputStream.write(buf);
-            if (policy.sync) {
-                outputStream.flush();
-            }
+            raf.write(buf);
 
             ccurrInfo.setSize(ccurrInfo.size() + buf.length);
             ccurrInfo.setLastId(id);
@@ -443,16 +453,16 @@ public class FileBasedWal implements Wal, AutoCloseable {
     }
 
     private void closeCurrFile() {
-        if (outputStream == null) {
+        if (raf == null) {
             Preconditions.checkState(ccurrInfo == null);
             return;
         }
 
         try {
-            outputStream.close();
-            outputStream = null;
+            raf.close();
+            raf = null;
             Instant instant = Instant.now();
-            ccurrInfo.setMtime(instant.toEpochMilli());
+            ccurrInfo.setMtime(instant.getEpochSecond());
             BasicFileAttributeView fileAttrs =
                     Files.getFileAttributeView(Paths.get(ccurrInfo.path()), BasicFileAttributeView.class);
             fileAttrs.setTimes(FileTime.from(instant), null, null);
@@ -463,19 +473,19 @@ public class FileBasedWal implements Wal, AutoCloseable {
     }
 
     private void prepareNewFile(long startLogId) {
-        if (outputStream != null) {
+        if (raf != null) {
             LOGGER.warn("The current file needs to be closed first");
         }
 
         WalFileInfo info = new WalFileInfo(
-                Paths.get(dir, String.format("%d.wal", startLogId)).toString(),
+                Paths.get(dir, String.format("%019d.wal", startLogId)).toString(),
                 startLogId
         );
 
         walFiles.add(Pair.of(startLogId, info));
 
         try {
-            outputStream = new FileOutputStream(info.path());
+            raf = new RandomAccessFile(info.path(), policy.sync ? "rws" : "rw");
             ccurrInfo = info;
         } catch (FileNotFoundException e) {
             throw new GeException("Failed to open file " + info.path(), e);
@@ -614,7 +624,44 @@ public class FileBasedWal implements Wal, AutoCloseable {
 
     @Override
     public boolean linkCurrentWAL(String newPath) {
-        return false;
+        closeCurrFile();
+        try {
+            walFilesMutex.lock();
+            if (walFiles.isEmpty()) {
+                LOGGER.info(idStr + "No wal files found, skip link");
+                return true;
+            }
+
+            File newPathFile = new File(newPath);
+            if (newPathFile.exists()) {
+                try {
+                    FileUtils.deleteDirectory(newPathFile);
+                } catch (IOException e) {
+                    LOGGER.error("Remove existing directory failed: " + newPath);
+                    return false;
+                }
+            }
+
+            if (!newPathFile.mkdirs()) {
+                LOGGER.error("Could not create folder: " + newPath);
+                return false;
+            }
+
+            for (Pair<Long, WalFileInfo> f : this.walFiles) {
+                Path targetFile = Paths.get(newPath, String.format("%019d.wal", f.first()));
+                try {
+                    Files.createLink(targetFile, Paths.get(f.other().path()));
+                } catch (IOException e) {
+                    LOGGER.error(idStr + " Create link failed for " + f.other().path(), e);
+                    return false;
+                }
+                LOGGER.info(idStr + " Create link success for " + f.other().path() + " on " + newPath);
+            }
+        } finally {
+            walFilesMutex.unlock();
+        }
+
+        return true;
     }
 
     @Override
@@ -647,7 +694,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
             if (walFiles.isEmpty())
                 return;
 
-            long now = Clocks.systemClock().millis();
+            long now = Clocks.systemClock().instant().getEpochSecond();
             // In theory we only need to keep the latest wal file because it is beging written now.
             // However, sometimes will trigger raft snapshot even only a small amount of logs is missing,
             // especially when we reboot all storage, so se keep one more wal.
@@ -663,7 +710,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
             while (it.hasNext()) {
                 Pair<Long, WalFileInfo> e = it.next();
                 // keep at least two wal
-                if (++index < size - 2 && (now - e.other().mtime()) > walTTL) {
+                if (index++ < size - 2 && (now - e.other().mtime()) > walTTL) {
                     LOGGER.info("Clean wals, remove " + e.other().path());
                     FileUtils.deleteQuietly(new File(e.other().path()));
                     it.remove();

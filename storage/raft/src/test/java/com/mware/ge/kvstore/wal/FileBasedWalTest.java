@@ -3,15 +3,18 @@ package com.mware.ge.kvstore.wal;
 import com.mware.ge.kvstore.utils.LogIterator;
 import com.mware.ge.kvstore.wal.FileBasedWal.FileBasedWalInfo;
 import org.apache.commons.io.FileUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -31,7 +34,7 @@ public class FileBasedWalTest {
             "abcdefghijklmnopqrstuvwxyz123456789abcdefghijklmnopqrstuvwxyz123456789" +
             "abcdefghijklmnopqrstuvwxyz123456789abcdefghijklmnopqrstuvwxyz123456789" +
             "abcdefghijklmnopqrstuvwxyz123456789abcdefghijklmnopqrstuvwxyz123456789" +
-            "abcdefghijklmnopqrstuvwxyz123456789abcdefghijklmnopqrstuvwxyz-%d";
+            "abcdefghijklmnopqrstuvwxyz123456789abcdefghijklmnopqrstuvwxyz-%06d";
 
     @Test
     public void appendLogs() throws Exception {
@@ -85,7 +88,7 @@ public class FileBasedWalTest {
             assertEquals(10000, wal.lastLogId());
         }
 
-        Collection<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[] { "wal" } , false);
+        Collection<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false);
         assertEquals(11, walFiles.size());
 
         // Now let's open it to read
@@ -202,7 +205,7 @@ public class FileBasedWalTest {
         }
 
         // Check the number of files
-        Collection<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[] { "wal" } , false);
+        Collection<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false);
         assertEquals(1, walFiles.size());
 
         // Now let's open it to read
@@ -284,7 +287,7 @@ public class FileBasedWalTest {
                 assertEquals(100 * (count + 1), wal.lastLogId());
             }
 
-            Collection<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[] { "wal" } , false);
+            Collection<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false);
             assertEquals(10, walFiles.size());
 
             // Rollback
@@ -292,13 +295,13 @@ public class FileBasedWalTest {
                 assertTrue(wal.rollbackToLog(i));
                 assertEquals(i, wal.lastLogId());
             }
-            walFiles = FileUtils.listFiles(walDir.toFile(), new String[] { "wal" } , false);
+            walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false);
             assertEquals(0, walFiles.size());
 
             for (int i = 1; i <= 10; i++) {
                 wal.appendLog(i, 1, 0, String.format(kLongMsg, i).getBytes(StandardCharsets.UTF_8));
             }
-            walFiles = FileUtils.listFiles(walDir.toFile(), new String[] { "wal" } , false);
+            walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false);
             assertEquals(1, walFiles.size());
         }
     }
@@ -371,5 +374,119 @@ public class FileBasedWalTest {
             }
         }
 
+        FileUtils.deleteDirectory(walDir.toFile());
+    }
+
+    @Test
+    public void checkLastWalTest() throws Exception {
+        Path walDir = Files.createTempDirectory("testWal.");
+        FileBasedWalInfo info = new FileBasedWalInfo();
+        FileBasedWalPolicy policy = new FileBasedWalPolicy();
+        policy.fileSize = 1024L * 1024L;
+
+        try (FileBasedWal wal = FileBasedWal.getWal(walDir.toString(), info, policy, ((logId, termId, clusterId, log) -> true), null)) {
+            assertEquals(0, wal.lastLogId());
+
+            for (int i = 1; i <= 1000; i++) {
+                wal.appendLog(i, 1, 0, String.format(kLongMsg, i).getBytes(StandardCharsets.UTF_8));
+            }
+            assertEquals(1000, wal.lastLogId());
+        }
+
+        // Modify the wal file, make last wal invalid
+        List<File> walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false)
+                .stream().sorted(Comparator.comparing(File::getName))
+                .collect(Collectors.toList());
+
+        File f = walFiles.get(walFiles.size() - 1);
+        long size = f.length();
+        try (FileChannel outChan = new FileOutputStream(f, true).getChannel()) {
+            outChan.truncate(size - Integer.BYTES);
+        }
+
+        long expected;
+        File lastWalPath;
+        try (FileBasedWal wal = FileBasedWal.getWal(walDir.toString(), info, policy, ((logId, termId, clusterId, log) -> true), null)) {
+            assertEquals(999, wal.lastLogId());
+
+            // get lastId in previous wal, make last wal invalid
+            walFiles = FileUtils.listFiles(walDir.toFile(), new String[]{"wal"}, false)
+                    .stream().sorted(Comparator.comparing(File::getName))
+                    .collect(Collectors.toList());
+            lastWalPath = walFiles.get(walFiles.size() - 1);
+
+            expected = wal.walFiles.get(wal.walFiles.size() - 2).other().lastId();
+        }
+
+        try (FileChannel outChan = new FileOutputStream(lastWalPath, true).getChannel()) {
+            outChan.truncate(Long.BYTES + Long.BYTES);
+        }
+
+        // Now let's open it to read
+        try (FileBasedWal wal = FileBasedWal.getWal(walDir.toString(), info, policy, ((logId, termId, clusterId, log) -> true), null)) {
+            assertEquals(expected, wal.lastLogId());
+        }
+
+        // truncate last wal
+        try (FileChannel outChan = new FileOutputStream(lastWalPath, true).getChannel()) {
+            outChan.truncate(0);
+        }
+
+        // Now let's open it to read
+        try (FileBasedWal wal = FileBasedWal.getWal(walDir.toString(), info, policy, ((logId, termId, clusterId, log) -> true), null)) {
+            assertEquals(expected, wal.lastLogId());
+
+            // Append more log, and reset to 1000, the last wal should be an empty file
+            for (long i = expected + 1; i <= expected + 1000; i++) {
+                wal.appendLog(i, 1, 0, String.format(kLongMsg, i).getBytes(StandardCharsets.UTF_8));
+            }
+            assertEquals(expected + 1000, wal.lastLogId());
+
+            wal.rollbackToLog(1000);
+            assertEquals(1000, wal.lastLogId());
+        }
+
+        try (FileBasedWal wal = FileBasedWal.getWal(walDir.toString(), info, policy, ((logId, termId, clusterId, log) -> true), null)) {
+            assertEquals(1000, wal.lastLogId());
+        }
+
+        FileUtils.deleteDirectory(walDir.toFile());
+    }
+
+    @Test
+    public void linkTest() throws Exception {
+        Path walDir = Files.createTempDirectory("testWal.");
+        FileBasedWalInfo info = new FileBasedWalInfo();
+        FileBasedWalPolicy policy = new FileBasedWalPolicy();
+        policy.fileSize = 1024L * 512L;
+
+        try (FileBasedWal wal = FileBasedWal.getWal(walDir.toString(), info, policy, ((logId, termId, clusterId, log) -> true), null)) {
+            assertEquals(0, wal.lastLogId());
+
+            for (int i = 1; i <= 1000; i++) {
+                wal.appendLog(i, 1, 0, String.format(kLongMsg, i).getBytes(StandardCharsets.UTF_8));
+            }
+            assertEquals(1000, wal.lastLogId());
+
+            String snapshotFolder = String.format("%s/snapshot", walDir.toString());
+            assertTrue(wal.linkCurrentWAL(snapshotFolder));
+
+            List<File> files = FileUtils.listFiles(new File(snapshotFolder), new String[]{"wal"}, false)
+                    .stream().sorted(Comparator.comparing(File::getName))
+                    .collect(Collectors.toList());
+
+            assertEquals(3, files.size());
+            for (int i = 0; i < wal.walFiles.size(); i++) {
+                long sz1 = FileUtils.sizeOf(new File(wal.walFiles.get(i).other().path()));
+                long sz2 = FileUtils.sizeOf(files.get(i));
+                assertEquals(sz1, sz2);
+            }
+
+            int num = wal.walFiles.size();
+            wal.appendLog(1001, 1, 0, String.format(kLongMsg, 1001).getBytes(StandardCharsets.UTF_8));
+            assertEquals(num + 1, wal.walFiles.size());
+        }
+
+        FileUtils.deleteDirectory(walDir.toFile());
     }
 }

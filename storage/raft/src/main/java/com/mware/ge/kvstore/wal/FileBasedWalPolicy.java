@@ -15,11 +15,23 @@ public class FileBasedWalPolicy {
         return fileSize;
     }
 
+    public void setFileSize(long fileSize) {
+        this.fileSize = fileSize;
+    }
+
     public long getBufferSize() {
         return bufferSize;
     }
 
+    public void setBufferSize(int bufferSize) {
+        this.bufferSize = bufferSize;
+    }
+
     public boolean isSync() {
         return sync;
+    }
+
+    public void setSync(boolean sync) {
+        this.sync = sync;
     }
 }

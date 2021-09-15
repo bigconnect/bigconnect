@@ -18,7 +18,7 @@ public class Host {
     private final SocketAddress addr;
     private final RaftPart part;
     private ReentrantLock lock = new ReentrantLock();
-    private final boolean isLearner;
+    private boolean isLearner;
     private String idStr;
     boolean paused;
     boolean stopped;
@@ -124,6 +124,10 @@ public class Host {
 
     public boolean isLearner() {
         return isLearner;
+    }
+
+    public void setLearner(boolean learner) {
+        this.isLearner = learner;
     }
 
     public CompletableFuture<AskForVoteResponse> askForVote(AskForVoteRequest req) {

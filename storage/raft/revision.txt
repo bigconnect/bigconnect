@@ -1,0 +1,2 @@
+Re-change the options for rebuild index batch number
+307528fc0cae11c1be4cbc1ccd7fcc5f39452b54 09.08.2021

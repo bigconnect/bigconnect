@@ -22,7 +22,6 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
-import java.time.temporal.ChronoField;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
@@ -32,8 +31,10 @@ import java.util.function.Function;
 public class FileBasedWal implements Wal, AutoCloseable {
     private GeLogger LOGGER = GeLoggerFactory.getLogger(FileBasedWal.class);
 
-    // Default wal ttl
     public static int WAL_TTL = 14400;
+    public static int WAL_FILE_SIZE = 16 * 1024 * 1024;
+    public static int WAL_BUFFER_SIZE = 8 * 1024 * 1024;
+    public static boolean WAL_SYNC = false;
 
     // firstLogId -> WalInfo
     // The last entry is the current opened WAL file
@@ -753,8 +754,8 @@ public class FileBasedWal implements Wal, AutoCloseable {
     }
 
     public static class FileBasedWalInfo {
-        String idStr;
-        int spaceId;
-        int partId;
+        public String idStr;
+        public int spaceId;
+        public int partId;
     }
 }

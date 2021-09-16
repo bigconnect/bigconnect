@@ -79,9 +79,9 @@
         <!-- General -->
         <classpath.filename>${project.build.directory}/.classpath.${user.name}</classpath.filename>
         <java.compiler.showWarnings>true</java.compiler.showWarnings>
-        <java.source.version>1.8</java.source.version>
-        <java.target.version>1.8</java.target.version>
-        <java.release.version>1.8</java.release.version>
+        <java.source.version>11</java.source.version>
+        <java.target.version>11</java.target.version>
+        <java.release.version>11</java.release.version>
         <maven.build.timestamp.format>EEE MMM dd HH:mm z yyyy</maven.build.timestamp.format>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -169,7 +169,7 @@
         <scala.version>2.11.12</scala.version>
         <scala-maven-plugin.version>3.4.2</scala-maven-plugin.version>
         <scala.binary.version>2.11</scala.binary.version>
-        <scala.target.vm>1.8</scala.target.vm>
+        <scala.target.vm>11</scala.target.vm>
         <scala.java.additional.args/>
 
         <!-- Maven Plugin Properties -->

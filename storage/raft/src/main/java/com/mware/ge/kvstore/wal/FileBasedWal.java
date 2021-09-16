@@ -749,7 +749,7 @@ public class FileBasedWal implements Wal, AutoCloseable {
         return count;
     }
 
-    interface PreProcessor {
+    public interface PreProcessor {
         boolean apply(long logId, long termId, long clusterId, byte[] log);
     }
 

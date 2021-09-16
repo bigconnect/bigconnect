@@ -25,7 +25,9 @@ enum ErrorCode {
 
     E_BAD_ROLE = -17,
 
-    E_EXCEPTION = -20;          // An thrift internal exception was thrown
+    E_EXCEPTION = -20,          // An thrift internal exception was thrown
+
+    E_WRITE_STALLED = -3011;
 }
 
 typedef i64 ClusterID

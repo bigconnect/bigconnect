@@ -15,9 +15,9 @@
     <name>BigConnect: Storage Layer</name>
 
     <modules>
-        <module>accumulo</module>
-        <module>rocksdb</module>
-<!--        <module>raft</module>-->
+<!--        <module>accumulo</module>-->
+<!--        <module>rocksdb</module>-->
+        <module>raft</module>
 <!--        <module>hbase</module>-->
     </modules>
 

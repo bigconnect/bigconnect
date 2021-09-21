@@ -1,5 +1,7 @@
 package com.mware.ge.kvstore.raftex;
 
+import com.mware.ge.kvstore.utils.LogIterator;
+import com.mware.ge.kvstore.utils.SharedFuture;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
 import com.mware.ge.util.Preconditions;
@@ -8,6 +10,8 @@ import org.apache.thrift.async.AsyncMethodCallback;
 import org.javatuples.Triplet;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,8 +40,8 @@ public class Host {
     boolean requestOnGoing_;
     final Lock noMoreRequestLock = new ReentrantLock();
     final Condition noMoreRequestCV_ = noMoreRequestLock.newCondition();
-    CompletableFuture<AppendLogResponse> promise_ = new CompletableFuture<>();
-    CompletableFuture<AppendLogResponse> cachingPromise_ =;
+    SharedFuture<AppendLogResponse> promise_ = new SharedFuture<>();
+    SharedFuture<AppendLogResponse> cachingPromise_ = new SharedFuture<>();
 
     // <term, logId, committedLogId>
     Triplet<Long, Long, Long> pendingReq_ = new Triplet<>(0L, 0L, 0L);
@@ -65,7 +69,6 @@ public class Host {
         this.part_ = part;
         this.isLearner_ = isLearner;
         this.idStr_ = String.format("%s[Host: %s:%d]", part_.idStr_, addr_.getHostString(), addr_.getPort());
-        this.cachingPromise_ = new CompletableFuture<>();
     }
 
     public String idStr() {
@@ -191,6 +194,8 @@ public class Host {
             long prevLogId
     ) {
         LOGGER.info("%s: Entering Host::appendLogs()", idStr_);
+        CompletableFuture<AppendLogResponse> ret = new CompletableFuture<>();
+        AppendLogRequest req = new AppendLogRequest();
 
         try {
             lock_.lock();
@@ -204,20 +209,362 @@ public class Host {
             }
 
             if (requestOnGoing_ && res == ErrorCode.SUCCEEDED) {
-                /**
-                 * TODO
-                 * TODO
-                 * TODO
-                 * TODO
-                 * TODO
-                 * TODO
-                 * TODO
-                 */
+                if (cachingPromise_.size() <= MAX_OUTSTANDING_REQUESTS) {
+                    pendingReq_ = new Triplet<>(term, logId, committedLogId);
+                    return cachingPromise_.getFuture();
+                } else {
+                    LOGGER.info(idStr_ + "Too many requests are waiting, return error");
+                    AppendLogResponse r = new AppendLogResponse();
+                    r.setError_code(ErrorCode.E_TOO_MANY_REQUESTS);
+                    return CompletableFuture.completedFuture(r);
+                }
             }
+
+            if (res != ErrorCode.SUCCEEDED) {
+                LOGGER.info(idStr_ + "The host is not in a proper status, just return");
+                AppendLogResponse r = new AppendLogResponse();
+                r.setError_code(res);
+                return CompletableFuture.completedFuture(r);
+            }
+
+            LOGGER.info(idStr_ + "About to send the AppendLog request");
+
+            // No request is ongoing, let's send a new request
+            if (lastLogIdSent_ == 0 && lastLogTermSent_ == 0) {
+                lastLogIdSent_ = prevLogId;
+                lastLogTermSent_ = prevLogTerm;
+                LOGGER.info(idStr_ + "This is the first time to send the logs to this host"
+                        + ", lastLogIdSent = " + lastLogIdSent_
+                        + ", lastLogTermSent = " + lastLogTermSent_);
+            }
+
+            logTermToSend_ = term;
+            logIdToSend_ = logId;
+            committedLogId_ = committedLogId;
+            pendingReq_ = new Triplet<>(0L, 0L, 0L);
+            promise_ = cachingPromise_;
+            cachingPromise_ = new SharedFuture<>();
+            ret = promise_.getFuture();
+
+            requestOnGoing_ = true;
+
+            req = prepareAppendLogRequest();
         } finally {
             lock_.unlock();
         }
+
+        // Get a new promise
+        appendLogsInternal(req);
+
+        return ret;
     }
+
+    private void setResponse(AppendLogResponse r) {
+        Preconditions.checkState(!lock_.tryLock());
+        promise_.complete(r);
+        cachingPromise_.complete(r);
+        cachingPromise_ = new SharedFuture<>();
+        pendingReq_ = new Triplet<>(0L, 0L, 0L);
+        requestOnGoing_ = false;
+    }
+
+    private void appendLogsInternal(AppendLogRequest req) {
+        sendAppendLogRequest(req).whenComplete((resp, e) -> {
+            LOGGER.info(idStr_ + "appendLogs() call got response");
+            if (e != null) {
+                LOGGER.info(idStr_ + e.getMessage());
+                AppendLogResponse r = new AppendLogResponse();
+                r.setError_code(ErrorCode.E_EXCEPTION);
+                try {
+                    lock_.lock();
+                    setResponse(r);
+                    lastLogIdSent_ = lastLogIdSent_ - 1;
+                } finally {
+                    lock_.unlock();
+                }
+
+                try {
+                    noMoreRequestLock.lock();
+                    noMoreRequestCV_.signalAll();
+                } finally {
+                    noMoreRequestLock.unlock();
+                }
+
+                return;
+            }
+
+            LOGGER.info(idStr_ + "AppendLogResponse code " + resp.getError_code()
+                    + ", currTerm " + resp.getCurrent_term()
+                    + ", lastLogId " + resp.getLast_log_id()
+                    + ", lastLogTerm " + resp.getLast_log_term()
+                    + ", commitLogId " + resp.getCommitted_log_id()
+                    + ", lastLogIdSent_ " + lastLogIdSent_
+                    + ", lastLogTermSent_ " + lastLogTermSent_);
+
+            switch (resp.getError_code()) {
+                case SUCCEEDED: {
+                    LOGGER.info(idStr_ + "AppendLog request sent successfully");
+
+                    AppendLogRequest newReq = null;
+                    try {
+                        lock_.lock();
+                        ErrorCode res = checkStatus();
+                        if (res != ErrorCode.SUCCEEDED) {
+                            LOGGER.info(idStr_ + "The host is not in a proper status, just return");
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(res);
+                            setResponse(r);
+                        } else if (lastLogIdSent_ >= resp.getLast_log_id()) {
+                            LOGGER.info(idStr_ + "We send nothing in the last request, so we don't send the same logs again");
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(res);
+                            setResponse(r);
+                        } else {
+                            lastLogIdSent_ = resp.getLast_log_id();
+                            lastLogTermSent_ = resp.getLast_log_term();
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            if (lastLogIdSent_ < logIdToSend_) {
+                                // More to send
+                                LOGGER.info(idStr_ + "There are more logs to send");
+                                newReq = prepareAppendLogRequest();
+                            } else {
+                                LOGGER.info(idStr_ + "Fulfill the promise, size = " + promise_.size());
+                                // Fulfill the promise
+                                promise_.complete(resp);
+                                if (noRequest()) {
+                                    LOGGER.info(idStr_ + "No request any more!");
+                                    requestOnGoing_ = false;
+                                } else {
+                                    Triplet<Long, Long, Long> tup = pendingReq_;
+                                    logTermToSend_ = tup.getValue0();
+                                    logIdToSend_ = tup.getValue1();
+                                    committedLogId_ = tup.getValue2();
+                                    LOGGER.info(idStr_ + "Sending the pending request in the queue"
+                                            + ", from " + lastLogIdSent_ + 1
+                                            + " to " + logIdToSend_);
+                                    newReq = prepareAppendLogRequest();
+                                    promise_ = cachingPromise_;
+                                    cachingPromise_ = new SharedFuture<>();
+                                    pendingReq_ = new Triplet<>(0L, 0L, 0L);
+                                }
+                            }
+                        }
+                    } finally {
+                        lock_.unlock();
+                    }
+
+                    if (newReq != null) {
+                        appendLogsInternal(newReq);
+                    } else {
+                        try {
+                            noMoreRequestLock.lock();
+                            noMoreRequestCV_.signalAll();
+                            return;
+                        } finally {
+                            noMoreRequestLock.unlock();
+                        }
+                    }
+                }
+                case E_LOG_GAP: {
+                    LOGGER.info(idStr_ + "The host's log is behind, need to catch up");
+                    AppendLogRequest newReq = null;
+                    try {
+                        lock_.lock();
+                        ErrorCode res = checkStatus();
+                        if (res != ErrorCode.SUCCEEDED) {
+                            LOGGER.info(idStr_ + "The host is not in a proper status, skip catching up the gap");
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(res);
+                            setResponse(r);
+                        } else if (lastLogIdSent_ == resp.getLast_log_id()) {
+                            LOGGER.info(idStr_ + "We send nothing in the last request , so we don't send the same logs again";
+                            lastLogIdSent_ = resp.getLast_log_id();
+                            lastLogTermSent_ = resp.getLast_log_term();
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(ErrorCode.SUCCEEDED);
+                            setResponse(r);
+                        } else {
+                            lastLogIdSent_ = Math.min(resp.getLast_log_id(), logIdToSend_ - 1);
+                            lastLogTermSent_ = resp.getLast_log_term();
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            newReq = prepareAppendLogRequest();
+                        }
+                    } finally {
+                        lock_.unlock();
+                    }
+
+                    if (newReq != null) {
+                        appendLogsInternal(newReq);
+                    } else {
+                        noMoreRequestLock.lock();
+                        noMoreRequestCV_.signalAll();
+                        noMoreRequestLock.unlock();
+                    }
+                    return;
+                }
+                case E_WAITING_SNAPSHOT: {
+                    LOGGER.info(idStr_ + "The host is waiting for the snapshot, " +
+                            "so we need to send log from current committedLogId " + committedLogId_);
+                    AppendLogRequest newReq = null;
+                    try {
+                        lock_.lock();
+                        ErrorCode res = checkStatus();
+                        if (res != ErrorCode.SUCCEEDED) {
+                            LOGGER.info(idStr_ + "The host is not in a proper status, skip waiting the snapshot");
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(res);
+                            setResponse(r);
+                        } else {
+                            lastLogIdSent_ = committedLogId_;
+                            lastLogTermSent_ = logTermToSend_;
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            newReq = prepareAppendLogRequest();
+                        }
+                    } finally {
+                        lock_.unlock();
+                    }
+
+                    if (newReq != null) {
+                        appendLogsInternal(newReq);
+                    } else {
+                        noMoreRequestLock.lock();
+                        noMoreRequestCV_.signalAll();
+                        noMoreRequestLock.unlock();
+                    }
+                    return;
+                }
+                case E_LOG_STALE: {
+                    LOGGER.info(idStr_ + "Log stale, reset lastLogIdSent " + lastLogIdSent_
+                            + " to the followers lastLodId " + resp.getLast_log_id());
+                    AppendLogRequest newReq = null;
+                    try {
+                        lock_.lock();
+                        ErrorCode res = checkStatus();
+                        if (res != ErrorCode.SUCCEEDED) {
+                            LOGGER.info(idStr_ + "The host is not in a proper status, skip waiting the snapshot");
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(res);
+                            setResponse(r);
+                        } else if (logIdToSend_ <= resp.getLast_log_id()) {
+                            LOGGER.info(idStr_ + "It means the request has been received by follower");
+                            lastLogIdSent_ = logIdToSend_ - 1;
+                            lastLogTermSent_ = resp.getLast_log_term();
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            AppendLogResponse r = new AppendLogResponse();
+                            r.setError_code(ErrorCode.SUCCEEDED);
+                            setResponse(r);
+                        } else {
+                            lastLogIdSent_ = Math.min(resp.getLast_log_id(), logIdToSend_ - 1);
+                            lastLogTermSent_ = resp.getLast_log_term();
+                            followerCommittedLogId_ = resp.getCommitted_log_id();
+                            newReq = prepareAppendLogRequest();
+                        }
+                    } finally {
+                        lock_.unlock();
+                    }
+
+                    if (newReq != null) {
+                        appendLogsInternal(newReq);
+                    } else {
+                        noMoreRequestLock.lock();
+                        noMoreRequestCV_.signalAll();
+                        noMoreRequestLock.unlock();
+                    }
+                    return;
+                }
+                default: {
+                    LOGGER.error(idStr_ + "Failed to append logs to the host (Err: " + resp.getError_code() + ")");
+                    try {
+                        lock_.lock();
+                        setResponse(resp);
+                        lastLogIdSent_ = logIdToSend_ - 1;
+                    } finally {
+                        lock_.unlock();
+                    }
+                    noMoreRequestLock.lock();
+                    noMoreRequestCV_.signalAll();
+                    noMoreRequestLock.unlock();
+                    return;
+                }
+            }
+        });
+    }
+
+    private AppendLogRequest prepareAppendLogRequest() {
+        Preconditions.checkState(!lock_.tryLock());
+        AppendLogRequest req = new AppendLogRequest();
+        req.setSpace(part_.spaceId());
+        req.setPart(part_.partitionId());
+        req.setCurrent_term(logTermToSend_);
+        req.setLast_log_id(logIdToSend_);
+        req.setLeader_addr(part_.address().getHostString());
+        req.setLeader_port(part_.address().getPort());
+        req.setCommitted_log_id(committedLogId_);
+        req.setLast_log_term_sent(lastLogTermSent_);
+        req.setLast_log_id_sent(lastLogIdSent_);
+
+        LOGGER.info(idStr_ + "Prepare AppendLogs request from Log "
+                + lastLogIdSent_ + 1 + " to " + logIdToSend_);
+
+        if (lastLogIdSent_ + 1 > part_.wal().lastLogId()) {
+            LOGGER.info(idStr_ + "My lastLogId in wal is " + part_.wal().lastLogId()
+                    + ", but you are seeking " + lastLogIdSent_ + 1
+                    + ", so i have nothing to send.");
+            return req;
+        }
+
+        LogIterator it = part_.wal().iterator(lastLogIdSent_ + 1, logIdToSend_);
+        if (it.valid()) {
+            LOGGER.info(idStr_ + "Prepare the list of log entries to send");
+            long term = it.logTerm();
+            req.setLog_term(term);
+            List<LogEntry> logs = new ArrayList<>();
+            for (int i = 0; it.valid() && it.logTerm() == term && i < MAX_APPENDLOG_BATCH_SIZE; it.next(), ++i) {
+                LogEntry le = new LogEntry();
+                le.setCluster(it.logSource());
+                le.setLog_str(it.logMsg());
+                logs.add(le);
+            }
+            req.setLog_str_list(logs);
+            req.setSending_snapshot(false);
+        } else {
+            req.setSending_snapshot(true);
+            if (!sendingSnapshot_.get()) {
+                LOGGER.info(idStr_ + "Can't find log " + lastLogIdSent_ + 1
+                        + " in wal, send the snapshot"
+                        + ", logIdToSend = " + logIdToSend_
+                        + ", firstLogId in wal = " + part_.wal().firstLogId()
+                        + ", lastLogId in wal = " + part_.wal().lastLogId());
+                sendingSnapshot_.set(true);
+                part_.snapshot_.sendSnapshot(part_, addr_)
+                        .thenAccept(status -> {
+                            if (status.ok()) {
+                                LOGGER.info(idStr_ + "Send snapshot succeeded!");
+                            } else {
+                                LOGGER.info(idStr_ + "Send snapshot failed!");
+                                // TODO: we should tell the follower i am failed.
+                            }
+                            sendingSnapshot_.set(false);
+                        });
+            } else {
+                LOGGER.info(idStr_ + "The snapshot req is in queue, please wait for a moment");
+            }
+        }
+
+        return req;
+    }
+
+    /**
+     * TODO
+     * TODO
+     * TODO
+     * TODO
+     * TODO
+     * TODO
+     * TODO
+     */
 
     public boolean isLearner_() {
         return isLearner_;
@@ -246,28 +593,11 @@ public class Host {
         return null;
     }
 
-    private void appendLogsInternal(AppendLogRequest req) {
-        throw new UnsupportedOperationException("TBI");
-    }
-
     private CompletableFuture<HeartbeatResponse> sendHeartbeatRequest(HeartbeatRequest req) {
-        throw new UnsupportedOperationException("TBI");
-    }
-
-    private AppendLogRequest prepareAppendLogRequest() {
         throw new UnsupportedOperationException("TBI");
     }
 
     private boolean noRequest() {
         throw new UnsupportedOperationException("TBI");
-    }
-
-    private void setResponse(AppendLogResponse r) {
-        Preconditions.checkState(lock_.tryLock());
-        promise_.complete(r);
-        cachingPromise_.complete(r);
-        cachingPromise_ = new CompletableFuture<>();
-        pendingReq_ = new Triplet<>(0L, 0L, 0L);
-        requestOnGoing_ = false;
     }
 }

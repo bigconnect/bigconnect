@@ -8,6 +8,7 @@ import com.mware.ge.kvstore.utils.LogIterator;
 import com.mware.ge.kvstore.wal.FileBasedWal;
 import com.mware.ge.kvstore.wal.FileBasedWal.FileBasedWalInfo;
 import com.mware.ge.kvstore.wal.FileBasedWalPolicy;
+import com.mware.ge.kvstore.wal.Wal;
 import com.mware.ge.time.Clocks;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
@@ -2108,6 +2109,22 @@ public abstract class RaftPart implements AutoCloseable {
             this.msg = msg;
             this.atomicOp = atomicOp;
         }
+    }
+
+    public int spaceId() {
+        return spaceId_;
+    }
+
+    public int partitionId() {
+        return partId_;
+    }
+
+    public InetSocketAddress address() {
+        return addr_;
+    }
+
+    public Wal wal() {
+        return wal_;
     }
 
     // Clean up extra data about the part, usually related to state machine

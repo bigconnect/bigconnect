@@ -152,7 +152,7 @@ public class Host {
         return ErrorCode.SUCCEEDED;
     }
 
-    public CompletableFuture<AskForVoteResponse> askForVote(ExecutorService eb, AskForVoteRequest req) {
+    public CompletableFuture<AskForVoteResponse> askForVote(AskForVoteRequest req) {
         try {
             lock_.lock();
             ErrorCode res = checkStatus();
@@ -167,7 +167,7 @@ public class Host {
         CompletableFuture<AskForVoteResponse> future = new CompletableFuture<>();
 
         try {
-            part_.clientMan_.askForVote(req, new AsyncMethodCallback<>() {
+            part_.clientMan_.client(addr_, 0).askForVote(req, new AsyncMethodCallback<>() {
                 @Override
                 public void onComplete(AskForVoteResponse askForVoteResponse) {
                     future.complete(askForVoteResponse);
@@ -186,7 +186,6 @@ public class Host {
     }
 
     public CompletableFuture<AppendLogResponse> appendLogs(
-            ExecutorService eb,
             long term,
             long logId,
             long committedLogId,
@@ -378,7 +377,7 @@ public class Host {
                             r.setError_code(res);
                             setResponse(r);
                         } else if (lastLogIdSent_ == resp.getLast_log_id()) {
-                            LOGGER.info(idStr_ + "We send nothing in the last request , so we don't send the same logs again";
+                            LOGGER.info(idStr_ + "We send nothing in the last request , so we don't send the same logs again");
                             lastLogIdSent_ = resp.getLast_log_id();
                             lastLogTermSent_ = resp.getLast_log_term();
                             followerCommittedLogId_ = resp.getCommitted_log_id();
@@ -556,15 +555,133 @@ public class Host {
         return req;
     }
 
-    /**
-     * TODO
-     * TODO
-     * TODO
-     * TODO
-     * TODO
-     * TODO
-     * TODO
-     */
+    private CompletableFuture<AppendLogResponse> sendAppendLogRequest(AppendLogRequest req) {
+        LOGGER.info(idStr_ + " Entering Host::sendAppendLogRequest()");
+
+        try {
+            lock_.lock();
+            ErrorCode res = checkStatus();
+            if (res != ErrorCode.SUCCEEDED) {
+                LOGGER.warn(idStr_ + " The Host is not in a proper status, do not send");
+                AppendLogResponse resp = new AppendLogResponse();
+                resp.setError_code(res);
+                return CompletableFuture.completedFuture(resp);
+            }
+        } finally {
+            lock_.unlock();
+        }
+
+        LOGGER.trace(idStr_ + "Sending appendLog: space " + req.getSpace()
+                + ", part " + req.getPart()
+                + ", current term " + req.getCurrent_term()
+                + ", last_log_id " + req.getLast_log_id()
+                + ", committed_id " + req.getCommitted_log_id()
+                + ", last_log_term_sent" + req.getLast_log_term_sent()
+                + ", last_log_id_sent " + req.getLast_log_id_sent());
+
+        CompletableFuture<AppendLogResponse> response = new CompletableFuture<>();
+
+        try {
+            part_.clientMan_.client(addr_, 0).appendLog(req, new AsyncMethodCallback<>() {
+                @Override
+                public void onComplete(AppendLogResponse appendLogResponse) {
+                    response.complete(appendLogResponse);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    response.completeExceptionally(e);
+                }
+            });
+        } catch (TException e) {
+            response.completeExceptionally(e);
+        }
+
+        return response;
+    }
+
+    public CompletableFuture<HeartbeatResponse> sendHeartbeat(
+            long term,
+            long latestLogId,
+            long commitLogId,
+            long lastLogTerm,
+            long lastLogId
+    ) {
+        HeartbeatRequest req = new HeartbeatRequest();
+        req.setSpace(part_.spaceId());
+        req.setPart(part_.partitionId());
+        req.setCurrent_term(term);
+        req.setLast_log_id(latestLogId);
+        req.setCommitted_log_id(commitLogId);
+        req.setLeader_addr(part_.address().getHostString());
+        req.setLeader_port(part_.address().getPort());
+        req.setLast_log_term_sent(lastLogTerm);
+        req.setLast_log_id_sent(lastLogId);
+
+        CompletableFuture<HeartbeatResponse> future = sendHeartbeatRequest(req);
+        future.handle((r, t) -> {
+            LOGGER.info(idStr_ + " heartbeat call got response");
+            if (t != null) {
+                HeartbeatResponse resp = new HeartbeatResponse();
+                resp.setError_code(ErrorCode.E_EXCEPTION);
+                return resp;
+            } else {
+                return r;
+            }
+        });
+        return future;
+    }
+
+    private CompletableFuture<HeartbeatResponse> sendHeartbeatRequest(HeartbeatRequest req) {
+        LOGGER.info(idStr_ + " Entering Host::sendHeartbeatRequest()");
+
+        try {
+            lock_.lock();
+            ErrorCode res = checkStatus();
+            if (res != ErrorCode.SUCCEEDED) {
+                LOGGER.warn(idStr_ + " The Host is not in a proper status, do not send");
+                HeartbeatResponse resp = new HeartbeatResponse();
+                resp.setError_code(res);
+                return CompletableFuture.completedFuture(resp);
+            }
+        } finally {
+            lock_.unlock();
+        }
+
+        LOGGER.trace(idStr_ + "Sending heartbeat: space " + req.getSpace()
+                + ", part " + req.getPart()
+                + ", current term " + req.getCurrent_term()
+                + ", last_log_id " + req.getLast_log_id()
+                + ", committed_id " + req.getCommitted_log_id()
+                + ", last_log_term_sent" + req.getLast_log_term_sent()
+                + ", last_log_id_sent " + req.getLast_log_id_sent());
+
+        CompletableFuture<HeartbeatResponse> response = new CompletableFuture<>();
+
+        try {
+            part_.clientMan_.client(addr_, 0).heartbeat(req, new AsyncMethodCallback<>() {
+                @Override
+                public void onComplete(HeartbeatResponse appendLogResponse) {
+                    response.complete(appendLogResponse);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    response.completeExceptionally(e);
+                }
+            });
+        } catch (TException e) {
+            response.completeExceptionally(e);
+        }
+
+        return response;
+    }
+
+
+    private boolean noRequest() {
+        Preconditions.checkState(!lock_.tryLock());
+        return pendingReq_.equals(new Triplet<>(0L, 0L, 0L));
+    }
 
     public boolean isLearner_() {
         return isLearner_;
@@ -574,30 +691,7 @@ public class Host {
         this.isLearner_ = learner_;
     }
 
-    public CompletableFuture<HeartbeatResponse> sendHeartbeat(
-            ExecutorService eb,
-            long term,
-            long latestLogId,
-            long commitLogId,
-            long lastLogTerm,
-            long lastLogId
-    ) {
-        return null;
-    }
-
     public InetSocketAddress address() {
         return addr_;
-    }
-
-    private CompletableFuture<AppendLogResponse> sendAppendLogRequest(AppendLogRequest req) {
-        return null;
-    }
-
-    private CompletableFuture<HeartbeatResponse> sendHeartbeatRequest(HeartbeatRequest req) {
-        throw new UnsupportedOperationException("TBI");
-    }
-
-    private boolean noRequest() {
-        throw new UnsupportedOperationException("TBI");
     }
 }

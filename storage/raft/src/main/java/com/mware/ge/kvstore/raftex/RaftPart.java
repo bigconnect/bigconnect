@@ -9,6 +9,7 @@ import com.mware.ge.kvstore.wal.FileBasedWal;
 import com.mware.ge.kvstore.wal.FileBasedWal.FileBasedWalInfo;
 import com.mware.ge.kvstore.wal.FileBasedWalPolicy;
 import com.mware.ge.kvstore.wal.Wal;
+import com.mware.ge.thrift.ThriftClientManager;
 import com.mware.ge.time.Clocks;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
@@ -110,8 +111,6 @@ public abstract class RaftPart implements AutoCloseable {
     // Write-ahead Log
     FileBasedWal wal_;
 
-    // IO Thread pool
-    ExecutorService ioThreadPool_;
     // Shared worker thread pool
     ScheduledExecutorService bgWorkers_;
     // Workers pool
@@ -119,7 +118,7 @@ public abstract class RaftPart implements AutoCloseable {
 
     SnapshotManager snapshot_;
 
-    RaftexService.AsyncClient clientMan_;
+    ThriftClientManager clientMan_;
     // Used in snapshot, record the last total count and total size received from request
     long lastTotalCount_ = 0;
     long lastTotalSize_ = 0;
@@ -146,15 +145,12 @@ public abstract class RaftPart implements AutoCloseable {
             int partId,
             InetSocketAddress localAddr,
             String walRoot,
-            ExecutorService pool,
             ScheduledExecutorService workers,
-            ExecutorService executor,
             SnapshotManager snapshotMan,
-            RaftexService.AsyncClient clientMan,
+            ThriftClientManager clientMan,
             DiskManager diskMan
     ) {
         idStr_ = String.format("[Port: %d, Space: %d, Part: %d] ", localAddr.getPort(), spaceId, partId);
-        Preconditions.checkNotNull(executor, idStr_ + "executor should not be null");
         clusterId_ = clusterId;
         spaceId_ = spaceId;
         partId_ = partId;
@@ -162,9 +158,7 @@ public abstract class RaftPart implements AutoCloseable {
         status_ = Status.STARTING;
         role_ = Role.FOLLOWER;
         leader_ = new InetSocketAddress("", 0);
-        ioThreadPool_ = pool;
         bgWorkers_ = workers;
-        executor_ = executor;
         snapshot_ = snapshotMan;
         clientMan_ = clientMan;
         diskMan_ = diskMan;
@@ -679,7 +673,7 @@ public abstract class RaftPart implements AutoCloseable {
         }
 
         // Step 2: Replicate to followers
-        replicateLogs(ioThreadPool_,
+        replicateLogs(
                 iter,
                 currTerm,
                 lastId,
@@ -689,7 +683,6 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     private void replicateLogs(
-            ExecutorService eb,
             AppendLogsIterator iter,
             long currTerm,
             long lastLogId,
@@ -727,7 +720,7 @@ public abstract class RaftPart implements AutoCloseable {
         FutureUtils.collectNSucceeded(
                 hosts.stream().map(h -> {
                     LOGGER.info(idStr_ + "Appending logs to " + h.idStr());
-                    return h.appendLogs(eb, currTerm, lastLogId, committedId, prevLogTerm, prevLogId);
+                    return h.appendLogs(currTerm, lastLogId, committedId, prevLogTerm, prevLogId);
                 }).collect(Collectors.toList()),
                 quorum_,
                 pair -> {
@@ -736,13 +729,12 @@ public abstract class RaftPart implements AutoCloseable {
         ).thenAccept(responses -> {
             LOGGER.info(idStr_ + "Received enough response");
             executor_.submit(() -> processAppendLogResponses(
-                    responses, eb, iter, currTerm, lastLogId, committedId, prevLogTerm, prevLogId, hosts));
+                    responses, iter, currTerm, lastLogId, committedId, prevLogTerm, prevLogId, hosts));
         });
     }
 
     private void processAppendLogResponses(
             List<Pair<Integer, AppendLogResponse>> resps,
-            ExecutorService eb,
             AppendLogsIterator iter,
             long currTerm,
             long lastLogId,
@@ -854,7 +846,7 @@ public abstract class RaftPart implements AutoCloseable {
         } else {
             // Not enough hosts accepted the log, re-try
             LOGGER.warn(idStr_ + "Only " + numSucceeded + " hosts succeeded, Need to try again");
-            replicateLogs(eb,
+            replicateLogs(
                     iter,
                     currTerm,
                     lastLogId,
@@ -1044,7 +1036,7 @@ public abstract class RaftPart implements AutoCloseable {
                 CompletableFuture<List<Pair<Integer, AskForVoteResponse>>> futures = FutureUtils.collectNSucceeded(
                         hosts_.stream().map(h -> {
                             LOGGER.info(idStr_ + "Sending AskForVoteRequest to " + h.address());
-                            return h.askForVote(ioThreadPool_, voteReq);
+                            return h.askForVote(voteReq);
                         }).collect(Collectors.toList()),
                         quorum_,
                         pair -> {
@@ -1186,7 +1178,7 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     // Process the incoming leader election request
-    private void processAskForVoteRequest(AskForVoteRequest req, AskForVoteResponse resp) {
+    protected void processAskForVoteRequest(AskForVoteRequest req, AskForVoteResponse resp) {
         LOGGER.info(idStr_ + "Recieved a VOTING request"
                 + ": space = " + req.getSpace()
                 + ", partition = " + req.getPart()
@@ -1308,7 +1300,7 @@ public abstract class RaftPart implements AutoCloseable {
         }
     }
 
-    private void processAppendLogRequest(AppendLogRequest req, AppendLogResponse resp) {
+    protected void processAppendLogRequest(AppendLogRequest req, AppendLogResponse resp) {
         LOGGER.info(idStr_ + "Received logAppend"
                 + ": GraphSpaceId = " + req.getSpace()
                 + ", partition = " + req.getPart()
@@ -1629,7 +1621,7 @@ public abstract class RaftPart implements AutoCloseable {
         return ErrorCode.SUCCEEDED;
     }
 
-    private void processHeartbeatRequest(HeartbeatRequest req, HeartbeatResponse resp) {
+    protected void processHeartbeatRequest(HeartbeatRequest req, HeartbeatResponse resp) {
         LOGGER.info(idStr_ + "Received heartbeat"
                 + ": GraphSpaceId = " + req.getSpace()
                 + ", partition = " + req.getPart()
@@ -1687,7 +1679,7 @@ public abstract class RaftPart implements AutoCloseable {
         }
     }
 
-    private void processSendSnapshotRequest(SendSnapshotRequest req, SendSnapshotResponse resp) {
+    protected void processSendSnapshotRequest(SendSnapshotRequest req, SendSnapshotResponse resp) {
         LOGGER.info(idStr_ + "Receive snapshot, total rows " + req.getRows().size()
                 + ", total count received " + req.getTotal_count()
                 + ", total size received " + req.getTotal_size()
@@ -1799,7 +1791,7 @@ public abstract class RaftPart implements AutoCloseable {
         FutureUtils.collectNSucceeded(
                 hosts.stream().map(h -> {
                     LOGGER.info(idStr_ + "Send heartbeat to " + h.idStr());
-                    return h.sendHeartbeat(ioThreadPool_, currTerm, latestLogId, commitLogId, prevLogTerm, prevLogId);
+                    return h.sendHeartbeat(currTerm, latestLogId, commitLogId, prevLogTerm, prevLogId);
                 }).collect(Collectors.toList()),
                 hosts.size(),
                 pair -> {
@@ -2033,6 +2025,33 @@ public abstract class RaftPart implements AutoCloseable {
             // Make sure the partition has stopped
             Preconditions.checkState(status_ == Status.STOPPED);
             LOGGER.info(idStr_ + "The part has been destroyed...");
+        } finally {
+            raftLock_.unlock();
+        }
+    }
+
+    public boolean isRunning() {
+        try {
+            raftLock_.lock();
+            return status_ == Status.RUNNING;
+        } finally {
+            raftLock_.unlock();
+        }
+    }
+
+    public boolean isLearner() {
+        try {
+            raftLock_.lock();
+            return role_ == Role.LEARNER;
+        } finally {
+            raftLock_.unlock();
+        }
+    }
+
+    public InetSocketAddress leader() {
+        try {
+            raftLock_.lock();
+            return leader_;
         } finally {
             raftLock_.unlock();
         }

@@ -169,7 +169,7 @@
         <scala.version>2.11.12</scala.version>
         <scala-maven-plugin.version>3.4.2</scala-maven-plugin.version>
         <scala.binary.version>2.11</scala.binary.version>
-        <scala.target.vm>11</scala.target.vm>
+        <scala.target.vm>1.8</scala.target.vm>
         <scala.java.additional.args/>
 
         <!-- Maven Plugin Properties -->

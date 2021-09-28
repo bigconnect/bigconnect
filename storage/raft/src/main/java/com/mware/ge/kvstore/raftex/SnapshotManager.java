@@ -103,21 +103,15 @@ public abstract class SnapshotManager {
         req.setTotal_count(totalCount);
         req.setDone(finished);
         CompletableFuture<SendSnapshotResponse> resp = new CompletableFuture<>();
-        try {
-            clientManager.client(addr, SNAPSHOT_SEND_TIMEOUT_MS).sendSnapshot(req, new AsyncMethodCallback<>() {
-                @Override
-                public void onComplete(SendSnapshotResponse response) {
-                    resp.complete(response);
-                }
 
-                @Override
-                public void onError(Exception exception) {
-                    resp.completeExceptionally(exception);
-                }
-            });
-        } catch (TException e) {
-            resp.completeExceptionally(e);
-        }
+        new Thread(() -> {
+            try {
+                SendSnapshotResponse sendSnapshotResponse = clientManager.client(addr, SNAPSHOT_SEND_TIMEOUT_MS).sendSnapshot(req);
+                resp.complete(sendSnapshotResponse);
+            } catch (TException e) {
+                resp.completeExceptionally(e);
+            }
+        }).start();
 
         return resp;
     }

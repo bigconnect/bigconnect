@@ -384,7 +384,13 @@ public class FileBasedWal implements Wal, AutoCloseable {
 
     @Override
     public boolean appendLogs(LogIterator iter) {
-        return false;
+        for (; iter.valid(); iter.next()) {
+            if (!appendLogInternal(iter.logId(), iter.logTerm(), iter.logSource(), iter.logMsg())) {
+                LOGGER.info(idStr + "Failed to append log for logId " + iter.logId());
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean appendLogInternal(long id, long term, long cluster, byte[] msg) {

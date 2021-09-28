@@ -6,6 +6,8 @@ import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
+import org.apache.thrift.server.TServer;
+import org.apache.thrift.server.TSimpleServer;
 import org.apache.thrift.server.TThreadPoolServer;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
@@ -16,13 +18,13 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RaftexServiceImpl implements RaftexService.Iface, RaftexService.AsyncIface {
+public class RaftexServiceImpl implements RaftexService.Iface {
     private GeLogger LOGGER = GeLoggerFactory.getLogger(RaftexServiceImpl.class);
 
     public static final int STATUS_NOT_RUNNING = 0;
     public static final int STATUS_RUNNING = 2;
 
-    TThreadPoolServer server_;
+    TServer server_;
     int serverPort_;
     Thread serverThread_;
     AtomicInteger status_ = new AtomicInteger(STATUS_NOT_RUNNING);
@@ -46,12 +48,14 @@ public class RaftexServiceImpl implements RaftexService.Iface, RaftexService.Asy
         LOGGER.info("Init thrift server for raft service, port: " + port);
         serverPort_ = port;
         TServerTransport transport = new TServerSocket(port);
-        server_ = new TThreadPoolServer(new TThreadPoolServer.Args(transport)
+        server_ = new TSimpleServer(new TServer.Args(transport)
                 .processor(new RaftexService.Processor<>(this)));
     }
 
     public boolean start() {
-        serverThread_ = new Thread(() -> serve());
+        serverThread_ = new Thread(this::serve);
+        serverThread_.start();
+
         waitUntilReady();
         if (status_.get() != STATUS_RUNNING) {
             waitUntilStop();
@@ -90,13 +94,19 @@ public class RaftexServiceImpl implements RaftexService.Iface, RaftexService.Asy
     }
 
     private void serve() {
-        LOGGER.info("Starting the Raftex Service");
+        try {
+            LOGGER.info("Starting the Raftex Service");
 
-        status_.set(STATUS_RUNNING);
-        server_.serve();
+            status_.set(STATUS_RUNNING);
+            LOGGER.info("Start the Raftex Service successfully");
 
-        status_.set(STATUS_NOT_RUNNING);
-        LOGGER.info("The Raftex Service stopped");
+            server_.serve();
+
+            status_.set(STATUS_NOT_RUNNING);
+            LOGGER.info("The Raftex Service stopped");
+        } finally {
+            server_.stop();
+        }
     }
 
     private void waitUntilReady() {
@@ -188,25 +198,5 @@ public class RaftexServiceImpl implements RaftexService.Iface, RaftexService.Asy
         }
         part.processHeartbeatRequest(req, resp);
         return resp;
-    }
-
-    @Override
-    public void askForVote(AskForVoteRequest req, AsyncMethodCallback<AskForVoteResponse> resultHandler) throws TException {
-        resultHandler.onComplete(askForVote(req));
-    }
-
-    @Override
-    public void appendLog(AppendLogRequest req, AsyncMethodCallback<AppendLogResponse> resultHandler) throws TException {
-        resultHandler.onComplete(appendLog(req));
-    }
-
-    @Override
-    public void sendSnapshot(SendSnapshotRequest req, AsyncMethodCallback<SendSnapshotResponse> resultHandler) throws TException {
-        resultHandler.onComplete(sendSnapshot(req));
-    }
-
-    @Override
-    public void heartbeat(HeartbeatRequest req, AsyncMethodCallback<HeartbeatResponse> resultHandler) throws TException {
-        resultHandler.onComplete(heartbeat(req));
     }
 }

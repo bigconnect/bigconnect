@@ -128,7 +128,7 @@ public class Host {
     public void waitForStop() {
         try {
             lock_.lock();
-            Preconditions.checkState(stopped_);
+            Preconditions.checkState(!stopped_);
             while (requestOnGoing_)
                 noMoreRequestCV_.awaitUninterruptibly();
             LOGGER.info("%s: The host has been stopped!", idStr_);
@@ -138,7 +138,7 @@ public class Host {
     }
 
     private ErrorCode checkStatus() {
-        Preconditions.checkState(!lock_.tryLock());
+        Preconditions.checkState(lock_.tryLock());
         if (stopped_) {
             LOGGER.info("%s: The host is stopped, just return", idStr_);
             return ErrorCode.E_HOST_STOPPED;
@@ -166,21 +166,15 @@ public class Host {
 
         CompletableFuture<AskForVoteResponse> future = new CompletableFuture<>();
 
-        try {
-            part_.clientMan_.client(addr_, 0).askForVote(req, new AsyncMethodCallback<>() {
-                @Override
-                public void onComplete(AskForVoteResponse askForVoteResponse) {
-                    future.complete(askForVoteResponse);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    future.completeExceptionally(e);
-                }
-            });
-        } catch (TException e) {
-            future.completeExceptionally(e);
-        }
+        new Thread(() -> {
+            try {
+                AskForVoteResponse resp = part_.clientMan_.client(addr_, 0).askForVote(req);
+                future.complete(resp);
+            } catch (Exception e) {
+                e.printStackTrace();
+                future.completeExceptionally(e);
+            }
+        }).start();
 
         return future;
     }
@@ -259,7 +253,7 @@ public class Host {
     }
 
     private void setResponse(AppendLogResponse r) {
-        Preconditions.checkState(!lock_.tryLock());
+        Preconditions.checkState(lock_.tryLock());
         promise_.complete(r);
         cachingPromise_.complete(r);
         cachingPromise_ = new SharedFuture<>();
@@ -492,7 +486,7 @@ public class Host {
     }
 
     private AppendLogRequest prepareAppendLogRequest() {
-        Preconditions.checkState(!lock_.tryLock());
+        Preconditions.checkState(lock_.tryLock());
         AppendLogRequest req = new AppendLogRequest();
         req.setSpace(part_.spaceId());
         req.setPart(part_.partitionId());
@@ -581,21 +575,15 @@ public class Host {
 
         CompletableFuture<AppendLogResponse> response = new CompletableFuture<>();
 
-        try {
-            part_.clientMan_.client(addr_, 0).appendLog(req, new AsyncMethodCallback<>() {
-                @Override
-                public void onComplete(AppendLogResponse appendLogResponse) {
-                    response.complete(appendLogResponse);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    response.completeExceptionally(e);
-                }
-            });
-        } catch (TException e) {
-            response.completeExceptionally(e);
-        }
+        new Thread(() -> {
+            try {
+                AppendLogResponse resp = part_.clientMan_.client(addr_, 0).appendLog(req);
+                response.complete(resp);
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.completeExceptionally(e);
+            }
+        }).start();
 
         return response;
     }
@@ -658,28 +646,22 @@ public class Host {
 
         CompletableFuture<HeartbeatResponse> response = new CompletableFuture<>();
 
-        try {
-            part_.clientMan_.client(addr_, 0).heartbeat(req, new AsyncMethodCallback<>() {
-                @Override
-                public void onComplete(HeartbeatResponse appendLogResponse) {
-                    response.complete(appendLogResponse);
-                }
-
-                @Override
-                public void onError(Exception e) {
-                    response.completeExceptionally(e);
-                }
-            });
-        } catch (TException e) {
-            response.completeExceptionally(e);
-        }
+        new Thread(() -> {
+            try {
+                HeartbeatResponse resp = part_.clientMan_.client(addr_, 0).heartbeat(req);
+                response.complete(resp);
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.completeExceptionally(e);
+            }
+        }).start();
 
         return response;
     }
 
 
     private boolean noRequest() {
-        Preconditions.checkState(!lock_.tryLock());
+        Preconditions.checkState(lock_.tryLock());
         return pendingReq_.equals(new Triplet<>(0L, 0L, 0L));
     }
 

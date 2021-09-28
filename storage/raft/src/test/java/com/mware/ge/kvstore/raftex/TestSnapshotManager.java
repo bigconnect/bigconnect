@@ -14,7 +14,7 @@ public class TestSnapshotManager extends SnapshotManager {
     private final RaftexServiceImpl service;
 
     public TestSnapshotManager(RaftexServiceImpl service) {
-        super(ThriftClientManager.getInstance());
+        super(new ThriftClientManager());
         this.service = service;
     }
 
@@ -24,7 +24,7 @@ public class TestSnapshotManager extends SnapshotManager {
         int totalCount = 0;
         int totalSize = 0;
         List<ByteBuffer> data = new ArrayList<>();
-        for (Pair<Integer, byte[]> row : part.data_) {
+        for (Pair<Long, byte[]> row : part.data_) {
             if (data.size() > 100) {
                 LOGGER.info(part.idStr_ + "Send snapshot total rows " + data.size()
                         + ", total count sended " + totalCount
@@ -47,9 +47,9 @@ public class TestSnapshotManager extends SnapshotManager {
         cb.apply(data, totalCount, totalSize, SnapshotStatus.DONE);
     }
 
-    private ByteBuffer encodeSnapshotRow(Integer logId, byte[] row) {
-        ByteBuffer rawData = ByteBuffer.allocate(Integer.BYTES + row.length);
-        rawData.putInt(logId);
+    private ByteBuffer encodeSnapshotRow(Long logId, byte[] row) {
+        ByteBuffer rawData = ByteBuffer.allocate(Long.BYTES + row.length);
+        rawData.putLong(logId);
         rawData.put(row);
         return rawData;
     }

@@ -20,7 +20,7 @@ public class FutureUtils {
     // The first element of the pair is the index to the given futures, and the second is the value of the succeeded future
     // The returned future fulfils when the given number of futures succeed, or when all given futures fulfil.
     // In either case, an array of succeeded values will be returned
-    public static  <T> CompletableFuture<List<Pair<Integer, T>>> collectNSucceeded(
+    public static <T> CompletableFuture<List<Pair<Integer, T>>> collectNSucceeded(
             List<CompletableFuture<T>> futures,
             int minRequired,
             Function<Pair<Integer, T>, Boolean> evaluator

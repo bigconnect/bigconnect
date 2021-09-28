@@ -1,7 +1,9 @@
 package com.mware.ge.kvstore.raftex;
 
+import com.google.common.util.concurrent.Monitor;
 import com.mware.ge.collection.Pair;
 import com.mware.ge.kvstore.DiskManager;
+import com.mware.ge.kvstore.utils.DebugLock;
 import com.mware.ge.kvstore.utils.DurationCounter;
 import com.mware.ge.kvstore.utils.FutureUtils;
 import com.mware.ge.kvstore.utils.LogIterator;
@@ -21,14 +23,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public abstract class RaftPart implements AutoCloseable {
@@ -52,14 +49,14 @@ public abstract class RaftPart implements AutoCloseable {
     // all listener's role is learner (cannot promote to follower)
     List<InetSocketAddress> listeners_ = new ArrayList<>();
     // The lock is used to protect logs_ and cachingPromise_
-    Lock logsLock_ = new ReentrantLock();
+    Monitor logsLock_ = new Monitor();
     AtomicBoolean replicatingLogs_ = new AtomicBoolean(false);
     AtomicBoolean bufferOverFlow_ = new AtomicBoolean(false);
     Status status_;
     Role role_;
 
     // Partition level lock to synchronize the access of the partition
-    Lock raftLock_ = new ReentrantLock();
+    Monitor raftLock_ = new Monitor();
 
     // When the partition is the leader, the leader_ is same as addr_
     InetSocketAddress leader_;
@@ -114,7 +111,7 @@ public abstract class RaftPart implements AutoCloseable {
     // Shared worker thread pool
     ScheduledExecutorService bgWorkers_;
     // Workers pool
-    ExecutorService executor_;
+    ExecutorService executor_ = Executors.newCachedThreadPool();
 
     SnapshotManager snapshot_;
 
@@ -200,9 +197,8 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void start(List<InetSocketAddress> peers, boolean asLearner) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-
             lastLogId_ = wal_.lastLogId();
             lastLogTerm_ = wal_.lastLogTerm();
             term_ = proposedTerm_ = lastLogTerm_;
@@ -221,7 +217,7 @@ public abstract class RaftPart implements AutoCloseable {
             }
 
             LOGGER.info(idStr_ + "There are " + peers.size() + " peer hosts, and total "
-                    + peers.size() + 1 + " copies. The quorum is " + (quorum_ + 1) + ", as learner " + asLearner
+                    + (peers.size() + 1) + " copies. The quorum is " + (quorum_ + 1) + ", as learner " + asLearner
                     + ", lastLogId " + lastLogId_ + ", lastLogTerm " + lastLogTerm_ + ", committedLogId " + committedLogId_
                     + ", term " + term_);
 
@@ -243,7 +239,7 @@ public abstract class RaftPart implements AutoCloseable {
             int delayMS = 100 + RandomUtils.nextInt(0, 900);
             bgWorkers_.schedule(() -> statusPolling(startTimeMs_), delayMS, TimeUnit.MILLISECONDS);
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -251,14 +247,14 @@ public abstract class RaftPart implements AutoCloseable {
         LOGGER.info(idStr_ + "Stopping the partition");
 
         List<Host> hosts;
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             status_ = Status.STOPPED;
             leader_ = new InetSocketAddress("", 0);
             role_ = Role.FOLLOWER;
             hosts = this.hosts_;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
 
         for (Host h : hosts) {
@@ -276,7 +272,6 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void addLearner(InetSocketAddress addr) {
-        assert raftLock_.tryLock();
         if (addr.equals(this.addr_)) {
             LOGGER.info(idStr_ + "I am already a learner!");
             return;
@@ -292,7 +287,6 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void preProcessTransLeader(InetSocketAddress target) {
-        assert raftLock_.tryLock();
         LOGGER.info(idStr_ + "Pre process transfer leader to " + target);
         switch (role_) {
             case FOLLOWER: {
@@ -301,12 +295,12 @@ public abstract class RaftPart implements AutoCloseable {
                 } else {
                     LOGGER.info(idStr_ + "I will be the new leader, trigger leader election now!");
                     bgWorkers_.submit(() -> {
+                        raftLock_.enter();
                         try {
-                            raftLock_.lock();
                             role_ = Role.CANDIDATE;
                             leader_ = new InetSocketAddress("", 0);
                         } finally {
-                            raftLock_.unlock();
+                            raftLock_.leave();
                         }
 
                         leaderElection();
@@ -321,7 +315,7 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void commitTransLeader(InetSocketAddress target) {
-        boolean needToUnlock = raftLock_.tryLock();
+        boolean needToUnlock = raftLock_.tryEnter();
         LOGGER.info(idStr_ + "Commit transfer leader to " + target);
         switch (role_) {
             case LEADER: {
@@ -350,12 +344,11 @@ public abstract class RaftPart implements AutoCloseable {
             }
         }
         if (needToUnlock) {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private void updateQuorum() {
-        Preconditions.checkState(!raftLock_.tryLock());
         int total = 0;
         for (Host h : hosts_) {
             if (!h.isLearner_())
@@ -365,7 +358,6 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     protected void addPeer(InetSocketAddress peer) {
-        Preconditions.checkState(!raftLock_.tryLock());
         if (peer.equals(addr_)) {
             if (role_ == Role.LEARNER) {
                 LOGGER.info(idStr_ + "I am learner, promote myself to be follower");
@@ -393,14 +385,13 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     protected void removePeer(InetSocketAddress peer) {
-        Preconditions.checkState(!raftLock_.tryLock());
         if (peer.equals(addr_)) {
             // The part will be removed in REMOVE_PART_ON_SRC phase
             LOGGER.info(idStr_ + "Remove myself from the raft group.");
             return;
         }
         Optional<Host> existing = hosts_.stream().filter(h -> h.address().equals(peer)).findFirst();
-        if (!existing.isPresent()) {
+        if (existing.isEmpty()) {
             LOGGER.info(idStr_ + "The peer " + peer + " does not exist!");
         } else {
             if (existing.get().isLearner_()) {
@@ -415,10 +406,9 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     protected ErrorCode checkPeer(InetSocketAddress candidate) {
-        Preconditions.checkState(!raftLock_.tryLock());
         List<Host> hosts = followers();
-        Optional<Host> existing = hosts_.stream().filter(h -> h.address().equals(candidate)).findFirst();
-        if (!existing.isPresent()) {
+        Optional<Host> existing = hosts.stream().filter(h -> h.address().equals(candidate)).findFirst();
+        if (existing.isEmpty()) {
             LOGGER.info(idStr_ + "The candidate " + candidate + " is not in my peers");
             return ErrorCode.E_WRONG_LEADER;
         }
@@ -426,8 +416,8 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void addListenerPeer(InetSocketAddress listener) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             if (listener.equals(addr_)) {
                 LOGGER.info(idStr_ + "I am already in the raft group");
                 return;
@@ -442,19 +432,19 @@ public abstract class RaftPart implements AutoCloseable {
                 LOGGER.info(idStr_ + "The listener " + listener + " already joined the raft group");
             }
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public void removeListenerPeer(InetSocketAddress listener) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             if (listener.equals(addr_)) {
                 LOGGER.info(idStr_ + "Remove myself from the raft group");
                 return;
             }
             Optional<Host> existing = hosts_.stream().filter(h -> h.address().equals(listener)).findFirst();
-            if (!existing.isPresent()) {
+            if (existing.isEmpty()) {
                 LOGGER.info(idStr_ + "The listener " + listener + " not found in the raft group");
             } else {
                 hosts_.removeIf(h -> h.address().equals(listener));
@@ -462,12 +452,11 @@ public abstract class RaftPart implements AutoCloseable {
                 LOGGER.info(idStr_ + "Remove listener " + listener);
             }
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public void preProcessRemovePeer(InetSocketAddress peer) {
-        Preconditions.checkState(!raftLock_.tryLock());
         if (role_ == Role.LEADER) {
             LOGGER.info(idStr_ + "I am leader, skip remove peer in preProcessLog");
             return;
@@ -476,7 +465,7 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void commitRemovePeer(InetSocketAddress peer) {
-        boolean needToUnlock = raftLock_.tryLock();
+        boolean needToUnlock = raftLock_.tryEnter();
         try {
             if (role_ == Role.FOLLOWER || role_ == Role.LEARNER) {
                 LOGGER.info(idStr_ + "I am " + roleStr(role_)
@@ -487,7 +476,7 @@ public abstract class RaftPart implements AutoCloseable {
             removePeer(peer);
         } finally {
             if (needToUnlock) {
-                raftLock_.unlock();
+                raftLock_.leave();
             }
         }
     }
@@ -543,8 +532,8 @@ public abstract class RaftPart implements AutoCloseable {
             return CompletableFuture.completedFuture(AppendLogResult.E_BUFFER_OVERFLOW);
         }
 
+        logsLock_.enter();
         try {
-            logsLock_.lock();
             LOGGER.info(idStr_ + "Checking whether buffer overflow");
 
             if (logs_.size() >= MAX_BATCH_SIZE) {
@@ -584,21 +573,21 @@ public abstract class RaftPart implements AutoCloseable {
                 return retFuture;
             }
         } finally {
-            logsLock_.unlock();
+            logsLock_.leave();
         }
 
         long firstId = 0;
         long termId = 0;
         AppendLogResult res;
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             res = canAppendLogs();
             if (res == AppendLogResult.SUCCEEDED) {
                 firstId = lastLogId_ + 1;
                 termId = term_;
             }
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
 
         if (!checkAppendLogResult(res)) {
@@ -611,6 +600,7 @@ public abstract class RaftPart implements AutoCloseable {
         // Replication will happen on a separate thread and will block
         // until majority accept the logs, the leadership changes, or
         // the partition stops
+        LOGGER.info(idStr_ + "Calling appendLogsInternal()");
         AppendLogsIterator it = new AppendLogsIterator(firstId, termId, swappedOutLogs, opCB -> {
             Preconditions.checkNotNull(opCB);
             Optional<String> opRet = opCB.get();
@@ -643,8 +633,8 @@ public abstract class RaftPart implements AutoCloseable {
 
         AppendLogResult res = AppendLogResult.SUCCEEDED;
         do {
+            raftLock_.enter();
             try {
-                raftLock_.lock();
                 res = canAppendLogs(termId);
                 if (res != AppendLogResult.SUCCEEDED) {
                     break;
@@ -663,7 +653,7 @@ public abstract class RaftPart implements AutoCloseable {
                 LOGGER.info(idStr_ + "Succeeded writing logs ["
                         + iter.firstLogId() + ", " + lastId + "] to WAL");
             } finally {
-                raftLock_.unlock();
+                raftLock_.leave();
             }
         } while (false);
 
@@ -694,8 +684,8 @@ public abstract class RaftPart implements AutoCloseable {
         final ArrayList<Host> hosts;
 
         do {
+            raftLock_.enter();
             try {
-                raftLock_.lock();
                 res = canAppendLogs(currTerm);
                 if (res != AppendLogResult.SUCCEEDED) {
                     hosts = new ArrayList<>();
@@ -703,7 +693,7 @@ public abstract class RaftPart implements AutoCloseable {
                 }
                 hosts = new ArrayList<>(hosts_);
             } finally {
-                raftLock_.unlock();
+                raftLock_.leave();
             }
         } while (false);
 
@@ -757,8 +747,8 @@ public abstract class RaftPart implements AutoCloseable {
             long firstLogId = 0;
             AppendLogResult res = AppendLogResult.SUCCEEDED;
             do {
+                raftLock_.enter();
                 try {
-                    raftLock_.lock();
                     res = canAppendLogs(currTerm);
                     if (res != AppendLogResult.SUCCEEDED) {
                         break;
@@ -766,7 +756,7 @@ public abstract class RaftPart implements AutoCloseable {
                     lastLogId_ = lastLogId;
                     lastLogTerm_ = currTerm;
                 } finally {
-                    raftLock_.unlock();
+                    raftLock_.leave();
                 }
             } while (false);
 
@@ -778,21 +768,21 @@ public abstract class RaftPart implements AutoCloseable {
             LogIterator walIt = wal_.iterator(committedId + 1, lastLogId);
             // Step 3: Commit the batch
             if (commitLogs(walIt, true) == ErrorCode.SUCCEEDED) {
+                raftLock_.enter();
                 try {
-                    raftLock_.lock();
                     committedLogId_ = lastLogId;
                     firstLogId = lastLogId_ + 1;
                     lastMsgAcceptedCostMs_ = lastMsgSentDur_.elapsedInMSec();
                     lastMsgAcceptedTime_ = Clocks.systemClock().millis();
                     commitInThisTerm_ = true;
                 } finally {
-                    raftLock_.unlock();
+                    raftLock_.leave();
                 }
             } else {
                 LOGGER.error(idStr_ + "Failed to commit logs");
             }
 
-            LOGGER.info(idStr_ + "Leader succeeded in committing the logs " + committedId + 1 + " to " + lastLogId);
+            LOGGER.info(idStr_ + "Leader succeeded in committing the logs " + (committedId + 1) + " to " + lastLogId);
 
             // Step 4: Fulfill the promise
             if (iter.hasNonAtomicOpLogs()) {
@@ -804,8 +794,8 @@ public abstract class RaftPart implements AutoCloseable {
 
             // Step 5: Check whether need to continue
             // the log replication
+            logsLock_.enter();
             try {
-                logsLock_.lock();
                 Preconditions.checkState(replicatingLogs_.get());
                 // Continue to process the original AppendLogsIterator if necessary
                 iter.resume();
@@ -818,7 +808,7 @@ public abstract class RaftPart implements AutoCloseable {
                         cachingPromise_.reset();
                         iter = new AppendLogsIterator(firstLogId, currTerm, logs_, op -> {
                             Optional<String> opRet = op.get();
-                            if (!opRet.isPresent()) {
+                            if (opRet.isEmpty()) {
                                 // Failed
                                 sendingPromise_.setOneSingleValue(AppendLogResult.E_ATOMIC_OP_FAILURE);
                             }
@@ -839,7 +829,7 @@ public abstract class RaftPart implements AutoCloseable {
                     }
                 }
             } finally {
-                logsLock_.unlock();
+                logsLock_.leave();
             }
 
             appendLogsInternal(iter, currTerm);
@@ -858,19 +848,20 @@ public abstract class RaftPart implements AutoCloseable {
 
     private boolean needToSendHeartbeat() {
         try {
-            raftLock_.lock();
+            raftLock_.enter();
             return status_ == Status.RUNNING && role_ == Role.LEADER;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private boolean needToStartElection() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-            if (status_ == Status.RUNNING && role_ == Role.FOLLOWER
-                    && (lastMsgRecvDur_.elapsedInMSec() >= weight_.get() * RAFT_HEARTBEAT_INTERVAL_SECS) || isBlindFollower_
-            ) {
+            if (status_ == Status.RUNNING &&
+                    role_ == Role.FOLLOWER &&
+                    (lastMsgRecvDur_.elapsedInMSec() >= weight_.get() * RAFT_HEARTBEAT_INTERVAL_SECS * 1000 ||
+                            isBlindFollower_)) {
                 LOGGER.info(idStr_ + "Start leader election, reason: lastMsgDur "
                         + lastMsgRecvDur_.elapsedInMSec()
                         + ", term " + term_);
@@ -880,13 +871,13 @@ public abstract class RaftPart implements AutoCloseable {
 
             return role_ == Role.CANDIDATE;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private AskForVoteRequest prepareElectionRequest(List<Host> hosts) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             // Make sure the partition is running
             if (status_ != Status.RUNNING) {
                 LOGGER.info(idStr_ + "The partition is not running");
@@ -931,14 +922,13 @@ public abstract class RaftPart implements AutoCloseable {
 
             return req;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private Role processElectionResponses(List<Pair<Integer, AskForVoteResponse>> results, List<Host> hosts, long proposedTerm) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-
             if (status_ == Status.STOPPED) {
                 LOGGER.info(idStr_ + "The part has been stopped, skip the request");
                 return role_;
@@ -984,7 +974,7 @@ public abstract class RaftPart implements AutoCloseable {
 
             return role_;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1007,12 +997,12 @@ public abstract class RaftPart implements AutoCloseable {
                 // Becasue C is in Candidate, so it will reject the snapshot request from B.
                 // Infinite loop begins.
                 // So we neeed to go back to the follower state to avoid the case.
+                raftLock_.enter();
                 try {
-                    raftLock_.lock();
                     role_ = Role.FOLLOWER;
                     return false;
                 } finally {
-                    raftLock_.unlock();
+                    raftLock_.leave();
                 }
             }
 
@@ -1057,8 +1047,8 @@ public abstract class RaftPart implements AutoCloseable {
                 case LEADER: {
                     // Elected
                     LOGGER.info(idStr_ + "The partition is elected as the leader");
+                    raftLock_.enter();
                     try {
-                        raftLock_.lock();
                         if (status_ == Status.RUNNING) {
                             leader_ = addr_;
                             hosts.forEach(Host::reset);
@@ -1068,7 +1058,7 @@ public abstract class RaftPart implements AutoCloseable {
                         weight_.set(1);
                         commitInThisTerm_ = false;
                     } finally {
-                        raftLock_.unlock();
+                        raftLock_.leave();
                     }
                     sendHeartbeat();
                     return true;
@@ -1092,6 +1082,7 @@ public abstract class RaftPart implements AutoCloseable {
             LOGGER.error(idStr_ + "Should not be here");
             return false;
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("Got exception ", e);
         } finally {
             inElection_.set(false);
@@ -1099,8 +1090,8 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     private void statusPolling(long startTime) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             // If startTime is not same as the time when `statusPolling` is add to event loop,
             // it means the part has been restarted (it only happens in ut for now), so don't
             // add another `statusPolling`.
@@ -1108,7 +1099,7 @@ public abstract class RaftPart implements AutoCloseable {
                 return;
             }
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
 
         long delay = RAFT_HEARTBEAT_INTERVAL_SECS * 1000 / 3;
@@ -1129,41 +1120,41 @@ public abstract class RaftPart implements AutoCloseable {
             LOGGER.info(idStr_ + "Clean up the snapshot");
             cleanupSnapshot();
         }
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             if (status_ == Status.RUNNING || status_ == Status.WAITING_SNAPSHOT) {
                 LOGGER.info(idStr_ + "Schedule new task");
                 bgWorkers_.schedule(() -> statusPolling(startTime), delay, TimeUnit.MILLISECONDS);
             }
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private boolean needToCleanupSnapshot() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             return status_ == Status.WAITING_SNAPSHOT && role_ != Role.LEADER
                     && lastSnapshotRecvDur_.elapsedInSec() != RAFT_SNAPSHOT_TIMEOUT;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private void cleanupSnapshot() {
         LOGGER.info(idStr_ + "Clean up the snapshot");
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             reset();
             status_ = Status.RUNNING;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private boolean needToCleanWal() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             if (status_ == Status.STARTING || status_ == Status.WAITING_SNAPSHOT) {
                 return false;
             }
@@ -1173,7 +1164,7 @@ public abstract class RaftPart implements AutoCloseable {
             }
             return true;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1189,9 +1180,8 @@ public abstract class RaftPart implements AutoCloseable {
                 + ", lastLogId = " + req.getLast_log_id()
                 + ", lastLogTerm = " + req.getLast_log_term());
 
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-
             // Make sure the partition is running
             if (status_ == Status.STOPPED) {
                 LOGGER.info(idStr_ + "The part has been stopped, skip the request");
@@ -1296,7 +1286,7 @@ public abstract class RaftPart implements AutoCloseable {
             weight_.set(1);
             isBlindFollower_ = false;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1319,8 +1309,8 @@ public abstract class RaftPart implements AutoCloseable {
                 + ", local committedLogId = " + committedLogId_
                 + ", local current term = " + term_);
 
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             resp.setCurrent_term(term_);
             resp.setLeader_addr(leader_.getHostString());
             resp.setLeader_port(leader_.getPort());
@@ -1521,7 +1511,7 @@ public abstract class RaftPart implements AutoCloseable {
             // Reset the timeout timer again in case wal and commit takes longer time than expected
             lastMsgRecvDur_.reset(false);
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1544,7 +1534,7 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     private ErrorCode verifyLeader(VerifyLeaderParams req) {
-        assert !raftLock_.tryLock();
+        assert !raftLock_.tryEnter();
         InetSocketAddress candidate = new InetSocketAddress(req.leader_addr, req.leader_port);
         ErrorCode code = checkPeer(candidate);
         if (code != ErrorCode.SUCCEEDED) {
@@ -1638,7 +1628,7 @@ public abstract class RaftPart implements AutoCloseable {
                 + ", local current term = " + term_);
 
         try {
-            raftLock_.lock();
+            raftLock_.enter();
 
             resp.setCurrent_term(term_);
             resp.setLeader_addr(leader_.getHostString());
@@ -1675,7 +1665,7 @@ public abstract class RaftPart implements AutoCloseable {
             // As for heartbeat, return ok after verifyLeader
             resp.setError_code(ErrorCode.SUCCEEDED);
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1685,9 +1675,8 @@ public abstract class RaftPart implements AutoCloseable {
                 + ", total size received " + req.getTotal_size()
                 + ", finished " + req.isDone());
 
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-
             if (status_ == Status.STOPPED) {
                 LOGGER.error(idStr_ + "The part has been stopped, skip the request");
                 resp.setError_code(ErrorCode.E_BAD_STATE);
@@ -1754,7 +1743,7 @@ public abstract class RaftPart implements AutoCloseable {
             }
             resp.setError_code(ErrorCode.SUCCEEDED);
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1762,6 +1751,7 @@ public abstract class RaftPart implements AutoCloseable {
         // If leader has not commit any logs in this term, it must commit all logs in previous term,
         // so heartbeat is send by appending one empty log.
         if (!replicatingLogs_.get()) {
+            appendLogAsync(clusterId_, LogType.NORMAL, new byte[0], null);
             executor_.submit(() -> appendLogAsync(clusterId_, LogType.NORMAL, new byte[0], null));
         }
 
@@ -1774,8 +1764,8 @@ public abstract class RaftPart implements AutoCloseable {
         final int replica;
         final List<Host> hosts;
 
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             currTerm = term_;
             latestLogId = wal_.lastLogId();
             commitLogId = committedLogId_;
@@ -1784,7 +1774,7 @@ public abstract class RaftPart implements AutoCloseable {
             replica = quorum_;
             hosts = new ArrayList<>(hosts_);
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
 
         long startMs = Clocks.systemClock().millis();
@@ -1810,13 +1800,13 @@ public abstract class RaftPart implements AutoCloseable {
             }
             if (numSucceeded > replica) {
                 LOGGER.info(idStr_, "Heartbeat is accepted by quorum");
+                raftLock_.enter();
                 try {
-                    raftLock_.lock();
                     long now = Clocks.systemClock().millis();
                     lastMsgAcceptedCostMs_ = now - startMs;
                     lastMsgAcceptedTime_ = now;
                 } finally {
-                    raftLock_.unlock();
+                    raftLock_.leave();
                 }
             }
         });
@@ -1824,7 +1814,6 @@ public abstract class RaftPart implements AutoCloseable {
 
     // followers return Host of which could vote, in other words, learner is not counted in
     public List<Host> followers() {
-        Preconditions.checkState(!raftLock_.tryLock());
         List<Host> hosts = new ArrayList<>();
         for (Host h : hosts_) {
             if (!h.isLearner_()) {
@@ -1836,7 +1825,7 @@ public abstract class RaftPart implements AutoCloseable {
 
     public List<InetSocketAddress> peers() {
         try {
-            raftLock_.lock();
+            raftLock_.enter();
             List<InetSocketAddress> peers = new ArrayList<>();
             peers.add(addr_);
             for (Host h : hosts_) {
@@ -1844,16 +1833,16 @@ public abstract class RaftPart implements AutoCloseable {
             }
             return peers;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public List<InetSocketAddress> listeners() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             return listeners_;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1863,14 +1852,14 @@ public abstract class RaftPart implements AutoCloseable {
 
     boolean checkAppendLogResult(AppendLogResult res) {
         if (res != AppendLogResult.SUCCEEDED) {
+            logsLock_.enter();
             try {
-                logsLock_.lock();
                 logs_.clear();
                 cachingPromise_.setValue(res);
                 cachingPromise_.reset();
                 bufferOverFlow_.set(false);
             } finally {
-                logsLock_.unlock();
+                logsLock_.leave();
             }
 
             sendingPromise_.setValue(res);
@@ -1881,7 +1870,6 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public void reset() {
-        Preconditions.checkState(!raftLock_.tryLock());
         wal_.reset();
         cleanup();
         lastLogId_ = committedLogId_ = 0;
@@ -1895,8 +1883,8 @@ public abstract class RaftPart implements AutoCloseable {
      * the method will return false.
      */
     public AppendLogResult isCatchedUp(InetSocketAddress peer) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             LOGGER.info(idStr_ + "Check whether I catch up");
             if (role_ != Role.LEADER) {
                 LOGGER.info(idStr_ + "I am not the leader");
@@ -1919,17 +1907,17 @@ public abstract class RaftPart implements AutoCloseable {
             }
             return AppendLogResult.E_INVALID_PEER;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public boolean linkCurrentWAL(String path) {
         Preconditions.checkNotNull(path);
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             return wal_.linkCurrentWAL(path);
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1937,8 +1925,8 @@ public abstract class RaftPart implements AutoCloseable {
      * Reset my peers if not equals the argument
      */
     public void checkAndResetPeers(List<InetSocketAddress> peers) {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             List<Host> hosts = new ArrayList<>(hosts_);
             for (Host h : hosts) {
                 LOGGER.info(idStr_ + "Check host " + h.address());
@@ -1952,7 +1940,7 @@ public abstract class RaftPart implements AutoCloseable {
                 addPeer(p);
             }
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
@@ -1976,9 +1964,8 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     public boolean leaseValid() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-
             if (hosts_.isEmpty()) {
                 return true;
             }
@@ -1991,12 +1978,11 @@ public abstract class RaftPart implements AutoCloseable {
             // the time duration since last time leader send a log (the log has been accepted as well)
             return Clocks.systemClock().millis() - lastMsgAcceptedTime_ < RAFT_HEARTBEAT_INTERVAL_SECS * 1000 - lastMsgAcceptedCostMs_;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     private AppendLogResult canAppendLogs() {
-        assert raftLock_.tryLock();
         if (status_ != Status.RUNNING) {
             LOGGER.error(idStr_ + "The partition is not running");
             return AppendLogResult.E_STOPPED;
@@ -2009,7 +1995,6 @@ public abstract class RaftPart implements AutoCloseable {
     }
 
     private AppendLogResult canAppendLogs(long termId) {
-        assert raftLock_.tryLock();
         if (term_ != termId) {
             LOGGER.error(idStr_ + "Term has been updated, origin " + termId + ", new " + term_);
             return AppendLogResult.E_TERM_OUT_OF_DATE;
@@ -2019,41 +2004,40 @@ public abstract class RaftPart implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
-
             // Make sure the partition has stopped
             Preconditions.checkState(status_ == Status.STOPPED);
             LOGGER.info(idStr_ + "The part has been destroyed...");
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public boolean isRunning() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             return status_ == Status.RUNNING;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public boolean isLearner() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             return role_ == Role.LEARNER;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 
     public InetSocketAddress leader() {
+        raftLock_.enter();
         try {
-            raftLock_.lock();
             return leader_;
         } finally {
-            raftLock_.unlock();
+            raftLock_.leave();
         }
     }
 

@@ -2,7 +2,6 @@ package com.mware.ge.kvstore.raftex;
 
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
-import com.mware.ge.util.Preconditions;
 import org.junit.Assert;
 
 import java.io.File;
@@ -42,8 +41,14 @@ public class RaftexTestBase {
         // Set up services
         for (int i = 0; i < numCopies; ++i) {
             int port = 22333 + i;
-            services.add(RaftexServiceImpl.createService(port));
+            RaftexServiceImpl service = RaftexServiceImpl.createService(port);
+            service.start();
+            services.add(service);
             allHosts.add(new InetSocketAddress("127.0.0.1", port));
+        }
+
+        if (isLearner.isEmpty()) {
+            allHosts.forEach(h -> isLearner.add(false));
         }
 
         List<SnapshotManager> sps = snapshots(services);
@@ -117,15 +122,12 @@ public class RaftexTestBase {
         while (true) {
             boolean sameLeader = false;
             try {
-                leaderMutex.lock();
-                leaderCV.awaitUninterruptibly();
-
-                if (leader.get() == null)
-                    leaderCV.awaitUninterruptibly();
-
-                // Sleep some time to wait until resp of heartbeat has come back when elected as leader
                 try {
-                    Thread.sleep(1000);
+                    leaderMutex.lock();
+
+                    while (leader.get() == null)
+                        leaderCV.await(1, TimeUnit.SECONDS);
+
                 } catch (InterruptedException e) {
                 }
                 sameLeader = checkLeader(copies, leader, isLearner);
@@ -209,16 +211,17 @@ public class RaftexTestBase {
     }
 
     public void finishRaft(List<RaftexServiceImpl> services, List<TestShard> copies, ScheduledExecutorService workers, AtomicReference<TestShard> leader) {
+        leader.set(null);
+        copies.clear();
+
+        for (RaftexServiceImpl svc : services)
+            svc.stop();
+
         try {
-            leader.set(null);
-            copies.clear();
-
-            for (RaftexServiceImpl svc : services)
-                svc.stop();
-
             workers.shutdown();
-            workers.awaitTermination(1000, TimeUnit.SECONDS);
+            workers.awaitTermination(1, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -228,5 +231,18 @@ public class RaftexTestBase {
             snapshots.add(new TestSnapshotManager(service));
         }
         return snapshots;
+    }
+
+    protected void killOneCopy(List<RaftexServiceImpl> services, List<TestShard> copies, AtomicReference<TestShard> leader, int idx) {
+        services.get(idx).removePartition(copies.get(idx));
+        if (leader.get() != null && leader.get().index() == idx) {
+            try {
+                leaderMutex.lock();
+                leader.set(null);
+            } finally {
+                leaderMutex.unlock();
+            }
+        }
+        LOGGER.info("copies " + idx + " stop");
     }
 }

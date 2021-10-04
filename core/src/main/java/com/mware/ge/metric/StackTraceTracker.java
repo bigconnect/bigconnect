@@ -102,7 +102,7 @@ public class StackTraceTracker {
     }
 
     public static class StackTraceItem {
-        private final Set<StackTraceItem> children = new HashSet<>();
+        private final Set<StackTraceItem> children = Collections.synchronizedSet(new HashSet<>());
         private final StackTraceElement stackTraceElement;
         private int count;
 

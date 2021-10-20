@@ -21,3 +21,4 @@ bc-elastic-plugin.zip
 /bolt.cert
 /bolt.key
 *.versionsBackup
+rocksdb-data/

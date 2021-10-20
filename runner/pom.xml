@@ -21,6 +21,12 @@
     <dependencies>
         <dependency>
             <groupId>io.bigconnect</groupId>
+            <artifactId>corev2</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.bigconnect</groupId>
             <artifactId>core</artifactId>
             <version>${project.version}</version>
             <exclusions>

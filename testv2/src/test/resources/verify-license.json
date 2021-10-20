@@ -1,0 +1,7 @@
+{
+  "subject": "biggraph-license",
+  "public_alias": "publiccert",
+  "store_ticket": "803b6cc3-d144-47e8-948f-ec8b39c8881e",
+  "publickey_path": "/public-certs.store",
+  "license_path": "conf/biggraph-community.license"
+}

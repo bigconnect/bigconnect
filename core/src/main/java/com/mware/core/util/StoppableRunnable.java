@@ -37,5 +37,5 @@
 package com.mware.core.util;
 
 public interface StoppableRunnable extends Runnable {
-    public void stop();
+    void stop();
 }

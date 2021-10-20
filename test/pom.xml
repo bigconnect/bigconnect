@@ -23,6 +23,20 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- v2 -->
+        <dependency>
+            <groupId>io.bigconnect</groupId>
+            <artifactId>corev2</artifactId>
+            <scope>compile</scope>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.bigconnect</groupId>
+            <artifactId>storage-rocksdb2</artifactId>
+            <scope>compile</scope>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.bigconnect</groupId>
             <artifactId>core</artifactId>

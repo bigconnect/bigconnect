@@ -202,6 +202,7 @@
 
     <modules>
         <module>core</module>
+        <module>corev2</module>
         <module>security</module>
         <module>bolt</module>
         <module>cypher</module>
@@ -210,7 +211,7 @@
         <module>search</module>
         <module>storage</module>
         <module>runner</module>
-        <module>test</module>
+        <module>testv2</module>
         <module>integration-tests</module>
         <module>release</module>
     </modules>

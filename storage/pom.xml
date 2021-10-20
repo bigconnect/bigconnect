@@ -15,8 +15,8 @@
     <name>BigConnect: Storage Layer</name>
 
     <modules>
-        <module>accumulo</module>
-        <module>rocksdb</module>
+<!--        <module>accumulo</module>-->
+        <module>rocksdb2</module>
     </modules>
 
     <profiles>

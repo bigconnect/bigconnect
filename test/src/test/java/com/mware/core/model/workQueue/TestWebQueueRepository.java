@@ -41,23 +41,13 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestWebQueueRepository extends WebQueueRepository {
+public class TestWebQueueRepository extends InMemoryWebQueueRepository {
     public List<JSONObject> broadcastJsonValues = new ArrayList<>();
 
     @Override
     public void broadcastJson(JSONObject json) {
         broadcastJsonValues.add(json);
-    }
-
-
-    @Override
-    public void subscribeToBroadcastMessages(BroadcastConsumer broadcastConsumer) {
-
-    }
-
-    @Override
-    public void unsubscribeFromBroadcastMessages(BroadcastConsumer broadcastConsumer) {
-
+        super.broadcastJson(json);
     }
 
     public void clearQueue() {

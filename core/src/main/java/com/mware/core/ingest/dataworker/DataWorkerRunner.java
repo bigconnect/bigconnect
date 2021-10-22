@@ -190,7 +190,7 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
             wrappers.add(wrapper);
             Thread thread = new Thread(wrapper);
             String workerName = worker.getClass().getName();
-            thread.setName("dataWorker-" + workerName);
+            thread.setName(Thread.currentThread().getName()+"-dw-" + workerName);
             thread.start();
         }
 
@@ -755,12 +755,12 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
         return Lists.newArrayList(this.dataWorkers);
     }
 
-    public static List<StoppableRunnable> startThreaded(int threadCount, User user) {
-        List<StoppableRunnable> stoppables = new ArrayList<>();
+    public static List<DataWorkerRunnerStoppable> startThreaded(int threadCount, User user) {
+        List<DataWorkerRunnerStoppable> stoppables = new ArrayList<>();
 
         LOGGER.info("Starting DataWorkerRunners on %d threads", threadCount);
         for (int i = 0; i < threadCount; i++) {
-            StoppableRunnable stoppable = new StoppableRunnable() {
+            DataWorkerRunnerStoppable stoppable = new DataWorkerRunnerStoppable() {
                 private DataWorkerRunner dataWorkerRunner = null;
 
                 @Override
@@ -785,6 +785,11 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
                         LOGGER.error("Failed stopping DataWorkerRunner", ex);
                     }
                 }
+
+                @Override
+                public DataWorkerRunner getDataWorkerRunner() {
+                    return dataWorkerRunner;
+                }
             };
             stoppables.add(stoppable);
             Thread t = new Thread(stoppable);
@@ -795,5 +800,9 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
         }
 
         return stoppables;
+    }
+
+    public interface DataWorkerRunnerStoppable extends StoppableRunnable  {
+        DataWorkerRunner getDataWorkerRunner();
     }
 }

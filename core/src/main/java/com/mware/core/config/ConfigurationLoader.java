@@ -159,8 +159,11 @@ public abstract class ConfigurationLoader {
         if (log4jFile == null || !log4jFile.exists()) {
             try {
                 String fileName = System.getProperty("logQuiet") == null ? "log4j.xml" : "log4j-quiet.xml";
-                URL log4jResource = getClass().getResource(fileName);
-                System.err.println("Could not resolve log4j.xml, using the fallback: " + log4jResource);
+                URL log4jResource = getClass().getResource("/"+fileName);
+                if (log4jResource == null)
+                    log4jResource = getClass().getResource(fileName);
+
+                System.err.println("Using log4j.xml resource: " + log4jResource);
                 if (log4jResource != null) {
                     DOMConfigurator.configure(log4jResource);
                     log4jLocation = log4jResource.toExternalForm();

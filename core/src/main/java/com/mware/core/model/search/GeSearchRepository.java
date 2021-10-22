@@ -127,12 +127,7 @@ public class GeSearchRepository extends SearchRepository {
         if (graph.doesVertexExist(id, authorizations)) {
             // switching from global to private
             if (isSearchGlobal(id, authorizations)) {
-                if (privilegeRepository.hasPrivilege(user, Privilege.SEARCH_SAVE_GLOBAL)) {
-                    deleteSearch(id, user);
-                } else {
-                    throw new BcAccessDeniedException(
-                            "User does not have the privilege to change a global search", user, id);
-                }
+                throw new BcAccessDeniedException("A global search with the same ID already exists", user, id);
             } else if (!isSearchPrivateToUser(id, user, authorizations)) {
                 throw new BcAccessDeniedException("User does not own this this search", user, id);
             }

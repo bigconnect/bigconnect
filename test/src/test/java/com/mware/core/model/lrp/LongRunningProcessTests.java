@@ -60,8 +60,6 @@ public class LongRunningProcessTests extends TestBaseWithInjector {
     @Test
     public void testCreateLRP() throws Exception {
         String id = longRunningProcessRepository.enqueue(new CreateLargeGraphLrpQueueItem(), getUser(), getAuthorizations());
-
-
         Thread.sleep(100_000L);
     }
 }

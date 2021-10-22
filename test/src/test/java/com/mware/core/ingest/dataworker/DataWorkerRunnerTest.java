@@ -37,17 +37,15 @@
 package com.mware.core.ingest.dataworker;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.mware.core.InMemoryGraphTestBase;
 import com.mware.core.config.Configuration;
-import com.mware.core.model.role.AuthorizationRepository;
+import com.mware.core.model.schema.SchemaConstants;
 import com.mware.core.model.workQueue.Priority;
-import com.mware.core.model.workQueue.WebQueueRepository;
-import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.status.JmxMetricsManager;
 import com.mware.core.status.MetricsManager;
 import com.mware.core.status.StatusRepository;
 import com.mware.ge.*;
-import com.mware.ge.values.storable.StringValue;
+import com.mware.ge.inmemory.InMemoryExtendedDataRow;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -57,21 +55,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.InputStream;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DataWorkerRunnerTest {
+public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
     private static final String VERTEX_ID = "vertexID";
     private static final String EDGE_ID = "edgeID";
 
@@ -79,28 +70,26 @@ public class DataWorkerRunnerTest {
     private static final String PROP_KEY = "propKey";
     private static final TextValue PROP_VALUE = Values.stringValue("propValue");
 
-    private DataWorkerRunner testSubject;
-    private Graph graph;
+    private DataWorkerRunner dataWorkerRunner;
     private MetricsManager metricsManager = new JmxMetricsManager();
-
-    @Mock
-    private WorkQueueRepository workQueueRepository;
-
-    @Mock
-    private WebQueueRepository webQueueRepository;
-
-    @Mock
-    private Configuration configuration;
-
-    @Mock
-    private AuthorizationRepository authorizationRepository;
+    private Authorizations AUTHS;
 
     @Mock
     private StatusRepository statusRepository;
 
     @Before
-    public void before() {
-        testSubject = new DataWorkerRunner(
+    public void before() throws Exception {
+        super.before();
+
+        AUTHS = getGraphAuthorizations("A");
+        getConfiguration().set(Configuration.STATUS_ENABLED, false);
+
+        dataWorkerRunner = createRunner();
+        getWorkQueueRepository().setDataWorkerRunner(dataWorkerRunner);
+    }
+
+    private DataWorkerRunner createRunner() {
+        DataWorkerRunner runner = new DataWorkerRunner(
                 workQueueRepository,
                 webQueueRepository,
                 statusRepository,
@@ -108,16 +97,19 @@ public class DataWorkerRunnerTest {
                 metricsManager,
                 authorizationRepository
         );
-        graph = mock(Graph.class);
-        testSubject.setGraph(graph);
+        runner.setGraph(graph);
+        runner.setAuthorizations(AUTHS);
+        runner.setConfiguration(getConfiguration());
+
+        return runner;
     }
 
     @Test
     public void testHandlePropertyOnVertexIsHandledByDWS() throws Exception {
-        TestCountingDWStub countingDWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingDWStub = new TestCountingDWStub1();
 
-        DataWorkerMessage message = createVertexPropertyGPWMessage(VERTEX_ID, PROP_NAME + "0", PROP_KEY + "0");
-        inflateVertexAndAddToGraph(VERTEX_ID, 1L);
+        DataWorkerMessage message = createVertexPropertyDWMessage(VERTEX_ID, PROP_NAME + "0", PROP_KEY + "0");
+        createVertex(VERTEX_ID, createNumProperties(1));
         runTests(countingDWStub, message);
 
         assertThat(countingDWStub.isExecutingCount.get(), is(1L));
@@ -126,10 +118,10 @@ public class DataWorkerRunnerTest {
 
     @Test
     public void testAllPropertiesOnVertexAreProcessedByDataWorkers() throws Exception {
-        TestCountingDWStub countingDWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingDWStub = new TestCountingDWStub1();
 
-        DataWorkerMessage message = createVertexIdJSONGPWMessage(VERTEX_ID);
-        inflateVertexAndAddToGraph(VERTEX_ID, 11L);
+        DataWorkerMessage message = createVertexIdJSONDWMessage(VERTEX_ID);
+        createVertex(VERTEX_ID, createNumProperties(11));
         runTests(countingDWStub, message);
 
         assertThat(countingDWStub.isExecutingCount.get(), is(12L));
@@ -138,10 +130,10 @@ public class DataWorkerRunnerTest {
 
     @Test
     public void testHandlePropertyOnEdgeIsHandledByDWS() throws Exception {
-        TestCountingDWStub countingDWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingDWStub = new TestCountingDWStub1();
 
-        DataWorkerMessage message = createEdgeIdJSONGPWMessage(EDGE_ID, PROP_NAME + "0", PROP_KEY + "0");
-        inflateEdgeAndAddToGraph(EDGE_ID, 1L);
+        DataWorkerMessage message = createEdgeIdJSONDWMessage(PROP_NAME + "0", PROP_KEY + "0");
+        createEdge(EDGE_ID, 1);
         runTests(countingDWStub, message);
 
         assertThat(countingDWStub.isExecutingCount.get(), is(2L));
@@ -150,10 +142,10 @@ public class DataWorkerRunnerTest {
 
     @Test
     public void testAllPropertiesOnEdgeAreProcessedByDataWorkers() throws Exception {
-        TestCountingDWStub countingGPWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingGPWStub = new TestCountingDWStub1();
 
-        DataWorkerMessage message = createEdgeIdJSONGPWMessage(EDGE_ID);
-        inflateEdgeAndAddToGraph(EDGE_ID, 14L);
+        DataWorkerMessage message = createEdgeIdJSONDWMessage(EDGE_ID);
+        createEdge(EDGE_ID, 14);
         runTests(countingGPWStub, message);
 
         assertThat(countingGPWStub.isExecutingCount.get(), is(15L));
@@ -168,7 +160,7 @@ public class DataWorkerRunnerTest {
 
         for (int i = 0; i < numMessages; i++) {
             ids[i] = EDGE_ID + "_" + i;
-            inflateEdgeAndAddToGraph(ids[i], numProperties);
+            createEdge(ids[i], numProperties);
         }
 
         DataWorkerMessage message = createMultiEdgeIdJSONGPWMessage(ids);
@@ -184,7 +176,7 @@ public class DataWorkerRunnerTest {
 
         for (int i = 0; i < numMessages; i++) {
             ids[i] = VERTEX_ID + "_" + i;
-            inflateVertexAndAddToGraph(ids[i], numProperties);
+            createVertex(ids[i], createNumProperties(numProperties));
         }
 
         testMultiElementMessage(numMessages, numProperties, createMultiVertexIdJSONGPWMessage(ids));
@@ -198,17 +190,15 @@ public class DataWorkerRunnerTest {
 
         for (int i = 0; i < numElements; i++) {
             ids[i] = VERTEX_ID + "_" + i;
-            inflateVertexAndAddToGraph(ids[i], prop);
+            createVertex(ids[i], prop);
         }
 
         DataWorkerMessage message = createMultiVertexPropertyMessage(ids, prop);
-        TestCountingDWStub countingGPWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingGPWStub = new TestCountingDWStub1();
         runTests(countingGPWStub, message);
 
-        long expectedNumProperties = (long) (numElements);
-
-        assertThat(countingGPWStub.isExecutingCount.get(), is(expectedNumProperties));
-        assertThat(countingGPWStub.isHandledCount.get(), is(expectedNumProperties));
+        assertThat(countingGPWStub.isExecutingCount.get(), is((long) numElements));
+        assertThat(countingGPWStub.isHandledCount.get(), is((long) numElements));
         assertThat(countingGPWStub.workedOnProperties.size(), is(1));
         Property next = countingGPWStub.workedOnProperties.iterator().next();
         assertThat(next.getName(), is(prop.getName()));
@@ -218,7 +208,7 @@ public class DataWorkerRunnerTest {
     }
 
     private void testMultiElementMessage(int numMessages, int numProperties, DataWorkerMessage message) throws Exception {
-        TestCountingDWStub countingGPWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingGPWStub = new TestCountingDWStub1();
         runTests(countingGPWStub, message);
 
         long expectedNumProperties = (long) (numMessages * numProperties + numMessages);
@@ -227,43 +217,80 @@ public class DataWorkerRunnerTest {
         assertThat(countingGPWStub.isHandledCount.get(), is(expectedNumProperties));
     }
 
+    @Test
+    public void testMultithreading() throws Exception {
+        List<DataWorkerRunner> runners = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            DataWorkerRunner runner = createRunner();
+            runner.addDataWorkerThreadedWrappers(startInThread(new TestCountingDWStub1()));
+            runner.prepare(getUserRepository().getSystemUser());
+            runner.run();
+            runners.add(runner);
+        }
+
+        int numElements = 50;
+
+        DataWorkerMemoryTracer.ENABLED = true;
+
+        for (int i = 0; i < numElements; i++) {
+            Vertex v = createVertex(VERTEX_ID + "_" + i, createNumProperties(1));
+            getWorkQueueRepository().pushGraphPropertyQueue(
+                    v,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Priority.HIGH,
+                    ElementOrPropertyStatus.UPDATE,
+                    null
+            );
+        }
+
+//        while (countingDWStub.isExecutingCount.get() < numElements * 2L) {
+//            Thread.sleep(1000L);
+//        }
+//
+//        DataWorkerMemoryTracer.print();
+//
+//        assertThat(countingDWStub.isExecutingCount.get(), is((long) numElements * 2));
+//        assertThat(countingDWStub.isHandledCount.get(), is((long) numElements * 2));
+//        assertThat(countingDWStub.workedOnProperties.size(), is(2));
+    }
+
     private void runTests(DataWorker worker, DataWorkerMessage message) throws Exception {
         DataWorkerThreadedWrapper dataWorkerThreadedWrapper = startInThread(worker);
+        dataWorkerRunner.addDataWorkerThreadedWrappers(dataWorkerThreadedWrapper);
 
-        testSubject.addDataWorkerThreadedWrappers(dataWorkerThreadedWrapper);
-
-        DataWorkerItem workerItem = testSubject.tupleDataToWorkerItem(message.toBytes());
-        testSubject.process(workerItem);
+        DataWorkerItem workerItem = dataWorkerRunner.tupleDataToWorkerItem(message.toBytes());
+        dataWorkerRunner.process(workerItem);
 
         stopInThread(dataWorkerThreadedWrapper);
     }
 
-    private void inflateVertexAndAddToGraph(String vertexId, long numProperties) {
-        inflateVertexAndAddToGraph(vertexId, createNumProperties(numProperties));
+    private Vertex createVertex(String vertexId, Property... properties) {
+        VertexBuilder v = graph.prepareVertex(vertexId, Visibility.EMPTY, SchemaConstants.CONCEPT_TYPE_THING);
+        for (Property property : properties) {
+            v.addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getVisibility());
+        }
+        return v.save(AUTHS);
     }
 
-    private void inflateVertexAndAddToGraph(String vertexId, Property... properties) {
-        Vertex mockedVertex = createMockedVertex(vertexId, properties);
-        registerVertexWithGraph(vertexId, mockedVertex);
-    }
-
-    private void inflateEdgeAndAddToGraph(String edgeId, long numProperties) {
+    private Edge createEdge(String edgeId, int numProperties) {
         Property[] props = createNumProperties(numProperties);
-        Edge mockedEdge = createMockedEdge(edgeId, props);
-        registerEdgeWithGraph(edgeId, mockedEdge);
+        EdgeBuilderByVertexId e = graph.prepareEdge(edgeId, VERTEX_ID, VERTEX_ID, "label", Visibility.EMPTY);
+        for (Property property : props) {
+            e.addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getVisibility());
+        }
+        return e.save(AUTHS);
     }
 
-    private DataWorkerThreadedWrapper createTestGPWThreadedWrapper(DataWorker worker) {
-        DataWorkerThreadedWrapper stubDataWorkerThreadedWrapper = new DataWorkerThreadedWrapper(worker);
-        stubDataWorkerThreadedWrapper.setMetricsManager(metricsManager);
-        return stubDataWorkerThreadedWrapper;
-    }
+    private DataWorkerThreadedWrapper startInThread(DataWorker worker) {
+        DataWorkerThreadedWrapper threadedWrapper = new DataWorkerThreadedWrapper(worker);
+        threadedWrapper.setMetricsManager(metricsManager);
 
-    private DataWorkerThreadedWrapper startInThread(DataWorker worker) throws InterruptedException {
-        DataWorkerThreadedWrapper testGPWThreadedWrapper = createTestGPWThreadedWrapper(worker);
-        Thread thread = new Thread(testGPWThreadedWrapper);
+        Thread thread = new Thread(threadedWrapper);
         thread.start();
-        return testGPWThreadedWrapper;
+        return threadedWrapper;
     }
 
     private void stopInThread(DataWorkerThreadedWrapper... wrappers) throws InterruptedException {
@@ -278,33 +305,7 @@ public class DataWorkerRunnerTest {
         Thread.sleep(50L);
     }
 
-    private class TestCountingDWStub extends DataWorker {
-        public AtomicLong isHandledCount = new AtomicLong(0);
-        public AtomicLong isExecutingCount = new AtomicLong(0);
-        public Set<Property> workedOnProperties = Sets.newHashSet();
-
-        @Override
-        public void execute(InputStream in, DataWorkerData data) throws Exception {
-            isExecutingCount.incrementAndGet();
-        }
-
-        @Override
-        public boolean isHandled(Element element, Property property) {
-            isHandledCount.incrementAndGet();
-            workedOnProperties.add(property);
-            return true;
-        }
-    }
-
-    private Edge createMockedEdge(String edgeId, Property... props) {
-        List<Property> propList = Lists.newArrayList(props);
-        Edge e = mock(Edge.class);
-        when(e.getId()).thenReturn(edgeId);
-        when(e.getProperties()).thenReturn(propList);
-        return e;
-    }
-
-    private Property[] createNumProperties(long num) {
+    private Property[] createNumProperties(int num) {
         List<Property> props = Lists.newArrayList();
 
         for (long i = 0; i < num; i++) {
@@ -315,79 +316,56 @@ public class DataWorkerRunnerTest {
     }
 
     private Property createProperty(String name, String key, Value value) {
-        Property prop = mock(Property.class);
-        when(prop.getName()).thenReturn(name);
-        when(prop.getKey()).thenReturn(key);
-        when(prop.getValue()).thenReturn(value);
-        when(prop.getVisibility()).thenReturn(Visibility.EMPTY);
-        return prop;
+        return new InMemoryExtendedDataRow.InMemoryProperty(name, key, value, FetchHints.ALL, 0L, Visibility.EMPTY);
     }
 
     private Vertex createMockedVertex(String id, Property... properties) {
-        List<Property> propList = Lists.newArrayList(properties);
-        Vertex v = mock(Vertex.class);
-        when(v.getId()).thenReturn(id);
-        when(v.getProperties()).thenReturn(propList);
+        VertexBuilder v = graph.prepareVertex(id, Visibility.EMPTY, SchemaConstants.CONCEPT_TYPE_THING);
         for (Property property : properties) {
-            String key = property.getKey();
-            String name = property.getName();
-            when(v.getProperty(key, name)).thenReturn(property);
-            when(v.getProperty(name)).thenReturn(property);
-            when(v.getProperties(name)).thenReturn(Collections.singletonList(property));
-            when(v.getProperties(key, name)).thenReturn(Collections.singletonList(property));
+            v.addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getVisibility());
         }
 
-        return v;
-    }
-
-    private void registerVertexWithGraph(String id, Vertex v) {
-        when(graph.getVertex(eq(id), any(Authorizations.class))).thenReturn(v);
-        when(graph.getVertex(eq(id), any(FetchHints.class), any(Authorizations.class))).thenReturn(v);
-    }
-
-    private void registerEdgeWithGraph(String edgeId, Edge e) {
-        when(graph.getEdge(eq(edgeId), any(Authorizations.class))).thenReturn(e);
-        when(graph.getEdge(eq(edgeId), any(FetchHints.class), any(Authorizations.class))).thenReturn(e);
+        return v.save(new Authorizations());
     }
 
     private static DataWorkerMessage createMultiEdgeIdJSONGPWMessage(String... edgeIds) {
-        return createTestJSONGPWMessage().setGraphEdgeId(edgeIds);
+        return createTestJSONDWMessage().setGraphEdgeId(edgeIds);
     }
 
     private static DataWorkerMessage createMultiVertexPropertyMessage(String[] vertexIds, Property property) {
-        return createTestJSONGPWMessage()
+        return createTestJSONDWMessage()
                 .setGraphVertexId(vertexIds)
                 .setPropertyKey(property.getKey())
                 .setPropertyName(property.getName());
     }
 
     private static DataWorkerMessage createMultiVertexIdJSONGPWMessage(String... vertexIds) {
-        return createTestJSONGPWMessage()
+        return createTestJSONDWMessage()
                 .setGraphVertexId(vertexIds);
     }
 
-    private static DataWorkerMessage createVertexPropertyGPWMessage(String vertexId, String propertyName, String propertyKey) {
-        return createVertexIdJSONGPWMessage(vertexId)
+    private static DataWorkerMessage createVertexPropertyDWMessage(String vertexId, String propertyName, String propertyKey) {
+        return createVertexIdJSONDWMessage(vertexId)
                 .setPropertyKey(propertyKey)
                 .setPropertyName(propertyName);
     }
 
-    private static DataWorkerMessage createEdgeIdJSONGPWMessage(String edgeId, String propertyName, String propertyKey) {
-        return createTestJSONGPWMessage()
-                .setGraphEdgeId(new String[]{edgeId});
+    private static DataWorkerMessage createEdgeIdJSONDWMessage(String propertyName, String propertyKey) {
+        return createTestJSONDWMessage()
+                .setGraphEdgeId(new String[]{DataWorkerRunnerTest.EDGE_ID});
     }
 
-    private static DataWorkerMessage createVertexIdJSONGPWMessage(String vertexId) {
-        return createTestJSONGPWMessage()
+    private static DataWorkerMessage createVertexIdJSONDWMessage(String vertexId) {
+        return createTestJSONDWMessage()
                 .setGraphVertexId(new String[]{vertexId});
     }
 
-    private static DataWorkerMessage createEdgeIdJSONGPWMessage(String edgeId) {
-        return createTestJSONGPWMessage()
+    private static DataWorkerMessage createEdgeIdJSONDWMessage(String edgeId) {
+        return createTestJSONDWMessage()
                 .setGraphEdgeId(new String[]{edgeId});
     }
 
-    private static DataWorkerMessage createTestJSONGPWMessage() {
+    private static DataWorkerMessage createTestJSONDWMessage() {
         DataWorkerMessage message = new DataWorkerMessage();
         message.setPriority(Priority.LOW);
         message.setVisibilitySource("");

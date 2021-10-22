@@ -239,6 +239,10 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
         return shouldRun;
     }
 
+    public Thread getProcessThread() {
+        return processThread;
+    }
+
     private class WorkerItemWrapper {
         private final TWorkerItem workerItem;
         private final WorkerTuple workerTuple;

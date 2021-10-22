@@ -36,6 +36,7 @@
  */
 package com.mware.ge.inmemory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mware.ge.*;
 import com.mware.ge.security.ColumnVisibility;
 import com.mware.ge.security.VisibilityEvaluator;
@@ -127,7 +128,8 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         }
     }
 
-    private static class InMemoryProperty extends Property {
+    @VisibleForTesting
+    public static class InMemoryProperty extends Property {
         private final String name;
         private final String key;
         private final Long timestamp;

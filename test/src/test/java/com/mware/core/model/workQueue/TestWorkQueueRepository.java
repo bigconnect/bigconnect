@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class TestWorkQueueRepository extends WorkQueueRepository {
+public class TestWorkQueueRepository extends InMemoryWorkQueueRepository {
     public Map<String, List<byte[]>> queues = new HashMap<>();
 
     public TestWorkQueueRepository(
@@ -57,38 +57,18 @@ public class TestWorkQueueRepository extends WorkQueueRepository {
         super(graph, configuration);
     }
 
-
     @Override
     public void pushOnQueue(String queueName, byte[] data, Priority priority) {
         List<byte[]> queue = queues.computeIfAbsent(queueName, k -> new ArrayList<>());
         queue.add(data);
+        super.pushOnQueue(queueName, data, priority);
     }
 
     public List<byte[]> getWorkQueue(String queueName) {
         return queues.get(queueName);
     }
 
-    public void clearQueue() {
+    public void clearMyQueue() {
         queues.clear();
-    }
-
-    @Override
-    public void flush() {
-
-    }
-
-    @Override
-    protected void deleteQueue(String queueName) {
-
-    }
-
-    @Override
-    public WorkerSpout createWorkerSpout(String queueName) {
-        return null;
-    }
-
-    @Override
-    public Map<String, Status> getQueuesStatus() {
-        return new HashMap<>();
     }
 }

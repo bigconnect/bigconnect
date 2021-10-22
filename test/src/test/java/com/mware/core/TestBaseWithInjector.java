@@ -68,8 +68,8 @@ import java.util.Map;
 
 public abstract class TestBaseWithInjector {
     final Map configMap = new HashMap();
-    Configuration configuration;
-    Graph graph;
+    protected Configuration configuration;
+    protected Graph graph;
 
     @Before
     public void before() {

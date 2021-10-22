@@ -125,8 +125,6 @@ public class SchemaFactory {
         }
         checkNotNull(icon, "The icon input stream is null");
 
-        LOGGER.debug("addEntityGlyphIcon");
-
         try {
             ByteArrayOutputStream imgOut = new ByteArrayOutputStream();
             IOUtils.copy(icon, imgOut);

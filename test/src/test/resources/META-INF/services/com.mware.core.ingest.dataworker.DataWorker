@@ -1,0 +1,3 @@
+com.mware.core.ingest.dataworker.TestCountingDWStub1
+com.mware.core.ingest.dataworker.TestCountingDWStub2
+com.mware.core.ingest.dataworker.TestCountingDWStub3

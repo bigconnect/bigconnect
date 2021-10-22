@@ -91,8 +91,8 @@ public class BcLoggerFactory {
     private static void logSystem() {
         BcLogger logger = getLogger(BcLoggerFactory.class);
         if(logger.isDebugEnabled()) {
-            logEnv(logger);
-            logSystemProperties(logger);
+//            logEnv(logger);
+//            logSystemProperties(logger);
             logJvmInputArguments(logger);
         }
     }

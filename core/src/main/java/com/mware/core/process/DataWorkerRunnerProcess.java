@@ -50,12 +50,13 @@ import com.mware.core.util.StoppableRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Singleton
 public class DataWorkerRunnerProcess extends LifecycleAdapter {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(DataWorkerRunnerProcess.class);
     private final Config config;
-    private final List<StoppableRunnable> stoppables = new ArrayList<>();
+    private final List<DataWorkerRunner.DataWorkerRunnerStoppable> stoppables = new ArrayList<>();
 
     public static class Config {
         @Configurable
@@ -85,5 +86,11 @@ public class DataWorkerRunnerProcess extends LifecycleAdapter {
     @Override
     public void shutdown() {
         stoppables.forEach(StoppableRunnable::stop);
+    }
+
+    public List<DataWorkerRunner> getDataWorkerRunners() {
+        return stoppables.stream()
+                .map(DataWorkerRunner.DataWorkerRunnerStoppable::getDataWorkerRunner)
+                .collect(Collectors.toList());
     }
 }

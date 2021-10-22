@@ -54,6 +54,7 @@ import com.mware.ge.Element;
 import com.mware.ge.Property;
 import com.mware.ge.TextIndexHint;
 import com.mware.ge.base.TestGraphFactory;
+import com.mware.ge.inmemory.InMemoryGraphFactory;
 import com.mware.ge.values.storable.StreamingPropertyValue;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -76,7 +77,7 @@ public class InMemoryDataWorkerTestBase extends GraphTestBase {
 
     @Override
     protected TestGraphFactory graphFactory() {
-        return null;
+        return new InMemoryGraphFactory();
     }
 
     protected void run(DataWorker gpw, DataWorkerPrepareData workerPrepareData, Element element) {

@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class InMemoryWorkQueueRepository extends WorkQueueRepository {
     private static Map<String, List<byte[]>> queues = new HashMap<>();
@@ -62,7 +63,7 @@ public class InMemoryWorkQueueRepository extends WorkQueueRepository {
 
     @Override
     public void pushOnQueue(String queueName, byte[] data, Priority priority) {
-        LOGGER.debug("push on queue: %s: %s", queueName, data);
+        LOGGER.debug("push on queue: %s: %s", queueName, new String(data));
         addToQueue(queueName, data, priority);
     }
 
@@ -128,7 +129,7 @@ public class InMemoryWorkQueueRepository extends WorkQueueRepository {
     public static List<byte[]> getQueue(String queueName) {
         List<byte[]> queue = queues.get(queueName);
         if (queue == null) {
-            queue = new LinkedList<>();
+            queue = new CopyOnWriteArrayList<>();
             queues.put(queueName, queue);
         }
         return queue;

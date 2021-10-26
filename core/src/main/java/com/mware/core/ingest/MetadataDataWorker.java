@@ -95,7 +95,7 @@ public class MetadataDataWorker extends DataWorker {
             getWebQueueRepository().broadcastPropertyChange(data.getElement(), propertyKey, propertyName, null);
         }
 
-        getWorkQueueRepository().pushGraphPropertyQueue(
+        getWorkQueueRepository().pushOnDwQueue(
                 data.getElement(),
                 propertyKey,
                 propertyName,

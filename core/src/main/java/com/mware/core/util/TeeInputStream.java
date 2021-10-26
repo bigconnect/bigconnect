@@ -36,8 +36,8 @@
  */
 package com.mware.core.util;
 
-import com.mware.core.status.PausableTimerContext;
-import com.mware.core.status.PausableTimerContextAware;
+import com.mware.ge.metric.PausableTimerContext;
+import com.mware.ge.metric.PausableTimerContextAware;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -45,7 +45,6 @@ import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.lifecycle.LifecycleAdapter;
 import com.mware.core.model.properties.types.BcPropertyUpdate;
 import com.mware.core.model.properties.types.BcPropertyUpdateRemove;
-import com.mware.core.status.model.Status;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.Edge;
@@ -56,7 +55,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -66,9 +64,10 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
 
     protected static final BcLogger LOGGER = BcLoggerFactory.getLogger(WorkQueueRepository.class);
     private final Configuration configuration;
-    protected String queueName;
     private final Graph graph;
     private DataWorkerRunner dataWorkerRunner;
+    private String dwQueueName;
+    private String lrpQueueName;
 
     protected WorkQueueRepository(
             Graph graph,
@@ -76,10 +75,14 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
     ) {
         this.graph = graph;
         this.configuration = configuration;
-        setQueueName(configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME));
+        this.dwQueueName = configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME);
+        this.lrpQueueName = configuration.get(Configuration.LRP_QUEUE_NAME, LRP_DEFAULT_QUEUE_NAME);
+
+        graph.getMetricsRegistry().getGauge(getClass(), dwQueueName, this::getDwQueueSize);
+        graph.getMetricsRegistry().getGauge(getClass(), lrpQueueName, this::getLrpQueueSize);
     }
 
-    public void pushGraphPropertyQueue(
+    public void pushOnDwQueue(
             Element element,
             String propertyKey,
             String propertyName,
@@ -107,11 +110,11 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         addElementTypeToJson(data, element);
 
         if (canHandle(element, propertyKey, propertyName, status)) {
-            pushOnQueue(queueName, data.toBytes(), priority);
+            pushOnQueue(dwQueueName, data.toBytes(), priority);
         }
     }
 
-    public void pushGraphPropertyQueue(
+    public void pushOnDwQueue(
             Element element,
             Iterable<BcPropertyUpdate> properties,
             String workspaceId,
@@ -153,7 +156,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
             data.setVisibilitySource(visibilitySource);
         }
 
-        pushOnQueue(queueName, data.toBytes(), priority);
+        pushOnQueue(dwQueueName, data.toBytes(), priority);
     }
 
     private void addElementTypeToJson(DataWorkerMessage data, Element element) {
@@ -184,10 +187,10 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         }
         data.put("propertyKey", propertyKey);
         data.put("propertyName", propertyName);
-        pushOnQueue(queueName, data, priority);
+        pushOnQueue(dwQueueName, data, priority);
     }
 
-    public void pushMultipleGraphPropertyQueue(
+    public void pushMultipleElementOnDwQueue(
             Iterable<? extends Element> elements,
             String propertyKey,
             String propertyName,
@@ -233,7 +236,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         data.setGraphVertexId(vertices.toArray(new String[vertices.size()]));
         data.setGraphEdgeId(edges.toArray(new String[edges.size()]));
 
-        pushOnQueue(queueName, data.toBytes(), priority);
+        pushOnQueue(dwQueueName, data.toBytes(), priority);
     }
 
     protected boolean canHandle(Element element, String propertyKey, String propertyName, ElementOrPropertyStatus status) {
@@ -274,9 +277,9 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         return data;
     }
 
-//    public void pushLongRunningProcessQueue(JSONObject queueItem, Priority priority) {
-//        pushOnQueue(workQueueNames.getLongRunningProcessQueueName(), queueItem, priority);
-//    }
+    public void pushLongRunningProcessQueue(JSONObject queueItem, Priority priority) {
+        pushOnQueue(lrpQueueName, queueItem, priority);
+    }
 
     public final void pushOnQueue(
             String queueName,
@@ -298,7 +301,8 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
     public abstract void flush();
 
     public void format() {
-        deleteQueue(queueName);
+        deleteQueue(dwQueueName);
+        deleteQueue(lrpQueueName);
     }
 
     protected abstract void deleteQueue(String queueName);
@@ -309,28 +313,27 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
 
     public abstract WorkerSpout createWorkerSpout(String queueName);
 
-    public abstract Map<String, Status> getQueuesStatus();
-
     public void setDataWorkerRunner(DataWorkerRunner graphPropertyRunner) {
         this.dataWorkerRunner = graphPropertyRunner;
     }
+
+    public abstract int getDwQueueSize();
+
+    public abstract int getLrpQueueSize();
 
     public boolean hasDataWorkerRunner() {
         return this.dataWorkerRunner != null;
     }
 
-    public void setQueueName(String queueName) {
-        this.queueName = queueName;
+    public String getDwQueueName() {
+        return dwQueueName;
     }
 
-    public String getQueueName() {
-        return queueName;
+    public String getLrpQueueName() {
+        return lrpQueueName;
     }
 
     protected Configuration getConfiguration() {
         return configuration;
     }
-
-    public void pushLongRunningProcessQueue(JSONObject queueItem, Priority priority) {
-        pushOnQueue(configuration.get(Configuration.LRP_QUEUE_NAME, LRP_DEFAULT_QUEUE_NAME), queueItem, priority);
-    }}
+}

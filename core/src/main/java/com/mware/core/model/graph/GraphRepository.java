@@ -41,7 +41,6 @@ import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.exception.BcResourceNotFoundException;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
-import com.mware.core.model.PropertyJustificationMetadata;
 import com.mware.core.model.clientapi.dto.ClientApiSourceInfo;
 import com.mware.core.model.clientapi.dto.SandboxStatus;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
@@ -62,7 +61,6 @@ import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.values.storable.Value;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -311,7 +309,7 @@ public class GraphRepository {
                 webQueueRepository.broadcastPropertyChange(element, publicProperty.getKey(), publicProperty.getName(), workspaceId);
             }
 
-            workQueueRepository.pushGraphPropertyQueue(
+            workQueueRepository.pushOnDwQueue(
                     element,
                     publicProperty.getKey(),
                     publicProperty.getName(),

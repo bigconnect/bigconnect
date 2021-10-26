@@ -36,18 +36,12 @@
  */
 package com.mware.core.externalResource;
 
-import com.google.inject.Inject;
-import com.mware.core.status.MetricEntry;
-import com.mware.core.status.MetricsManager;
 import com.mware.core.user.User;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 
-import java.util.Collection;
-
 public abstract class ExternalResourceWorker {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(ExternalResourceWorker.class);
-    private MetricsManager metricsManager;
 
     protected void prepare(
             @SuppressWarnings("UnusedParameters") User user
@@ -58,15 +52,4 @@ public abstract class ExternalResourceWorker {
     protected abstract void run() throws Exception;
 
     protected abstract void stop();
-
-    @Inject
-    public final void setMetricsManager(MetricsManager metricsManager) {
-        this.metricsManager = metricsManager;
-    }
-
-    public MetricsManager getMetricsManager() {
-        return metricsManager;
-    }
-
-    public abstract Collection<MetricEntry> getMetrics();
 }

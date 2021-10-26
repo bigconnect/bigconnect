@@ -44,16 +44,11 @@ import com.mware.core.model.WorkerBase;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.StatusRepository;
-import com.mware.core.status.StatusServer;
-import com.mware.core.status.model.LongRunningProcessRunnerStatus;
-import com.mware.core.status.model.ProcessStatus;
 import com.mware.core.user.User;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.core.util.StoppableRunnable;
-import com.mware.ge.Vertex;
+import com.mware.ge.Graph;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
@@ -69,18 +64,15 @@ public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorke
     private User user;
     private Configuration configuration;
     private List<LongRunningProcessWorker> workers = new ArrayList<>();
-    private final StatusRepository statusRepository;
 
     @Inject
     public LongRunningProcessRunner(
             WorkQueueRepository workQueueRepository,
             WebQueueRepository webQueueRepository,
-            StatusRepository statusRepository,
             Configuration configuration,
-            MetricsManager metricsManager
+            Graph graph
     ) {
-        super(workQueueRepository, webQueueRepository, configuration, metricsManager);
-        this.statusRepository = statusRepository;
+        super(workQueueRepository, webQueueRepository, configuration, graph.getMetricsRegistry());
     }
 
     public void prepare(Map map) {
@@ -114,20 +106,6 @@ public class LongRunningProcessRunner extends WorkerBase<LongRunningProcessWorke
             }
             workers.add(worker);
         }
-    }
-
-    @Override
-    protected StatusServer createStatusServer() throws Exception {
-        return new StatusServer(configuration, statusRepository, "longRunningProcess", LongRunningProcessRunner.class) {
-            @Override
-            protected ProcessStatus createStatus() {
-                LongRunningProcessRunnerStatus status = new LongRunningProcessRunnerStatus();
-                for (LongRunningProcessWorker worker : workers) {
-                    status.getRunningWorkers().add(worker.getStatus());
-                }
-                return status;
-            }
-        };
     }
 
     @Override

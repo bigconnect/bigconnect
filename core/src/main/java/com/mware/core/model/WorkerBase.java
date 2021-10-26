@@ -36,7 +36,6 @@
  */
 package com.mware.core.model;
 
-import com.codahale.metrics.Counter;
 import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
@@ -44,48 +43,39 @@ import com.mware.core.ingest.WorkerTuple;
 import com.mware.core.ingest.dataworker.WorkerItem;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.StatusServer;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import com.mware.ge.metric.Counter;
+import com.mware.ge.metric.GeMetricRegistry;
 
 import java.util.LinkedList;
 import java.util.Queue;
 
 public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
-    private final boolean statusEnabled;
     private final boolean exitOnNextTupleFailure;
     private final Counter queueSizeMetric;
-    private final MetricsManager metricsManager;
     private final String queueSizeMetricName;
     private WorkQueueRepository workQueueRepository;
     private WebQueueRepository webQueueRepository;
     private volatile boolean shouldRun;
-    private StatusServer statusServer = null;
     private final Queue<WorkerItemWrapper> tupleQueue = new LinkedList<>();
     private final int tupleQueueSize;
     private Thread processThread;
+    private GeMetricRegistry metricRegistry;
 
     protected WorkerBase(
             WorkQueueRepository workQueueRepository,
             WebQueueRepository webQueueRepository,
             Configuration configuration,
-            MetricsManager metricsManager
+            GeMetricRegistry metricRegistry
     ) {
         this.workQueueRepository = workQueueRepository;
         this.webQueueRepository = webQueueRepository;
-        this.metricsManager = metricsManager;
+        this.metricRegistry = metricRegistry;
         this.exitOnNextTupleFailure = configuration.getBoolean(getClass().getName() + ".exitOnNextTupleFailure", true);
         this.tupleQueueSize = configuration.getInt(getClass().getName() + ".tupleQueueSize", 10);
-        this.statusEnabled = configuration.getBoolean(Configuration.STATUS_ENABLED, Configuration.STATUS_ENABLED_DEFAULT);
-        this.queueSizeMetricName = metricsManager.getNamePrefix(this) + "queue-size-" + Thread.currentThread().getId();
-        this.queueSizeMetric = metricsManager.counter(queueSizeMetricName);
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        metricsManager.removeMetric(queueSizeMetricName);
-        super.finalize();
+        this.queueSizeMetricName = metricRegistry.createName(getClass(), "queue-size-" + Thread.currentThread().getId());
+        this.queueSizeMetric = metricRegistry.getCounter(getClass(), queueSizeMetricName);
     }
 
     public void run() throws Exception {
@@ -94,9 +84,6 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
         logger.info("begin runner");
         WorkerSpout workerSpout = prepareWorkerSpout();
         shouldRun = true;
-        if (statusEnabled) {
-            statusServer = createStatusServer();
-        }
         startProcessThread(logger, workerSpout);
         pollWorkerSpout(logger, workerSpout);
         logger.info("end runner");
@@ -117,7 +104,7 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
                             }
                             if (tupleQueue.size() > 0) {
                                 workerItemWrapper = tupleQueue.remove();
-                                queueSizeMetric.dec();
+                                queueSizeMetric.decrement();
                                 tupleQueue.notifyAll();
                             }
                         } while (shouldRun && workerItemWrapper == null);
@@ -174,7 +161,7 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
             }
             synchronized (tupleQueue) {
                 tupleQueue.add(workerItemWrapper);
-                queueSizeMetric.inc();
+                queueSizeMetric.increment();
                 tupleQueue.notifyAll();
                 while (shouldRun && tupleQueue.size() >= tupleQueueSize) {
                     tupleQueue.wait();
@@ -192,8 +179,6 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
         }
     }
 
-    protected abstract StatusServer createStatusServer() throws Exception;
-
     protected abstract void process(TWorkerItem workerItem) throws Exception;
 
     /**
@@ -204,9 +189,6 @@ public abstract class WorkerBase<TWorkerItem extends WorkerItem> {
 
     public void stop() {
         shouldRun = false;
-        if (statusServer != null) {
-            statusServer.shutdown();
-        }
         synchronized (tupleQueue) {
             tupleQueue.notifyAll();
         }

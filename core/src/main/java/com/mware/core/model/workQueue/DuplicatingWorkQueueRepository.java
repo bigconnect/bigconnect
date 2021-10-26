@@ -43,13 +43,11 @@ import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.lifecycle.LifeSupportService;
-import com.mware.core.status.model.Status;
 import com.mware.ge.Element;
 import com.mware.ge.Graph;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 
 import static com.mware.core.config.Configuration.DW_QUEUE_PREFIX;
@@ -129,8 +127,13 @@ public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
     }
 
     @Override
-    public Map<String, Status> getQueuesStatus() {
-        return workQueueRepository.getQueuesStatus();
+    public int getDwQueueSize() {
+        return workQueueRepository.getDwQueueSize();
+    }
+
+    @Override
+    public int getLrpQueueSize() {
+        return workQueueRepository.getLrpQueueSize();
     }
 
     @Override

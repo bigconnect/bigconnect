@@ -34,42 +34,46 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.core.status;
+package com.mware.ge.metric;
 
-public interface StatusRepository {
-    StatusHandle saveStatus(String group, String instance, StatusData statusData);
+import java.util.concurrent.TimeUnit;
 
-    void deleteStatus(StatusHandle statusHandle);
+public class PausableTimerContext implements AutoCloseable {
+    private final Timer timer;
+    private final Clock clock;
+    private long startTime;
+    private long totalTime;
+    private boolean paused;
 
-    Iterable<String> getGroups();
+    public PausableTimerContext(Timer timer) {
+        this.timer = timer;
+        this.clock = Clock.defaultClock();
+        this.startTime = clock.getTick();
+        this.totalTime = 0;
+        this.paused = false;
+    }
 
-    Iterable<String> getInstances(String group);
+    public long stop() {
+        pause();
+        timer.update(totalTime, TimeUnit.NANOSECONDS);
+        return totalTime;
+    }
 
-    StatusData getStatusData(String group, String instance);
-
-    class StatusHandle {
-        private final String group;
-        private final String instance;
-
-        public StatusHandle(String group, String instance) {
-            this.group = group;
-            this.instance = instance;
+    public void pause() {
+        if (paused) {
+            return;
         }
+        totalTime += clock.getTick() - startTime;
+        paused = true;
+    }
 
-        public String getGroup() {
-            return group;
-        }
+    public void resume() {
+        this.startTime = clock.getTick();
+        paused = false;
+    }
 
-        public String getInstance() {
-            return instance;
-        }
-
-        @Override
-        public String toString() {
-            return "StatusHandle{" +
-                    "group='" + group + '\'' +
-                    ", instance='" + instance + '\'' +
-                    '}';
-        }
+    @Override
+    public void close() throws Exception {
+        stop();
     }
 }

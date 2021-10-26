@@ -28,14 +28,13 @@ public class TestCountingDWStub3 extends DataWorker {
     @Override
     public void execute(InputStream in, DataWorkerData data) throws Exception {
         isExecutingCount.incrementAndGet();
-//        Thread.sleep(100L);
 
         Element element = data.getElement().prepareMutation()
-                .setProperty("p3", Values.stringValue("v3"), Visibility.EMPTY)
+                .setProperty("p3", Values.stringValue("v1 - " + Thread.currentThread().getName()), Visibility.EMPTY)
                 .save(getAuthorizations());
         getGraph().flush();
 
-        getWorkQueueRepository().pushGraphPropertyQueue(
+        getWorkQueueRepository().pushOnDwQueue(
                 element,
                 "",
                 "p3",

@@ -37,8 +37,6 @@
 package com.mware.core.model.workQueue;
 
 import com.mware.core.config.Configuration;
-import com.mware.core.ingest.WorkerSpout;
-import com.mware.core.status.model.Status;
 import com.mware.ge.Graph;
 
 import java.util.ArrayList;

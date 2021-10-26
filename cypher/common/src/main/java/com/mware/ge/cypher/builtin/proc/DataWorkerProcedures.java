@@ -76,7 +76,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.time.ZonedDateTime;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import static com.mware.core.ingest.dataworker.MimeTypeDataWorker.MULTI_VALUE_KEY;
@@ -97,7 +96,7 @@ public class DataWorkerProcedures {
                             @Name(value = "name", defaultValue = "") String propertyName) {
         if (bcApi.getWorkQueueRepository() != null) {
             if (StringUtils.isEmpty(propertyName)) {
-                bcApi.getWorkQueueRepository().pushGraphPropertyQueue(
+                bcApi.getWorkQueueRepository().pushOnDwQueue(
                         elem,
                         null,
                         null,
@@ -110,7 +109,7 @@ public class DataWorkerProcedures {
             } else {
                 Iterable<Property> properties = elem.getProperties(propertyName);
                 for (Property property : properties) {
-                    bcApi.getWorkQueueRepository().pushGraphPropertyQueue(
+                    bcApi.getWorkQueueRepository().pushOnDwQueue(
                             elem,
                             property.getKey(),
                             property.getName(),
@@ -172,7 +171,7 @@ public class DataWorkerProcedures {
             List<Element> resolvedVertices = termMentionUtils.resolveTermMentions(node, Collections.singletonList(tm));
 
             WorkQueueRepository workQueueRepository = bcApi.getWorkQueueRepository();
-            workQueueRepository.pushMultipleGraphPropertyQueue(
+            workQueueRepository.pushMultipleElementOnDwQueue(
                     resolvedVertices,
                     "NLP",
                     BcSchema.TITLE.getPropertyName(),
@@ -326,7 +325,7 @@ public class DataWorkerProcedures {
                     .setProperty(imageVertex, resolvedObjectVertex.getConceptType(), visibility, bcApi.getAuthorizations());
 
             WorkQueueRepository workQueueRepository = bcApi.getWorkQueueRepository();
-            workQueueRepository.pushGraphPropertyQueue(
+            workQueueRepository.pushOnDwQueue(
                     imageVertex,
                     "",
                     RawObjectSchema.DETECTED_OBJECT.getPropertyName(),

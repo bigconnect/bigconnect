@@ -142,7 +142,7 @@ public abstract class MimeTypeDataWorker extends DataWorker {
             getWebQueueRepository().broadcastPropertyChange(element, propertyKey, BcSchema.MIME_TYPE.getPropertyName(), data.getWorkspaceId());
         }
 
-        getWorkQueueRepository().pushGraphPropertyQueue(
+        getWorkQueueRepository().pushOnDwQueue(
                 element,
                 propertyKey,
                 BcSchema.MIME_TYPE.getPropertyName(),

@@ -5,18 +5,14 @@ import com.github.freva.asciitable.Column;
 import com.google.common.collect.Lists;
 import com.mware.core.TestBaseWithInjector;
 import com.mware.core.bootstrap.InjectHelper;
-import com.mware.core.config.Configuration;
 import com.mware.core.model.schema.SchemaConstants;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.process.DataWorkerRunnerProcess;
-import com.mware.core.status.model.QueueStatus;
-import com.mware.core.status.model.Status;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.*;
 import com.mware.ge.inmemory.InMemoryExtendedDataRow;
-import com.mware.ge.store.kv.KVStoreGraph;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
@@ -28,7 +24,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DataWorkerRunnerConcurrencyTests extends TestBaseWithInjector {
     private static BcLogger LOGGER = BcLoggerFactory.getLogger(DataWorkerRunnerConcurrencyTests.class);
@@ -45,7 +42,6 @@ public class DataWorkerRunnerConcurrencyTests extends TestBaseWithInjector {
     @Before
     public void before() {
         getConfigMap().put("com.mware.core.process.DataWorkerRunnerProcess.threadCount", "8");
-        getConfigMap().put(Configuration.STATUS_ENABLED, false);
         super.before();
         AUTHS = graph.createAuthorizations("A");
         workQueueRepository = InjectHelper.getInstance(WorkQueueRepository.class);
@@ -60,20 +56,25 @@ public class DataWorkerRunnerConcurrencyTests extends TestBaseWithInjector {
 
     @Test
     public void testMultithreading() throws InterruptedException {
-        int numElements = 5000;
+        int numElements = 500;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
 
         for (int i = 0; i < numElements; i++) {
-            Vertex v = createVertex(VERTEX_ID + "_" + i, createNumProperties(1));
-            workQueueRepository.pushGraphPropertyQueue(
-                    v,
-                    null,
-                    null,
-                    null,
-                    null,
-                    Priority.HIGH,
-                    ElementOrPropertyStatus.UPDATE,
-                    null
-            );
+            final int idx = i;
+            executorService.submit(() -> {
+                Vertex v = createVertex(VERTEX_ID + "_" + idx, createNumProperties(1));
+                workQueueRepository.pushOnDwQueue(
+                        v,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Priority.HIGH,
+                        ElementOrPropertyStatus.UPDATE,
+                        null
+                );
+            });
         }
 
         waitForQueueEmpty();
@@ -137,10 +138,7 @@ public class DataWorkerRunnerConcurrencyTests extends TestBaseWithInjector {
         Thread.sleep(1000);
         boolean hasMessages = true;
         while (hasMessages) {
-            Map<String, Status> queuesStatus = workQueueRepository.getQueuesStatus();
-            QueueStatus status = (QueueStatus) queuesStatus.values().iterator().next();
-            Status.CounterMetric messages = (Status.CounterMetric) status.getMetrics().get("messages");
-            hasMessages = messages.getCount() > 0;
+            hasMessages = workQueueRepository.getDwQueueSize() > 0;
             Thread.sleep(1000);
         }
     }

@@ -38,7 +38,14 @@ package com.mware.ge.metric;
 
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reporter;
+import com.codahale.metrics.graphite.Graphite;
+import com.codahale.metrics.graphite.GraphiteReporter;
+import com.codahale.metrics.jmx.JmxReporter;
+import com.mware.core.config.Configuration;
 import com.mware.ge.GeException;
+import com.mware.ge.GraphConfiguration;
+import com.mware.ge.io.IOUtils;
 
 import java.time.Duration;
 import java.util.Map;
@@ -47,7 +54,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public class DropWizardMetricRegistry implements GeMetricRegistry {
-    private static final String START_CONSOLE_REPORTER_PROPERTY_NAME = "metricRegistryStartConsoleReporter";
+    private static final String CONFIG_METRICS_REPORTER = "metrics.reporter";
+    private static final String CONFIG_METRICS_GRAPHITE_HOST = "metrics.reporter.graphite.host";
+    private static final String CONFIG_METRICS_GRAPHITE_PORT = "metrics.reporter.graphite.port";
+
     private final MetricRegistry metricRegistry;
     private final Map<String, Counter> countersByName = new ConcurrentHashMap<>();
     private final Map<String, Timer> timersByName = new ConcurrentHashMap<>();
@@ -55,51 +65,38 @@ public class DropWizardMetricRegistry implements GeMetricRegistry {
     private final Map<String, Gauge> gaugesByName = new ConcurrentHashMap<>();
     private final Map<String, StackTraceTracker> stackTraceTrackersByName = new ConcurrentHashMap<>();
     private boolean consoleReporterStarted;
-    private ConsoleReporter consoleReporter;
+    private Reporter reporter;
 
-    public DropWizardMetricRegistry() {
-        this(new MetricRegistry());
+    public DropWizardMetricRegistry(GraphConfiguration configuration) {
+        this(configuration, new MetricRegistry());
     }
 
-    public DropWizardMetricRegistry(MetricRegistry metricRegistry) {
+    public DropWizardMetricRegistry(GraphConfiguration configuration, MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
-        startConsoleReporterUsingSystemProperty();
-    }
 
-    private void startConsoleReporterUsingSystemProperty() {
-        String startConsoleReporter = System.getProperty(START_CONSOLE_REPORTER_PROPERTY_NAME, "false").trim();
-        if (startConsoleReporter.equalsIgnoreCase("false")) {
-            return;
+        String reporterType = configuration.getString(CONFIG_METRICS_REPORTER, "jmx");
+        switch (reporterType) {
+            case "console":
+                startConsoleReporter(10, TimeUnit.SECONDS);
+                break;
+            case "jmx":
+                this.reporter = JmxReporter.forRegistry(this.metricRegistry)
+                        .convertRatesTo(TimeUnit.MILLISECONDS)
+                        .convertDurationsTo(TimeUnit.MILLISECONDS)
+                        .build();
+                ((JmxReporter) this.reporter).start();
+                break;
+            case "graphite":
+                String host = configuration.getString(CONFIG_METRICS_GRAPHITE_HOST, "localhost");
+                int port = configuration.getInt(CONFIG_METRICS_GRAPHITE_PORT, 2003);
+                this.reporter = GraphiteReporter.forRegistry(metricRegistry)
+                        .convertRatesTo(TimeUnit.MILLISECONDS)
+                        .convertDurationsTo(TimeUnit.MILLISECONDS)
+                        .build(new Graphite(host, port));
+
+                ((GraphiteReporter) reporter).start(5, TimeUnit.SECONDS);
+                break;
         }
-
-        if (startConsoleReporter.equalsIgnoreCase("true") || startConsoleReporter.length() == 0) {
-            startConsoleReporter(10, TimeUnit.SECONDS);
-            return;
-        }
-
-        startConsoleReporter(startConsoleReporter);
-    }
-
-    private void startConsoleReporter(String period) {
-        try {
-            Duration duration = parseDuration(period);
-            startConsoleReporter(duration.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (Exception ex) {
-            throw new GeException("Could not parse period: " + period, ex);
-        }
-    }
-
-    static Duration parseDuration(String period) {
-        period = period.trim();
-        try {
-            return Duration.parse(period.toUpperCase());
-        } catch (Exception ex) {
-            return Duration.parse("PT" + period.toUpperCase());
-        }
-    }
-
-    public void startConsoleReporter(long periodMillis) {
-        startConsoleReporter(periodMillis, TimeUnit.MILLISECONDS);
     }
 
     public void startConsoleReporter(long period, TimeUnit timeUnit) {
@@ -119,11 +116,13 @@ public class DropWizardMetricRegistry implements GeMetricRegistry {
     }
 
     private ConsoleReporter getConsoleReporter() {
-        if (consoleReporter == null) {
-            consoleReporter = ConsoleReporter.forRegistry(getMetricRegistry())
+        if (reporter == null) {
+            reporter = ConsoleReporter.forRegistry(getMetricRegistry())
+                    .convertRatesTo(TimeUnit.MILLISECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
                     .build();
         }
-        return consoleReporter;
+        return (ConsoleReporter) reporter;
     }
 
     public MetricRegistry getMetricRegistry() {
@@ -201,9 +200,12 @@ public class DropWizardMetricRegistry implements GeMetricRegistry {
         gaugesByName.keySet().forEach(metricRegistry::remove);
         stackTraceTrackersByName.keySet().forEach(metricRegistry::remove);
 
-        if (consoleReporter != null && consoleReporterStarted) {
-            consoleReporter.report();
+        if (reporter != null && consoleReporterStarted) {
+            ((ConsoleReporter) reporter).report();
         }
+
+        if (reporter != null)
+            IOUtils.closeAllSilently(reporter);
     }
 
     public static class Gauge<T> implements com.mware.ge.metric.Gauge<T> {

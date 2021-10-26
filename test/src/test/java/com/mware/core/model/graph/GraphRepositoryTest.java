@@ -301,7 +301,7 @@ public class GraphRepositoryTest {
         assertTrue(hiddenVisibilities.hasNext());
         assertEquals(WORKSPACE_VIZ, hiddenVisibilities.next());
 
-        List<byte[]> queue = workQueueRepository.getWorkQueue(workQueueRepository.getQueueName());
+        List<byte[]> queue = workQueueRepository.getWorkQueue(workQueueRepository.getDwQueueName());
         assertEquals(1, queue.size());
         workQueueRepository.clearQueue();
     }
@@ -363,7 +363,7 @@ public class GraphRepositoryTest {
             });
         }
 
-        List<byte[]> queue = workQueueRepository.getWorkQueue(workQueueRepository.getQueueName());
+        List<byte[]> queue = workQueueRepository.getWorkQueue(workQueueRepository.getDwQueueName());
         assertEquals(2, queue.size());
         assertWorkQueueContains(queue, "v1", "", BcSchema.MODIFIED_DATE.getPropertyName());
         assertWorkQueueContains(queue, "v1", "", BcSchema.VISIBILITY_JSON.getPropertyName());

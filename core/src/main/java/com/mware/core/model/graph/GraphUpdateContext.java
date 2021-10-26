@@ -47,7 +47,6 @@ import com.mware.ge.*;
 import com.mware.ge.mutation.ElementMutation;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -149,7 +148,7 @@ public abstract class GraphUpdateContext implements AutoCloseable {
                         null,
                         priority
                 );
-                workQueueRepository.pushGraphPropertyQueue(
+                workQueueRepository.pushOnDwQueue(
                         element,
                         f.getElementUpdateContext().getProperties(),
                         null,

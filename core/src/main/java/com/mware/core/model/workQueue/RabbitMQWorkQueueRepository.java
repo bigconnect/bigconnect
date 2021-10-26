@@ -42,8 +42,6 @@ import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.lifecycle.LifeSupportService;
-import com.mware.core.status.model.QueueStatus;
-import com.mware.core.status.model.Status;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.Graph;
@@ -57,9 +55,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.time.Duration;
-import java.time.temporal.ChronoField;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -154,9 +149,20 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     }
 
     @Override
-    public Map<String, Status> getQueuesStatus() {
+    public int getDwQueueSize() {
+        Integer qsize = getQueuesStatus().get(getDwQueueName());
+        return qsize != null ? qsize : 0;
+    }
+
+    @Override
+    public int getLrpQueueSize() {
+        Integer qsize = getQueuesStatus().get(getLrpQueueName());
+        return qsize != null ? qsize : 0;
+    }
+
+    private Map<String, Integer> getQueuesStatus() {
         try {
-            Map<String, Status> results = new HashMap<>();
+            Map<String, Integer> results = new HashMap<>();
             URL url = new URL(String.format("http://%s:15672/api/queues", rabbitMqAddresses[0].getHost()));
             URLConnection conn = url.openConnection();
             String basicAuth = Base64.encodeBase64String("guest:guest".getBytes());
@@ -167,7 +173,7 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
                     JSONObject queueJson = queuesJson.getJSONObject(i);
                     String name = queueJson.getString("name");
                     int messages = queueJson.getInt("messages");
-                    results.put(name, new QueueStatus(messages));
+                    results.put(name, messages);
                 }
             }
             return results;

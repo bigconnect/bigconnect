@@ -36,69 +36,57 @@
  */
 package com.mware.core.model.longRunningProcess;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
 import com.google.inject.Inject;
-import org.json.JSONObject;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.StatusServer;
-import com.mware.core.status.model.LongRunningProcessRunnerStatus;
-import com.mware.core.status.model.Status;
+import com.mware.ge.Graph;
+import com.mware.ge.metric.PausableTimerContext;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import com.mware.ge.metric.Counter;
+import com.mware.ge.metric.GeMetricRegistry;
+import com.mware.ge.metric.Timer;
+import org.json.JSONObject;
 
 public abstract class LongRunningProcessWorker {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(LongRunningProcessWorker.class);
-    private MetricsManager metricsManager;
+    private GeMetricRegistry metricRegistry;
     private Counter totalProcessedCounter;
     private Counter totalErrorCounter;
     private Counter processingCounter;
     private Timer processingTimeTimer;
 
     public void prepare(LongRunningWorkerPrepareData workerPrepareData) {
-        String namePrefix = getMetricsManager().getNamePrefix(this);
-        totalProcessedCounter = getMetricsManager().counter(namePrefix + "total-processed");
-        processingCounter = getMetricsManager().counter(namePrefix + "processing");
-        totalErrorCounter = getMetricsManager().counter(namePrefix + "total-errors");
-        processingTimeTimer = getMetricsManager().timer(namePrefix + "processing-time");
+        totalProcessedCounter = metricRegistry.getCounter(getClass(),  "total-processed");
+        processingCounter = metricRegistry.getCounter(getClass(),  "processing");
+        totalErrorCounter = metricRegistry.getCounter(getClass(),  "total-errors");
+        processingTimeTimer = metricRegistry.getTimer(getClass(),  "processing-time");
     }
 
     public abstract boolean isHandled(JSONObject longRunningProcessQueueItem);
 
     public final void process(JSONObject longRunningProcessQueueItem) {
-        try (Timer.Context t = processingTimeTimer.time()) {
-            processingCounter.inc();
+        PausableTimerContext t = new PausableTimerContext(processingTimeTimer);
+        try {
+            processingCounter.increment();
             try {
                 processInternal(longRunningProcessQueueItem);
             } finally {
-                processingCounter.dec();
+                processingCounter.decrement();
             }
-            totalProcessedCounter.inc();
+            totalProcessedCounter.increment();
         } catch (Throwable ex) {
             LOGGER.error("Failed to complete long running process: " + longRunningProcessQueueItem, ex);
-            this.totalErrorCounter.inc();
+            this.totalErrorCounter.increment();
             throw ex;
+        } finally {
+            t.stop();
         }
     }
 
     protected abstract void processInternal(JSONObject longRunningProcessQueueItem);
 
-    public LongRunningProcessRunnerStatus.LongRunningProcessWorkerStatus getStatus() {
-        LongRunningProcessRunnerStatus.LongRunningProcessWorkerStatus status = new LongRunningProcessRunnerStatus.LongRunningProcessWorkerStatus();
-        StatusServer.getGeneralInfo(status, getClass());
-        status.getMetrics().put("totalProcessed", Status.Metric.create(totalProcessedCounter));
-        status.getMetrics().put("processing", Status.Metric.create(processingCounter));
-        status.getMetrics().put("totalErrors", Status.Metric.create(totalErrorCounter));
-        status.getMetrics().put("processingTime", Status.Metric.create(processingTimeTimer));
-        return status;
-    }
 
     @Inject
-    public final void setMetricsManager(MetricsManager metricsManager) {
-        this.metricsManager = metricsManager;
-    }
-
-    public MetricsManager getMetricsManager() {
-        return metricsManager;
+    public void setMetricRegistry(Graph graph) {
+        this.metricRegistry = graph.getMetricsRegistry();
     }
 }

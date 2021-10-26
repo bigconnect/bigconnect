@@ -34,18 +34,8 @@
  * embedding the product in a web application, shipping BigConnect with a
  * closed source product.
  */
-package com.mware.core.status.model;
+package com.mware.ge.metric;
 
-public class ExternalResourceRunnerStatus extends WorkerRunnerStatus {
-    public static class ExternalResourceWorkerStatus extends WorkerStatus {
-        private String threadName;
-
-        public void setThreadName(String threadName) {
-            this.threadName = threadName;
-        }
-
-        public String getThreadName() {
-            return threadName;
-        }
-    }
+public interface PausableTimerContextAware {
+    void setPausableTimerContext(PausableTimerContext pausableTimerContext);
 }

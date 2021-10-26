@@ -120,8 +120,6 @@ public class Configuration {
     public static final boolean DEFAULT_TRACE_ENABLED = false;
     public static final String STATUS_REFRESH_INTERVAL_SECONDS = "status.refreshIntervalSeconds";
     public static final int STATUS_REFRESH_INTERVAL_SECONDS_DEFAULT = 10;
-    public static final String STATUS_ENABLED = "status.enabled";
-    public static final boolean STATUS_ENABLED_DEFAULT = true;
     public static final String SYSTEM_PROPERTY_PREFIX = "bc.";
     public static final String AUTH_TOKEN_PASSWORD = "auth.token.password";
     public static final String AUTH_TOKEN_SALT = "auth.token.salt";

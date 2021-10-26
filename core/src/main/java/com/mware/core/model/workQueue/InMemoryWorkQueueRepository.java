@@ -40,12 +40,9 @@ import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.WorkerTuple;
-import com.mware.core.status.model.QueueStatus;
-import com.mware.core.status.model.Status;
 import com.mware.ge.Graph;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -78,7 +75,6 @@ public class InMemoryWorkQueueRepository extends WorkQueueRepository {
 
     @Override
     public void flush() {
-
     }
 
     @Override
@@ -109,12 +105,19 @@ public class InMemoryWorkQueueRepository extends WorkQueueRepository {
     }
 
     @Override
-    public Map<String, Status> getQueuesStatus() {
-        Map<String, Status> results = new HashMap<>();
-        for (Map.Entry<String, List<byte[]>> queue : queues.entrySet()) {
-            results.put(queue.getKey(), new QueueStatus(queue.getValue().size()));
+    public int getDwQueueSize() {
+        if (queues.get(getDwQueueName()) != null) {
+            return queues.get(getDwQueueName()).size();
         }
-        return results;
+        return 0;
+    }
+
+    @Override
+    public int getLrpQueueSize() {
+        if (queues.get(getLrpQueueName()) != null) {
+            return queues.get(getLrpQueueName()).size();
+        }
+        return 0;
     }
 
     public static void clearQueue() {

@@ -38,12 +38,8 @@ package com.mware.core.ingest.dataworker;
 
 import com.google.common.collect.Lists;
 import com.mware.core.InMemoryGraphTestBase;
-import com.mware.core.config.Configuration;
 import com.mware.core.model.schema.SchemaConstants;
 import com.mware.core.model.workQueue.Priority;
-import com.mware.core.status.JmxMetricsManager;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.StatusRepository;
 import com.mware.ge.*;
 import com.mware.ge.inmemory.InMemoryExtendedDataRow;
 import com.mware.ge.values.storable.TextValue;
@@ -52,7 +48,6 @@ import com.mware.ge.values.storable.Values;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
@@ -71,18 +66,13 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
     private static final TextValue PROP_VALUE = Values.stringValue("propValue");
 
     private DataWorkerRunner dataWorkerRunner;
-    private MetricsManager metricsManager = new JmxMetricsManager();
     private Authorizations AUTHS;
-
-    @Mock
-    private StatusRepository statusRepository;
 
     @Before
     public void before() throws Exception {
         super.before();
 
         AUTHS = getGraphAuthorizations("A");
-        getConfiguration().set(Configuration.STATUS_ENABLED, false);
 
         dataWorkerRunner = createRunner();
         getWorkQueueRepository().setDataWorkerRunner(dataWorkerRunner);
@@ -92,10 +82,9 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
         DataWorkerRunner runner = new DataWorkerRunner(
                 workQueueRepository,
                 webQueueRepository,
-                statusRepository,
                 configuration,
-                metricsManager,
-                authorizationRepository
+                authorizationRepository,
+                graph
         );
         runner.setGraph(graph);
         runner.setAuthorizations(AUTHS);
@@ -234,7 +223,7 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
 
         for (int i = 0; i < numElements; i++) {
             Vertex v = createVertex(VERTEX_ID + "_" + i, createNumProperties(1));
-            getWorkQueueRepository().pushGraphPropertyQueue(
+            getWorkQueueRepository().pushOnDwQueue(
                     v,
                     null,
                     null,
@@ -285,8 +274,7 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
     }
 
     private DataWorkerThreadedWrapper startInThread(DataWorker worker) {
-        DataWorkerThreadedWrapper threadedWrapper = new DataWorkerThreadedWrapper(worker);
-        threadedWrapper.setMetricsManager(metricsManager);
+        DataWorkerThreadedWrapper threadedWrapper = new DataWorkerThreadedWrapper(worker, graph.getMetricsRegistry());
 
         Thread thread = new Thread(threadedWrapper);
         thread.start();

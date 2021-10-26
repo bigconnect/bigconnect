@@ -42,7 +42,6 @@ import com.google.inject.Singleton;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
-import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workQueue.Priority;
@@ -65,7 +64,6 @@ import org.json.JSONObject;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.List;
 
 @Singleton
@@ -121,7 +119,7 @@ public class PingUtil {
         if(webQueueRepository.shouldBroadcast(priority)) {
             webQueueRepository.broadcastPropertyChange(vertex, null, null, null);
         }
-        workQueueRepository.pushGraphPropertyQueue(
+        workQueueRepository.pushOnDwQueue(
                 vertex,
                 null,
                 null,

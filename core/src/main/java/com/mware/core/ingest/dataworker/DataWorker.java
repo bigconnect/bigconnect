@@ -281,7 +281,7 @@ public abstract class DataWorker {
                 getWebQueueRepository().broadcastPropertyChange(element, textPropertyKey, BcSchema.TEXT.getPropertyName(), null);
             }
 
-            getWorkQueueRepository().pushGraphPropertyQueue(
+            getWorkQueueRepository().pushOnDwQueue(
                     element,
                     textPropertyKey,
                     BcSchema.TEXT.getPropertyName(),
@@ -315,7 +315,7 @@ public abstract class DataWorker {
                 data.getWorkspaceId(),
                 data.getPriority()
         );
-        getWorkQueueRepository().pushGraphPropertyQueue(
+        getWorkQueueRepository().pushOnDwQueue(
                 data.getElement(),
                 changedProperties,
                 data.getWorkspaceId(),

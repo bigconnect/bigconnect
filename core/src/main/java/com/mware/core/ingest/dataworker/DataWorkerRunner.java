@@ -50,16 +50,11 @@ import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.security.VisibilityTranslator;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.StatusRepository;
-import com.mware.core.status.StatusServer;
-import com.mware.core.status.model.DataWorkerRunnerStatus;
-import com.mware.core.status.model.ProcessStatus;
 import com.mware.core.user.User;
 import com.mware.core.util.*;
 import com.mware.ge.*;
-import com.mware.ge.values.storable.StreamingPropertyValue;
 import com.mware.ge.util.IterableUtils;
+import com.mware.ge.values.storable.StreamingPropertyValue;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -77,7 +72,6 @@ import static com.mware.ge.util.IterableUtils.toList;
 // Unlike many other injected classes, this is not a singleton
 public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
     private static final BcLogger LOGGER = BcLoggerFactory.getLogger(DataWorkerRunner.class);
-    private final StatusRepository statusRepository;
     private final AuthorizationRepository authorizationRepository;
     private Graph graph;
     private Authorizations authorizations;
@@ -95,13 +89,11 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
     public DataWorkerRunner(
             WorkQueueRepository workQueueRepository,
             WebQueueRepository webQueueRepository,
-            StatusRepository statusRepository,
             Configuration configuration,
-            MetricsManager metricsManager,
-            AuthorizationRepository authorizationRepository
+            AuthorizationRepository authorizationRepository,
+            Graph graph
     ) {
-        super(workQueueRepository, webQueueRepository, configuration, metricsManager);
-        this.statusRepository = statusRepository;
+        super(workQueueRepository, webQueueRepository, configuration, graph.getMetricsRegistry());
         this.authorizationRepository = authorizationRepository;
         this.queueName = configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME);
     }
@@ -185,7 +177,7 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
                 LOGGER.error("Could not prepare data worker %s", worker.getClass().getName(), ex);
             }
 
-            DataWorkerThreadedWrapper wrapper = new DataWorkerThreadedWrapper(worker);
+            DataWorkerThreadedWrapper wrapper = new DataWorkerThreadedWrapper(worker, graph.getMetricsRegistry());
             setupWrapper(wrapper);
             wrappers.add(wrapper);
             Thread thread = new Thread(wrapper);
@@ -239,20 +231,6 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
             }
         }
         return termMentionFilters;
-    }
-
-    @Override
-    protected StatusServer createStatusServer() throws Exception {
-        return new StatusServer(configuration, statusRepository, "dataWorker", DataWorkerRunner.class) {
-            @Override
-            protected ProcessStatus createStatus() {
-                DataWorkerRunnerStatus status = new DataWorkerRunnerStatus();
-                for (DataWorkerThreadedWrapper dataWorkerThreadedWrapper : workerWrappers) {
-                    status.getRunningWorkers().add(dataWorkerThreadedWrapper.getStatus());
-                }
-                return status;
-            }
-        };
     }
 
     private void safeExecuteHandleAllEntireElements(DataWorkerItem workerItem) throws Exception {
@@ -793,7 +771,7 @@ public class DataWorkerRunner extends WorkerBase<DataWorkerItem> {
             };
             stoppables.add(stoppable);
             Thread t = new Thread(stoppable);
-            t.setName("data-worker-runner-" + t.getId());
+            t.setName("dw-runner-" + t.getId());
             t.setDaemon(true);
             LOGGER.debug("Starting DataWorkerRunner thread: %s", t.getName());
             t.start();

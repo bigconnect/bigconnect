@@ -42,29 +42,25 @@ import com.mware.core.config.Configuration;
 import com.mware.core.externalResource.ExternalResourceRunner;
 import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.lifecycle.LifecycleAdapter;
-import com.mware.core.status.StatusRepository;
 import com.mware.core.user.SystemUser;
 
 @Singleton
 public class ExternalResourceRunnerProcess extends LifecycleAdapter {
     private final Configuration configuration;
     private ExternalResourceRunner resourceRunner;
-    private StatusRepository statusRepository;
 
     @Inject
     public ExternalResourceRunnerProcess(
             Configuration configuration,
-            LifeSupportService lifeSupportService,
-            StatusRepository statusRepository
+            LifeSupportService lifeSupportService
     ) {
         this.configuration = configuration;
-        this.statusRepository = statusRepository;
         lifeSupportService.add(this);
     }
 
     @Override
     public void start() {
-        resourceRunner = new ExternalResourceRunner(configuration, statusRepository, new SystemUser());
+        resourceRunner = new ExternalResourceRunner(configuration, new SystemUser());
         resourceRunner.startAll();
     }
 

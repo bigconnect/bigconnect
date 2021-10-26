@@ -80,10 +80,6 @@ import com.mware.core.security.AuditService;
 import com.mware.core.security.DirectVisibilityTranslator;
 import com.mware.core.security.LoggingAuditService;
 import com.mware.core.security.VisibilityTranslator;
-import com.mware.core.status.InMemoryStatusRepository;
-import com.mware.core.status.JmxMetricsManager;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.StatusRepository;
 import com.mware.core.time.TimeRepository;
 import com.mware.core.trace.DefaultTraceRepository;
 import com.mware.core.trace.TraceRepository;
@@ -171,10 +167,6 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
         checkNotNull(configuration, "configuration cannot be null");
         bind(Configuration.class).toInstance(configuration);
 
-        LOGGER.debug("binding %s", JmxMetricsManager.class.getName());
-        MetricsManager metricsManager = new JmxMetricsManager();
-        bind(MetricsManager.class).toInstance(metricsManager);
-
         bindInterceptor(Matchers.any(), Matchers.annotatedWith(Traced.class), new TracedMethodInterceptor());
 
         bind(TraceRepository.class)
@@ -218,9 +210,6 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
                 .in(Scopes.SINGLETON);
         bind(EmailRepository.class)
                 .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.EMAIL_REPOSITORY, NopEmailRepository.class))
-                .in(Scopes.SINGLETON);
-        bind(StatusRepository.class)
-                .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.STATUS_REPOSITORY, InMemoryStatusRepository.class))
                 .in(Scopes.SINGLETON);
         bind(FileSystemRepository.class)
                 .toProvider(BcBootstrap.getConfigurableProvider(configuration, Configuration.FILE_SYSTEM_REPOSITORY, LocalFileSystemRepository.class))

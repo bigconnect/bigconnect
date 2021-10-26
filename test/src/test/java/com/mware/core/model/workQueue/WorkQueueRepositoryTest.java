@@ -178,10 +178,10 @@ public class WorkQueueRepositoryTest {
         properties.add(new BcPropertyUpdate(BcSchema.COMMENT, "k3"));
 
         webQueueRepository.broadcastPropertiesChange(element, properties, null, Priority.HIGH);
-        workQueueRepository.pushGraphPropertyQueue(element, properties, null, null, Priority.HIGH);
+        workQueueRepository.pushOnDwQueue(element, properties, null, null, Priority.HIGH);
 
-        assertEquals(1, workQueueRepository.getWorkQueue(workQueueRepository.getQueueName()).size());
-        DataWorkerMessage message = DataWorkerMessage.create(workQueueRepository.getWorkQueue(workQueueRepository.getQueueName()).get(0));
+        assertEquals(1, workQueueRepository.getWorkQueue(workQueueRepository.getDwQueueName()).size());
+        DataWorkerMessage message = DataWorkerMessage.create(workQueueRepository.getWorkQueue(workQueueRepository.getDwQueueName()).get(0));
         assertEquals(3, message.getProperties().length);
     }
 }

@@ -36,21 +36,16 @@
  */
 package com.mware.core.ingest.dataworker;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
-import com.google.inject.Inject;
-import com.mware.ge.Element;
 import com.mware.core.exception.BcException;
-import com.mware.core.status.MetricsManager;
-import com.mware.core.status.PausableTimerContext;
-import com.mware.core.status.PausableTimerContextAware;
-import com.mware.core.status.StatusServer;
-import com.mware.core.status.model.DataWorkerRunnerStatus;
-import com.mware.core.status.model.Status;
+import com.mware.ge.metric.PausableTimerContext;
+import com.mware.ge.metric.PausableTimerContextAware;
 import com.mware.core.trace.Trace;
 import com.mware.core.trace.TraceSpan;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import com.mware.ge.Element;
+import com.mware.ge.metric.Counter;
+import com.mware.ge.metric.GeMetricRegistry;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,19 +57,19 @@ public class DataWorkerThreadedWrapper implements Runnable {
     private static final int DEQUEUE_LOG_MESSAGE_FREQUENCY_MS = 10 * 1000;
     private static final int DEQUEUE_WARN_THRESHOLD_MS = 30 * 1000;
     private final DataWorker worker;
-
-    public DataWorkerThreadedWrapper(DataWorker worker) {
-        this.worker = worker;
-    }
-
+    private final GeMetricRegistry metricRegistry;
     private Counter totalProcessedCounter = null;
     private Counter processingCounter;
     private Counter totalErrorCounter;
-    private Timer processingTimeTimer;
+    private com.mware.ge.metric.Timer processingTimeTimer;
     private boolean stopped;
     private final Queue<Work> workItems = new LinkedList<>();
     private final Queue<WorkResult> workResults = new LinkedList<>();
-    private MetricsManager metricsManager;
+
+    public DataWorkerThreadedWrapper(DataWorker worker, GeMetricRegistry metricRegistry) {
+        this.worker = worker;
+        this.metricRegistry = metricRegistry;
+    }
 
     @Override
     public final void run() {
@@ -101,7 +96,7 @@ public class DataWorkerThreadedWrapper implements Runnable {
                     if (in instanceof PausableTimerContextAware) {
                         ((PausableTimerContextAware) in).setPausableTimerContext(timerContext);
                     }
-                    processingCounter.inc();
+                    processingCounter.increment();
                     long startTime = System.currentTimeMillis();
                     TraceSpan traceSpan = startTraceIfEnabled(work, elementId);
                     try {
@@ -112,8 +107,8 @@ public class DataWorkerThreadedWrapper implements Runnable {
                         long endTime = System.currentTimeMillis();
                         long time = endTime - startTime;
                         LOGGER.debug("END doWork (%s): %s (%dms)", workerClassName, elementId, time);
-                        processingCounter.dec();
-                        totalProcessedCounter.inc();
+                        processingCounter.decrement();
+                        totalProcessedCounter.increment();
                         timerContext.stop();
                     }
                     synchronized (workResults) {
@@ -122,7 +117,7 @@ public class DataWorkerThreadedWrapper implements Runnable {
                     }
                 } catch (Throwable ex) {
                     LOGGER.error("failed to complete work (%s): %s", workerClassName, elementId, ex);
-                    totalErrorCounter.inc();
+                    totalErrorCounter.increment();
                     synchronized (workResults) {
                         workResults.add(new WorkResult(ex));
                         workResults.notifyAll();
@@ -166,11 +161,10 @@ public class DataWorkerThreadedWrapper implements Runnable {
 
     private void ensureMetricsInitialized() {
         if (totalProcessedCounter == null) {
-            String namePrefix = metricsManager.getNamePrefix(this.worker);
-            totalProcessedCounter = metricsManager.counter(namePrefix + "total-processed");
-            processingCounter = metricsManager.counter(namePrefix + "processing");
-            totalErrorCounter = metricsManager.counter(namePrefix + "total-errors");
-            processingTimeTimer = metricsManager.timer(namePrefix + "processing-time");
+            totalProcessedCounter = metricRegistry.getCounter(this.worker.getClass(), "total-processed");
+            processingCounter = metricRegistry.getCounter(this.worker.getClass(),  "processing");
+            totalErrorCounter = metricRegistry.getCounter(this.worker.getClass(),  "total-errors");
+            processingTimeTimer = metricRegistry.getTimer(this.worker.getClass(),  "processing-time");
         }
     }
 
@@ -223,16 +217,6 @@ public class DataWorkerThreadedWrapper implements Runnable {
         return worker;
     }
 
-    public DataWorkerRunnerStatus.DataWorkerStatus getStatus() {
-        DataWorkerRunnerStatus.DataWorkerStatus status = new DataWorkerRunnerStatus.DataWorkerStatus();
-        StatusServer.getGeneralInfo(status, this.worker.getClass());
-        status.getMetrics().put("totalProcessed", Status.Metric.create(totalProcessedCounter));
-        status.getMetrics().put("processing", Status.Metric.create(processingCounter));
-        status.getMetrics().put("totalErrors", Status.Metric.create(totalErrorCounter));
-        status.getMetrics().put("processingTime", Status.Metric.create(processingTimeTimer));
-        return status;
-    }
-
     private class Work {
         private final InputStream in;
         private final DataWorkerData data;
@@ -261,11 +245,6 @@ public class DataWorkerThreadedWrapper implements Runnable {
         public Throwable getError() {
             return error;
         }
-    }
-
-    @Inject
-    public void setMetricsManager(MetricsManager metricsManager) {
-        this.metricsManager = metricsManager;
     }
 
     @Override

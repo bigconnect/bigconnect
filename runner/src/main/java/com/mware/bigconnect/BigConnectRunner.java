@@ -39,6 +39,7 @@ package com.mware.bigconnect;
 import com.mware.bolt.BoltServer;
 import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.cmdline.CommandLineTool;
+import com.mware.core.config.Configuration;
 import com.mware.core.ingest.video.VideoFrameInfo;
 import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
@@ -55,10 +56,10 @@ import com.mware.core.process.LongRunningProcessRunnerProcess;
 import com.mware.core.process.SystemNotificationProcess;
 import com.mware.core.security.BcVisibility;
 import com.mware.core.util.VersionUtil;
-import com.mware.ge.cypher.connection.DefaultNetworkConnectionTracker;
-import com.mware.ge.cypher.connection.NetworkConnectionTracker;
+import com.mware.ge.GraphConfiguration;
 import com.mware.ge.metric.DropWizardMetricRegistry;
 
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +91,9 @@ public class BigConnectRunner extends CommandLineTool {
         VersionUtil.printVersion();
 
         // start metric registry
-        new DropWizardMetricRegistry();
+        new DropWizardMetricRegistry(
+                new GraphConfiguration(((Map) configuration.getSubset(Configuration.GRAPH_PROVIDER)))
+        );
 
         executorService.awaitTermination(10000, TimeUnit.DAYS);
         return 0;

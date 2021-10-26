@@ -239,7 +239,7 @@ public class GeCypherQueryContext {
                 }
                 if (savedElement != null) {
                     for (Property property : mutation.getProperties()) {
-                        workQueueRepository.pushGraphPropertyQueue(
+                        workQueueRepository.pushOnDwQueue(
                                 savedElement,
                                 property.getKey(),
                                 property.getName(),

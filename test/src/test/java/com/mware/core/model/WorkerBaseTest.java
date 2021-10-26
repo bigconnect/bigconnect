@@ -42,9 +42,10 @@ import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.dataworker.WorkerItem;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
-import com.mware.core.status.JmxMetricsManager;
-import com.mware.core.status.StatusServer;
 import com.mware.core.util.BcLogger;
+import com.mware.ge.metric.DropWizardMetricRegistry;
+import com.mware.ge.metric.GeMetricRegistry;
+import com.mware.ge.metric.NullMetricRegistry;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,7 +84,7 @@ public class WorkerBaseTest {
         when(workQueueRepository.createWorkerSpout(eq("test"))).thenReturn(workerSpout);
         when(workerSpout.nextTuple()).thenThrow(new BcException("could not get nextTuple"));
 
-        TestWorker testWorker = new TestWorker(workQueueRepository, webQueueRepository, configuration);
+        TestWorker testWorker = new TestWorker(workQueueRepository, webQueueRepository, configuration, new NullMetricRegistry());
         try {
             testWorker.run();
             fail("should throw");
@@ -99,14 +100,14 @@ public class WorkerBaseTest {
         when(workQueueRepository.createWorkerSpout(eq("test"))).thenReturn(workerSpout);
         when(workerSpout.nextTuple()).thenThrow(new BcException("could not get nextTuple"));
 
-        TestWorker testWorker = new TestWorker(workQueueRepository, webQueueRepository, configuration);
+        TestWorker testWorker = new TestWorker(workQueueRepository, webQueueRepository, configuration, new NullMetricRegistry());
         testWorker.run();
         assertEquals(1, nextTupleExceptionCount);
     }
 
     private class TestWorker extends WorkerBase<TestWorkerItem> {
-        protected TestWorker(WorkQueueRepository workQueueRepository, WebQueueRepository webQueueRepository, Configuration configuration) {
-            super(workQueueRepository, webQueueRepository, configuration, new JmxMetricsManager());
+        protected TestWorker(WorkQueueRepository workQueueRepository, WebQueueRepository webQueueRepository, Configuration configuration, GeMetricRegistry metricRegistry) {
+            super(workQueueRepository, webQueueRepository, configuration, metricRegistry);
         }
 
         @Override
@@ -132,11 +133,6 @@ public class WorkerBaseTest {
                 return;
             }
             super.handleNextTupleException(logger, ex);
-        }
-
-        @Override
-        protected StatusServer createStatusServer() throws Exception {
-            return null;
         }
     }
 

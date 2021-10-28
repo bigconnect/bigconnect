@@ -46,8 +46,10 @@ import com.mware.core.user.SystemUser;
 import com.mware.core.user.User;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
+import com.mware.core.util.ServiceLoaderUtil;
 import com.mware.ge.Authorizations;
 import com.mware.ge.TextIndexHint;
+import com.mware.ge.collection.Iterables;
 import com.mware.ge.values.storable.BooleanValue;
 import com.mware.ge.values.storable.Value;
 import org.apache.commons.io.IOUtils;
@@ -150,8 +152,7 @@ public class SchemaFactory {
 
     public void applyContributions(Configuration configuration) {
         try {
-            InjectHelper.getInjectedServices(SchemaContribution.class, configuration)
-                    .stream()
+            Iterables.stream(ServiceLoaderUtil.loadWithoutInjecting(SchemaContribution.class, configuration))
                     .filter(sc -> !sc.patchApplied(this))
                     .forEach(sc -> sc.patchSchema(this));
         } catch (Exception ex) {
@@ -222,15 +223,15 @@ public class SchemaFactory {
                 parent = getOrCreateThingConcept();
 
             Concept c = schemaRepository.getOrCreateConcept(parent, conceptType, displayName, true, coreConcept, systemUser, workspaceId);
-            for(Map.Entry<String, Value> prop : properties.entrySet()) {
-                c.setProperty(prop.getKey(), prop.getValue(), new SystemUser(),authorizations);
+            for (Map.Entry<String, Value> prop : properties.entrySet()) {
+                c.setProperty(prop.getKey(), prop.getValue(), new SystemUser(), authorizations);
             }
 
-            if(intents != null) {
+            if (intents != null) {
                 Arrays.stream(intents).forEach(intent -> c.addIntent(intent, new SystemUser(), authorizations));
             }
 
-            if(!StringUtils.isEmpty(glyphIcon))
+            if (!StringUtils.isEmpty(glyphIcon))
                 addGlyphIcon(c, SchemaRepositoryBase.class.getResourceAsStream(glyphIcon));
             else if (glyphIconStream != null)
                 addGlyphIcon(c, glyphIconStream);
@@ -301,14 +302,14 @@ public class SchemaFactory {
 
             Relationship r = schemaRepository.getOrCreateRelationshipType(parent, Arrays.asList(sourceConcepts), Arrays.asList(targetConcepts), label, true, coreConcept, systemUser, workspaceId);
 
-            for(Map.Entry<String, Value> prop : properties.entrySet()) {
+            for (Map.Entry<String, Value> prop : properties.entrySet()) {
                 r.setProperty(prop.getKey(), prop.getValue(), new SystemUser(), authorizations);
             }
-            if(intents != null) {
+            if (intents != null) {
                 Arrays.stream(intents).forEach(intent -> r.addIntent(intent, new SystemUser(), authorizations));
             }
 
-            if(inverseOf != null)
+            if (inverseOf != null)
                 schemaRepository.getOrCreateInverseOfRelationship(r, inverseOf);
 
             return r;
@@ -465,7 +466,7 @@ public class SchemaFactory {
 
         public SchemaProperty save() {
             if (concepts == null || concepts.length == 0) {
-                concepts = new Concept[] { SchemaFactory.this.getOrCreateThingConcept() };
+                concepts = new Concept[]{SchemaFactory.this.getOrCreateThingConcept()};
             }
             SchemaPropertyDefinition schemaPropertyDefinition = new SchemaPropertyDefinition(Arrays.asList(concepts), name, displayName, type);
             schemaPropertyDefinition.setUserVisible(userVisible);
@@ -486,7 +487,7 @@ public class SchemaFactory {
             schemaPropertyDefinition.setPropertyGroup(propertyGroup);
             schemaPropertyDefinition.setExtendedDataTableDomain(extendedDataTableNames);
 
-            if(forRelationships != null)
+            if (forRelationships != null)
                 schemaPropertyDefinition.getRelationships().addAll(Arrays.asList(forRelationships));
 
             SchemaProperty prop = schemaRepository.addPropertyTo(
@@ -525,7 +526,7 @@ public class SchemaFactory {
             );
 
 
-            if(intents != null) {
+            if (intents != null) {
                 Arrays.stream(intents).forEach(intent -> prop.addIntent(intent, authorizations));
             }
 

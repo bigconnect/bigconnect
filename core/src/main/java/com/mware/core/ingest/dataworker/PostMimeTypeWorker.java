@@ -37,8 +37,12 @@
 package com.mware.core.ingest.dataworker;
 
 import com.google.inject.Inject;
+import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.properties.BcSchema;
+import com.mware.core.model.schema.SchemaRepository;
+import com.mware.core.model.termMention.TermMentionRepository;
+import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.user.User;
@@ -58,6 +62,10 @@ public abstract class PostMimeTypeWorker {
     private Graph graph;
     private WorkQueueRepository workQueueRepository;
     private WebQueueRepository webQueueRepository;
+    private Configuration configuration;
+    private SchemaRepository schemaRepository;
+    private GraphAuthorizationRepository graphAuthorizationRepository;
+    private TermMentionRepository termMentionRepository;
     private File localFileForRaw;
     private DataWorkerPrepareData workerPrepareData;
 
@@ -128,6 +136,42 @@ public abstract class PostMimeTypeWorker {
     @Inject
     public void setWebQueueRepository(WebQueueRepository webQueueRepository) {
         this.webQueueRepository = webQueueRepository;
+    }
+
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
+    @Inject
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
+    @Inject
+    public void setSchemaRepository(SchemaRepository schemaRepository) {
+        this.schemaRepository = schemaRepository;
+    }
+
+    public SchemaRepository getSchemaRepository() {
+        return schemaRepository;
+    }
+
+    @Inject
+    public void setGraphAuthorizationRepository(GraphAuthorizationRepository graphAuthorizationRepository) {
+        this.graphAuthorizationRepository = graphAuthorizationRepository;
+    }
+
+    public GraphAuthorizationRepository getGraphAuthorizationRepository() {
+        return graphAuthorizationRepository;
+    }
+
+    @Inject
+    public void setTermMentionRepository(TermMentionRepository termMentionRepository) {
+        this.termMentionRepository = termMentionRepository;
+    }
+
+    public TermMentionRepository getTermMentionRepository() {
+        return termMentionRepository;
     }
 
     public WebQueueRepository getWebQueueRepository() {

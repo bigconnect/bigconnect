@@ -38,6 +38,7 @@ package com.mware.core.ingest.dataworker;
 
 import com.google.common.collect.Lists;
 import com.mware.core.InMemoryGraphTestBase;
+import com.mware.core.model.plugin.PluginStateRepository;
 import com.mware.core.model.schema.SchemaConstants;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.ge.*;
@@ -53,15 +54,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
@@ -208,7 +203,7 @@ public class DataWorkerRunnerTest extends InMemoryGraphTestBase {
     }
 
     private void testMultiElementMessage(int numMessages, int numProperties, DataWorkerMessage message) throws Exception {
-        TestCountingDWStub countingGPWStub = new TestCountingDWStub();
+        TestCountingDWStub1 countingGPWStub = new TestCountingDWStub1();
         runTests(countingGPWStub, message);
 
         long expectedNumProperties = (long) (numMessages * numProperties + numMessages);

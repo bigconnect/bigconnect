@@ -331,6 +331,7 @@ public class SchemaFactory {
         private boolean sortable = true;
         private boolean systemProperty = true;
         private String aggType;
+        private long aggMinDocumentCount = 0L;
         private Collection<TextIndexHint> textIndexHints = TextIndexHint.NONE;
         private PropertyType type;
         private String displayType;
@@ -424,6 +425,11 @@ public class SchemaFactory {
             return this;
         }
 
+        public DefaultConceptProperty aggMinDocumentCount(long aggMinDocumentCount) {
+            this.aggMinDocumentCount = aggMinDocumentCount;
+            return this;
+        }
+
         public DefaultConceptProperty type(PropertyType type) {
             this.type = type;
             return this;
@@ -473,6 +479,7 @@ public class SchemaFactory {
             schemaPropertyDefinition.setTextIndexHints(textIndexHints);
             schemaPropertyDefinition.setSearchFacet(searchFacet);
             schemaPropertyDefinition.setAggType(aggType);
+            schemaPropertyDefinition.setAggMinDocumentCount(aggMinDocumentCount);
             schemaPropertyDefinition.setDisplayType(displayType);
             schemaPropertyDefinition.setSortable(sortable);
             schemaPropertyDefinition.setPossibleValues(possibleValues);

@@ -816,6 +816,9 @@ public class DefaultSchemaCreator {
                 .displayName("Detected Object")
                 .textIndexHints(TextIndexHint.EXACT_MATCH)
                 .type(PropertyType.STRING)
+                .searchFacet(true)
+                .aggType("term")
+                .aggMinDocumentCount(1)
                 .save();
 
         schemaFactory.newConceptProperty()

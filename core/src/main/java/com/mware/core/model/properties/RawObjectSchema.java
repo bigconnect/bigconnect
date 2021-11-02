@@ -52,7 +52,6 @@ public class RawObjectSchema {
     public static final StringBcProperty TITLE_LANGUAGE = new StringBcProperty("titleLanguage");
     public static final StringSingleValueBcProperty RAW_SENTIMENT = new StringSingleValueBcProperty("sentiment");
     public static final StringSingleValueBcProperty RAW_TYPE = new StringSingleValueBcProperty("rawType");
-    public static final DetectedObjectProperty DETECTED_OBJECT = new DetectedObjectProperty("detectedObject");
     public static final StringBcProperty PROCESS = new StringBcProperty("process");
     public static final StringBcProperty ROW_KEY = new StringBcProperty("rowKey");
     public static final StringMetadataBcProperty COMMENT_PATH_METADATA = new StringMetadataBcProperty("commentPath");
@@ -76,4 +75,8 @@ public class RawObjectSchema {
     public static final StringSingleValueBcProperty ORIGINAL_AUTHOR_ID = new StringSingleValueBcProperty("socialOrigAuthorId");
     public static final StringBcProperty LINKS = new StringBcProperty("links");
     public static final StringBcProperty HASHTAGS = new StringBcProperty("hashtags");
+
+    public static final StringBcProperty DETECTED_OBJECT = new StringBcProperty("detectedObject");
+    public static final ArtifactDetectedObjectMetadataBcProperty DETECTED_OBJECT_METADATA = new ArtifactDetectedObjectMetadataBcProperty("_ado");
+
 }

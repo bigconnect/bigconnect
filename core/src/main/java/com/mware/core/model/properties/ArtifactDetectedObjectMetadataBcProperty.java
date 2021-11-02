@@ -36,14 +36,14 @@
  */
 package com.mware.core.model.properties;
 
-import com.mware.core.model.properties.types.BcProperty;
+import com.mware.core.model.properties.types.MetadataBcProperty;
 import com.mware.ge.values.storable.TextValue;
 import com.mware.ge.values.storable.Value;
 import com.mware.ge.values.storable.Values;
 import org.json.JSONObject;
 
-public class DetectedObjectProperty extends BcProperty<ArtifactDetectedObject> {
-    public DetectedObjectProperty(String key) {
+public class ArtifactDetectedObjectMetadataBcProperty extends MetadataBcProperty<ArtifactDetectedObject> {
+    public ArtifactDetectedObjectMetadataBcProperty(String key) {
         super(key);
     }
 

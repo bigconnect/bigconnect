@@ -74,7 +74,7 @@ public interface MediaBcSchema {
     DoubleSingleValueBcProperty MEDIA_IMAGE_HEADING = new DoubleSingleValueBcProperty("mediaImageHeading");
     BooleanSingleValueBcProperty MEDIA_Y_AXIS_FLIPPED = new BooleanSingleValueBcProperty("mediaYAxisFlipped");
     IntegerSingleValueBcProperty MEDIA_CLOCKWISE_ROTATION = new IntegerSingleValueBcProperty("mediaClockwiseRotation");
-    DetectedObjectProperty DETECTED_OBJECT = new DetectedObjectProperty("detectedObject");
+    ArtifactDetectedObjectMetadataBcProperty DETECTED_OBJECT = new ArtifactDetectedObjectMetadataBcProperty("detectedObject");
     StringSingleValueBcProperty MEDIA_VIDEO_FORMAT = new StringSingleValueBcProperty("mediaVideoFormat");
     StringSingleValueBcProperty MEDIA_AUDIO_FORMAT = new StringSingleValueBcProperty("mediaAudioFormat");
     StringSingleValueBcProperty MEDIA_VIDEO_CODEC = new StringSingleValueBcProperty("mediaVideoCodec");

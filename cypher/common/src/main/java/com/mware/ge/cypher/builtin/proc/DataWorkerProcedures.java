@@ -41,6 +41,7 @@ import com.mware.core.model.clientapi.dto.VisibilityJson;
 import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.graph.GraphUpdateContext;
 import com.mware.core.model.properties.ArtifactDetectedObject;
+import com.mware.core.model.properties.ArtifactDetectedObjectMetadataBcProperty;
 import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.properties.RawObjectSchema;
 import com.mware.core.model.properties.types.PropertyMetadata;
@@ -193,11 +194,10 @@ public class DataWorkerProcedures {
             @Name("y1") Number y1,
             @Name("x2") Number x2,
             @Name("y2") Number y2,
-            @Name("probability") Number proba,
+            @Name("probability") Number _confidence,
             @Name("class") String clazz) {
         synchronized (bcApi.getGraph()) {
             SchemaRepository schemaRepository = bcApi.getSchemaRepository();
-            VisibilityTranslator visibilityTranslator = dependencies.resolveDependency(VisibilityTranslator.class, ONLY);
             GraphRepository graphRepository = dependencies.resolveDependency(GraphRepository.class, ONLY);
 
             String artifactContainsImageOfEntityIri =
@@ -205,16 +205,16 @@ public class DataWorkerProcedures {
                             "artifactContainsImageOfEntity", SchemaRepository.PUBLIC);
             User user = new SystemUser();
             ZonedDateTime modifiedDate = ZonedDateTime.now();
-            Visibility visibility = visibilityTranslator.toVisibility("").getVisibility();
 
             PropertyMetadata propertyMetadata =
-                    new PropertyMetadata(modifiedDate, user, new VisibilityJson(), visibility);
+                    new PropertyMetadata(modifiedDate, user, new VisibilityJson(), Visibility.EMPTY);
             String id = bcApi.getGraph().getIdGenerator().nextId();
             Vertex artifactVertex = bcApi.getGraph().getVertex(node.getId(), bcApi.getAuthorizations());
 
             // Check for duplicates
-            Iterable<ArtifactDetectedObject> artifacts = RawObjectSchema.DETECTED_OBJECT.getPropertyValues(artifactVertex);
-            for (ArtifactDetectedObject artifact : artifacts) {
+            Iterable<Property> props = RawObjectSchema.DETECTED_OBJECT.getProperties(artifactVertex);
+            for (Property prop : props) {
+                ArtifactDetectedObject artifact = RawObjectSchema.DETECTED_OBJECT_METADATA.getMetadataValue(prop);
                 // Duck typing
                 if (Math.abs(artifact.getX1() - x1.doubleValue()) <= 0.01 &&
                         Math.abs(artifact.getX2() - x2.doubleValue()) <= 0.01 &&
@@ -231,10 +231,9 @@ public class DataWorkerProcedures {
                          graphRepository.beginGraphUpdate(Priority.NORMAL, user, bcApi.getAuthorizations())) {
                 ctx.setPushOnQueue(false);
                 // Create Edge
-                edge = ctx.getOrCreateEdgeAndUpdate(
-                        null, node.getId(), id, artifactContainsImageOfEntityIri, visibility, edgeCtx -> {
-                            edgeCtx.updateBuiltInProperties(propertyMetadata);
-                        }).get();
+                edge = ctx.getOrCreateEdgeAndUpdate(null, node.getId(), id, artifactContainsImageOfEntityIri, Visibility.EMPTY, edgeCtx ->
+                        edgeCtx.updateBuiltInProperties(propertyMetadata)
+                ).get();
 
                 // Create Artifact
                 artifactDetectedObject = new ArtifactDetectedObject(
@@ -242,6 +241,7 @@ public class DataWorkerProcedures {
                         y1.doubleValue(),
                         x2.doubleValue(),
                         y2.doubleValue(),
+                        _confidence.doubleValue(),
                         clazz,
                         "system",
                         edge.getId(),
@@ -257,23 +257,25 @@ public class DataWorkerProcedures {
 
                 // Create Vertex
                 final String propertyKey = artifactDetectedObject.getMultivalueKey(DataWorkerProcedures.class.getName());
-                double confidence = Math.floor(proba.doubleValue() * 100) / 100.0;
-                Vertex resolvedObjectVertex = ctx.getOrCreateVertexAndUpdate(id, visibility, clazz, elemCtx -> {
+                double confidence = Math.floor(_confidence.doubleValue() * 100) / 100.0;
+                Vertex resolvedObjectVertex = ctx.getOrCreateVertexAndUpdate(id, Visibility.EMPTY, clazz, elemCtx -> {
                     if (elemCtx.isNewElement()) {
                         elemCtx.updateBuiltInProperties(propertyMetadata);
                         BcSchema.TITLE.updateProperty(elemCtx, MULTI_VALUE_KEY,
-                                clazz + " [Confidence: " + confidence + "]",
+                                clazz + " [" + confidence + "]",
                                 propertyMetadata);
                     }
 
                     RawObjectSchema.ROW_KEY.updateProperty(elemCtx, id, propertyKey, propertyMetadata);
                 }).get();
 
-                ctx.update(artifactVertex,
-                        elemCtx -> RawObjectSchema.DETECTED_OBJECT
-                                .updateProperty(elemCtx, propertyKey, artifactDetectedObject, propertyMetadata)).get();
+                ctx.update(artifactVertex, elemCtx -> {
+                    Metadata m = Metadata.create();
+                    RawObjectSchema.DETECTED_OBJECT_METADATA.setMetadata(m, artifactDetectedObject, Visibility.EMPTY);
+                    RawObjectSchema.DETECTED_OBJECT.updateProperty(elemCtx, propertyKey, artifactDetectedObject.getConcept(), propertyMetadata);
+                }).get();
 
-                createCroppedImageVertex(ctx, visibility, propertyMetadata, artifactVertex, resolvedObjectVertex,
+                createCroppedImageVertex(ctx, Visibility.EMPTY, propertyMetadata, artifactVertex, resolvedObjectVertex,
                         x1.doubleValue(), x2.doubleValue(), y1.doubleValue(), y2.doubleValue());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -293,9 +295,9 @@ public class DataWorkerProcedures {
             double sy1 = Math.max(0, y1 * image.getHeight());
             double sx2 = x2 * image.getWidth();
             double sy2 = y2 * image.getHeight();
-            BufferedImage cropped = image.getSubimage((int)sx1, (int)sy1,
-                                                        (int)(Math.min(image.getWidth(), sx2) - sx1),
-                                                        (int)(Math.min(image.getHeight(), sy2) - sy1));
+            BufferedImage cropped = image.getSubimage((int) sx1, (int) sy1,
+                    (int) (Math.min(image.getWidth(), sx2) - sx1),
+                    (int) (Math.min(image.getHeight(), sy2) - sy1));
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             ImageIO.write(cropped, "jpeg", os);
@@ -306,16 +308,16 @@ public class DataWorkerProcedures {
             // Cropped image vertex
             Vertex imageVertex =
                     ctx.getOrCreateVertexAndUpdate(id, visibility, SchemaConstants.CONCEPT_TYPE_IMAGE, elemCtx -> {
-                elemCtx.updateBuiltInProperties(propertyMetadata);
-                BcSchema.MIME_TYPE.updateProperty(elemCtx, "","image/jpeg", propertyMetadata);
-                propertyMetadata.add(BcSchema.MIME_TYPE.getPropertyName(), Values.stringValue("image/jpeg"), visibility);
-                BcSchema.RAW.updateProperty(elemCtx, spv, propertyMetadata);
-            }).get();
+                        elemCtx.updateBuiltInProperties(propertyMetadata);
+                        BcSchema.MIME_TYPE.updateProperty(elemCtx, "", "image/jpeg", propertyMetadata);
+                        propertyMetadata.add(BcSchema.MIME_TYPE.getPropertyName(), Values.stringValue("image/jpeg"), visibility);
+                        BcSchema.RAW.updateProperty(elemCtx, spv, propertyMetadata);
+                    }).get();
             // Edge: resolvedObject vertex -has image-> cropped image vertex
             ctx.getOrCreateEdgeAndUpdate(
                     null, resolvedObjectVertex.getId(), id, EDGE_LABEL_HAS_IMAGE, visibility, edgeCtx -> {
-                edgeCtx.updateBuiltInProperties(propertyMetadata);
-            }).get();
+                        edgeCtx.updateBuiltInProperties(propertyMetadata);
+                    }).get();
 
             RawObjectSchema.ENTITY_IMAGE_VERTEX_ID
                     .setProperty(resolvedObjectVertex, id, visibility, bcApi.getAuthorizations());

@@ -49,6 +49,7 @@ public class ArtifactDetectedObject {
     private double y1;
     private double x2;
     private double y2;
+    private double confidence;
     private String process;
 
     public ArtifactDetectedObject(JSONObject json) {
@@ -56,6 +57,7 @@ public class ArtifactDetectedObject {
         this.y1 = json.getDouble("y1");
         this.x2 = json.getDouble("x2");
         this.y2 = json.getDouble("y2");
+        this.confidence = json.getDouble("confidence");
         this.process = json.optString("process");
         this.concept = json.optString("concept");
         this.edgeId = json.optString("edgeId");
@@ -63,11 +65,23 @@ public class ArtifactDetectedObject {
         this.originalPropertyKey = json.optString("originalPropertyKey");
     }
 
-    public ArtifactDetectedObject(double x1, double y1, double x2, double y2, String concept, String process, String edgeId, String resolvedVertexId, String originalPropertyKey) {
+    public ArtifactDetectedObject(
+            double x1,
+            double y1,
+            double x2,
+            double y2,
+            double confidence,
+            String concept,
+            String process,
+            String edgeId,
+            String resolvedVertexId,
+            String originalPropertyKey
+    ) {
         this.x1 = x1;
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
+        this.confidence = confidence;
         this.concept = concept;
         this.process = process;
         this.edgeId = edgeId;
@@ -75,8 +89,8 @@ public class ArtifactDetectedObject {
         this.originalPropertyKey = originalPropertyKey;
     }
 
-    public ArtifactDetectedObject(double x1, double y1, double x2, double y2, String concept, String process) {
-        this(x1, y1, x2, y2, concept, process, null, null, null);
+    public ArtifactDetectedObject(double x1, double y1, double x2, double y2, double confidence, String concept, String process) {
+        this(x1, y1, x2, y2, confidence, concept, process, null, null, null);
     }
 
     public double getX1() {
@@ -109,6 +123,14 @@ public class ArtifactDetectedObject {
 
     public void setY2(double y2) {
         this.y2 = y2;
+    }
+
+    public void setConfidence(double confidence) {
+        this.confidence = confidence;
+    }
+
+    public double getConfidence() {
+        return confidence;
     }
 
     public String getConcept() {
@@ -157,6 +179,8 @@ public class ArtifactDetectedObject {
         json.put("y1", getY1());
         json.put("x2", getX2());
         json.put("y2", getY2());
+        json.put("confidence", getConfidence());
+
         if (getProcess() != null) {
             json.put("process", getProcess());
         }
@@ -172,6 +196,7 @@ public class ArtifactDetectedObject {
         if (getOriginalPropertyKey() != null) {
             json.put("originalPropertyKey", getOriginalPropertyKey());
         }
+
         return json;
     }
 }

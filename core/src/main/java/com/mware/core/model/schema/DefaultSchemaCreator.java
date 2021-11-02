@@ -814,6 +814,7 @@ public class DefaultSchemaCreator {
                 .concepts(thingConcept)
                 .name(RawObjectSchema.DETECTED_OBJECT.getPropertyName())
                 .displayName("Detected Object")
+                .textIndexHints(TextIndexHint.EXACT_MATCH)
                 .type(PropertyType.STRING)
                 .save();
 

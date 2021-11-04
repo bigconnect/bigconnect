@@ -951,8 +951,12 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
             query.has(propertyName);
             query.limit(0);
 
-            QueryResultsIterable resultsIterable = query.search();
+            QueryResultsIterable resultsIterable = query.elementIds();
             long results = resultsIterable.getTotalHits();
+            safeClose(resultsIterable);
+
+            resultsIterable = query.extendedDataRowIds();
+            results += resultsIterable.getTotalHits();
             safeClose(resultsIterable);
 
             if (results == 0) {

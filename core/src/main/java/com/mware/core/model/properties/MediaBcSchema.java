@@ -51,9 +51,8 @@ public interface MediaBcSchema {
     String MIME_TYPE_AUDIO_MP4 = "audio/mp4";
     String MIME_TYPE_AUDIO_OGG = "audio/ogg";
 
-    String METADATA_VIDEO_FRAME_START_TIME = "videoFrameStartTime";
-
     StreamingBcProperty RAW_POSTER_FRAME = new StreamingBcProperty("rawPosterFrame");
+    LongMetadataBcProperty METADATA_VIDEO_PREVIEW_FRAMES = new LongMetadataBcProperty("videoPreviewFrames");
     StreamingSingleValueBcProperty VIDEO_PREVIEW_IMAGE = new StreamingSingleValueBcProperty("videoPreviewImage");
 
     StreamingSingleValueBcProperty AUDIO_MP3 = new StreamingSingleValueBcProperty("audio-mp3");

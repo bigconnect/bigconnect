@@ -36,14 +36,16 @@
  */
 package com.mware.ge.accumulo;
 
-import com.mware.ge.FetchHints;
-import com.mware.ge.Metadata;
-import com.mware.ge.Vertex;
+import com.mware.core.model.properties.MediaBcSchema;
+import com.mware.ge.*;
 import com.mware.ge.base.GraphMetadataTests;
 import com.mware.ge.base.GraphTestSetup;
 import com.mware.ge.base.TestGraphFactory;
+import com.mware.ge.mutation.ElementMutation;
+import com.mware.ge.mutation.ExistingElementMutation;
 import com.mware.ge.util.GeLogger;
 import com.mware.ge.util.GeLoggerFactory;
+import com.mware.ge.values.storable.Values;
 import org.apache.accumulo.core.client.RowIterator;
 import org.apache.accumulo.core.client.ScannerBase;
 import org.apache.accumulo.core.data.Key;

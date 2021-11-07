@@ -85,10 +85,6 @@
             <scope>test</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>org.apache.accumulo</groupId>
-                    <artifactId>accumulo-server-base</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>jline</groupId>
                     <artifactId>jline</artifactId>
                 </exclusion>

@@ -410,8 +410,7 @@ public abstract class ElementMutationBuilder {
         }
 
         byte[] value = geSerializer.objectToBytes(propertyValue);
-        long ts = property.getTimestamp() == null ? IncreasingTime.currentTimeMillis() : property.getTimestamp();
-        m.put(StorableElement.CF_PROPERTY, columnQualifier, columnVisibility, ts, value);
+        m.put(StorableElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
         addPropertyMetadataToMutation(m, property);
     }
 

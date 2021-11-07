@@ -65,14 +65,14 @@ public class MutablePropertyImpl extends MutableProperty {
             FetchHints fetchHints
     ) {
         if (metadata == null && fetchHints.isIncludePropertyMetadata()) {
-            metadata = Metadata.create(FetchHints.ALL);
+            metadata = Metadata.create(fetchHints);
         }
 
         this.key = key;
         this.name = name;
         this.value = value;
         this.metadata = metadata;
-        this.timestamp = timestamp;
+        this.timestamp = timestamp == null ? IncreasingTime.currentTimeMillis() : timestamp;
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
         this.fetchHints = fetchHints;

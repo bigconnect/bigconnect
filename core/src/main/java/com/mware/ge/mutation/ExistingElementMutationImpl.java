@@ -137,7 +137,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     public ElementMutation<T> addPropertyValue(String key, String name, Value value, Metadata metadata, Visibility visibility) {
-        return addPropertyValue(key, name, value, metadata, IncreasingTime.currentTimeMillis(), visibility);
+        return addPropertyValue(key, name, value, metadata, null, visibility);
     }
 
     @Override

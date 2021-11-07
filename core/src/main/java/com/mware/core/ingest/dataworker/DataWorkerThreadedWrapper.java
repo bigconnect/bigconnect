@@ -37,8 +37,6 @@
 package com.mware.core.ingest.dataworker;
 
 import com.mware.core.exception.BcException;
-import com.mware.ge.metric.PausableTimerContext;
-import com.mware.ge.metric.PausableTimerContextAware;
 import com.mware.core.trace.Trace;
 import com.mware.core.trace.TraceSpan;
 import com.mware.core.util.BcLogger;
@@ -46,6 +44,8 @@ import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.Element;
 import com.mware.ge.metric.Counter;
 import com.mware.ge.metric.GeMetricRegistry;
+import com.mware.ge.metric.PausableTimerContext;
+import com.mware.ge.metric.PausableTimerContextAware;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,6 +101,10 @@ public class DataWorkerThreadedWrapper implements Runnable {
                     TraceSpan traceSpan = startTraceIfEnabled(work, elementId);
                     try {
                         DataWorkerMemoryTracer.log(workerClassName, elementId, work.getData() != null ? work.getData().getProperty() : null);
+                        this.worker.getElementTracer().trace(
+                                elementId,
+                                "dwExecute",
+                                workerClassName+", prop: " + (work.getData().getProperty() != null ? work.getData().getProperty().getName() : ""));
                         this.worker.execute(in, work.getData());
                     } finally {
                         stopTraceIfEnabled(work, traceSpan);

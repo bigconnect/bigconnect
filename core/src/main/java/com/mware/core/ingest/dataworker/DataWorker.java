@@ -51,6 +51,7 @@ import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
 import com.mware.core.model.workspace.WorkspaceRepository;
 import com.mware.core.security.VisibilityTranslator;
+import com.mware.core.trace.ElementTracer;
 import com.mware.core.user.User;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
@@ -75,6 +76,7 @@ public abstract class DataWorker {
     private Configuration configuration;
     private WorkspaceRepository workspaceRepository;
     private GraphRepository graphRepository;
+    private ElementTracer elementTracer;
 
     public VerifyResults verify() {
         return new VerifyResults();
@@ -221,6 +223,15 @@ public abstract class DataWorker {
     @Inject
     public final void setGraphRepository(GraphRepository graphRepository) {
         this.graphRepository = graphRepository;
+    }
+
+    @Inject
+    public void setElementTracer(ElementTracer elementTracer) {
+        this.elementTracer = elementTracer;
+    }
+
+    public ElementTracer getElementTracer() {
+        return elementTracer;
     }
 
     /**

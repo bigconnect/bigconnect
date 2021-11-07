@@ -45,6 +45,8 @@ import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.lifecycle.LifecycleAdapter;
 import com.mware.core.model.properties.types.BcPropertyUpdate;
 import com.mware.core.model.properties.types.BcPropertyUpdateRemove;
+import com.mware.core.trace.ElementTraceInfo;
+import com.mware.core.trace.ElementTracer;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.Edge;
@@ -68,6 +70,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
     private DataWorkerRunner dataWorkerRunner;
     private String dwQueueName;
     private String lrpQueueName;
+    private ElementTracer elementTracer;
 
     protected WorkQueueRepository(
             Graph graph,
@@ -78,6 +81,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         this.dwQueueName = configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME);
         this.lrpQueueName = configuration.get(Configuration.LRP_QUEUE_NAME, LRP_DEFAULT_QUEUE_NAME);
 
+        this.elementTracer = new ElementTracer(graph, configuration);
         graph.getMetricsRegistry().getGauge(getClass(), dwQueueName, this::getDwQueueSize);
         graph.getMetricsRegistry().getGauge(getClass(), lrpQueueName, this::getLrpQueueSize);
     }
@@ -110,6 +114,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         addElementTypeToJson(data, element);
 
         if (canHandle(element, propertyKey, propertyName, status)) {
+            elementTracer.trace(element.getId(), "pushOnQueue: "+dwQueueName, data.toJsonString());
             pushOnQueue(dwQueueName, data.toBytes(), priority);
         }
     }
@@ -156,6 +161,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
             data.setVisibilitySource(visibilitySource);
         }
 
+        elementTracer.trace(element.getId(), "pushOnQueue: "+dwQueueName, data.toJsonString());
         pushOnQueue(dwQueueName, data.toBytes(), priority);
     }
 
@@ -187,6 +193,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
         }
         data.put("propertyKey", propertyKey);
         data.put("propertyName", propertyName);
+        elementTracer.trace(element.getId(), "pushOnQueue: "+dwQueueName, data.toString());
         pushOnQueue(dwQueueName, data, priority);
     }
 
@@ -223,7 +230,7 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
             if (!canHandle(element, propertyKey, propertyName, status)) {
                 continue;
             }
-
+            elementTracer.trace(element.getId(), "pushOnQueue: "+dwQueueName, data.toJsonString());
             if (element instanceof Vertex) {
                 vertices.add(element.getId());
             } else if (element instanceof Edge) {

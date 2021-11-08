@@ -43,6 +43,7 @@ import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.properties.types.BcPropertyUpdate;
 import com.mware.core.model.role.AuthorizationRepository;
 import com.mware.core.model.schema.SchemaConstants;
+import com.mware.core.model.user.InMemoryGraphAuthorizationRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.workspace.Workspace;
 import com.mware.core.model.workspace.WorkspaceRepository;
@@ -98,7 +99,8 @@ public class WorkQueueRepositoryTest {
         authorizations = graph.createAuthorizations();
         workQueueRepository = new TestWorkQueueRepository(
                 graph,
-                configuration
+                configuration,
+                new InMemoryGraphAuthorizationRepository()
         );
         webQueueRepository = new TestWebQueueRepository();
         webQueueRepository.setAuthorizationRepository(authorizationRepository);

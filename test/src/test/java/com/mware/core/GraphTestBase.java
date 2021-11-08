@@ -289,7 +289,8 @@ public abstract class GraphTestBase {
         }
         workQueueRepository = new TestWorkQueueRepository(
                 getGraph(),
-                getConfiguration()
+                getConfiguration(),
+                getGraphAuthorizationRepository()
         );
         return workQueueRepository;
     }

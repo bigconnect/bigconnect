@@ -37,6 +37,7 @@
 package com.mware.core.model.workQueue;
 
 import com.mware.core.config.Configuration;
+import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.ge.Graph;
 
 import java.util.ArrayList;
@@ -50,9 +51,10 @@ public class TestWorkQueueRepository extends InMemoryWorkQueueRepository {
 
     public TestWorkQueueRepository(
             Graph graph,
-            Configuration configuration
+            Configuration configuration,
+            GraphAuthorizationRepository graphAuthorizationRepository
     ) {
-        super(graph, configuration);
+        super(graph, configuration, graphAuthorizationRepository);
     }
 
     @Override

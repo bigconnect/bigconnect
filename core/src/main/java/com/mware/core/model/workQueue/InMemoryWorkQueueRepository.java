@@ -40,6 +40,7 @@ import com.google.inject.Inject;
 import com.mware.core.config.Configuration;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.WorkerTuple;
+import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.ge.Graph;
 
 import java.util.HashMap;
@@ -53,9 +54,10 @@ public class InMemoryWorkQueueRepository extends WorkQueueRepository {
     @Inject
     public InMemoryWorkQueueRepository(
             Graph graph,
-            Configuration configuration
+            Configuration configuration,
+            GraphAuthorizationRepository graphAuthorizationRepository
     ) {
-        super(graph, configuration);
+        super(graph, configuration, graphAuthorizationRepository);
     }
 
     @Override

@@ -42,6 +42,7 @@ import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.lifecycle.LifeSupportService;
+import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.util.BcLogger;
 import com.mware.core.util.BcLoggerFactory;
 import com.mware.ge.Graph;
@@ -73,9 +74,10 @@ public class RabbitMQWorkQueueRepository extends WorkQueueRepository {
     public RabbitMQWorkQueueRepository(
             Graph graph,
             Configuration configuration,
-            LifeSupportService lifeSupportService
+            LifeSupportService lifeSupportService,
+            GraphAuthorizationRepository graphAuthorizationRepository
     ) {
-        super(graph, configuration);
+        super(graph, configuration, graphAuthorizationRepository);
         lifeSupportService.add(this);
     }
 

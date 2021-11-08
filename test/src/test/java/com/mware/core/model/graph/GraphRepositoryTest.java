@@ -47,6 +47,7 @@ import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.properties.types.PropertyMetadata;
 import com.mware.core.model.schema.SchemaConstants;
 import com.mware.core.model.termMention.TermMentionRepository;
+import com.mware.core.model.user.InMemoryGraphAuthorizationRepository;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workQueue.TestWebQueueRepository;
 import com.mware.core.model.workQueue.TestWorkQueueRepository;
@@ -111,7 +112,7 @@ public class GraphRepositoryTest {
         visibilityTranslator = new DirectVisibilityTranslator();
         graph = InMemoryGraph.create(graphConfig, idGenerator, new DefaultSearchIndex(graphConfig));
         defaultAuthorizations = graph.createAuthorizations();
-        workQueueRepository = new TestWorkQueueRepository(graph, configuration);
+        workQueueRepository = new TestWorkQueueRepository(graph, configuration, new InMemoryGraphAuthorizationRepository());
         webQueueRepository = new TestWebQueueRepository();
 
         graphRepository = new GraphRepository(

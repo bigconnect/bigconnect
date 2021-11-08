@@ -43,6 +43,7 @@ import com.mware.core.exception.BcException;
 import com.mware.core.ingest.WorkerSpout;
 import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.lifecycle.LifeSupportService;
+import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.ge.Element;
 import com.mware.ge.Graph;
 import org.json.JSONObject;
@@ -64,9 +65,10 @@ public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
     public DuplicatingWorkQueueRepository(
             Graph graph,
             Configuration configuration,
-            LifeSupportService lifeSupportService
+            LifeSupportService lifeSupportService,
+            GraphAuthorizationRepository graphAuthorizationRepository
     ) {
-        super(graph, configuration);
+        super(graph, configuration, graphAuthorizationRepository);
 
         ImmutableSet.Builder<String> builder = ImmutableSet.builder();
         for (String key : configuration.getKeys(DW_QUEUE_PREFIX)) {
@@ -86,7 +88,7 @@ public class DuplicatingWorkQueueRepository extends WorkQueueRepository {
         }
         lrpQueueNames = builder.build();
 
-        workQueueRepository = new RabbitMQWorkQueueRepository(graph, configuration, lifeSupportService);
+        workQueueRepository = new RabbitMQWorkQueueRepository(graph, configuration, lifeSupportService, graphAuthorizationRepository);
 
         lifeSupportService.add(this);
     }

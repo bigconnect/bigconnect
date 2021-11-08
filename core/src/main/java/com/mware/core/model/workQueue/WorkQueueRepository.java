@@ -45,6 +45,7 @@ import com.mware.core.ingest.dataworker.ElementOrPropertyStatus;
 import com.mware.core.lifecycle.LifecycleAdapter;
 import com.mware.core.model.properties.types.BcPropertyUpdate;
 import com.mware.core.model.properties.types.BcPropertyUpdateRemove;
+import com.mware.core.model.user.GraphAuthorizationRepository;
 import com.mware.core.trace.ElementTraceInfo;
 import com.mware.core.trace.ElementTracer;
 import com.mware.core.util.BcLogger;
@@ -74,14 +75,15 @@ public abstract class WorkQueueRepository extends LifecycleAdapter {
 
     protected WorkQueueRepository(
             Graph graph,
-            Configuration configuration
+            Configuration configuration,
+            GraphAuthorizationRepository graphAuthorizationRepository
     ) {
         this.graph = graph;
         this.configuration = configuration;
         this.dwQueueName = configuration.get(Configuration.DW_QUEUE_NAME, DW_DEFAULT_QUEUE_NAME);
         this.lrpQueueName = configuration.get(Configuration.LRP_QUEUE_NAME, LRP_DEFAULT_QUEUE_NAME);
 
-        this.elementTracer = new ElementTracer(graph, configuration);
+        this.elementTracer = new ElementTracer(graph, configuration, graphAuthorizationRepository);
         graph.getMetricsRegistry().getGauge(getClass(), dwQueueName, this::getDwQueueSize);
         graph.getMetricsRegistry().getGauge(getClass(), lrpQueueName, this::getLrpQueueSize);
     }

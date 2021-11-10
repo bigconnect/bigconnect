@@ -97,9 +97,7 @@ public class ElementUpdateContext<T extends Element> {
     ) {
         checkNotNull(user, "User cannot be null");
         Visibility defaultVisibility = visibilityTranslator.getDefaultVisibility();
-        if (user != null) {
-            BcSchema.MODIFIED_BY.updateProperty(this, user.getUserId(), defaultVisibility);
-        }
+        BcSchema.MODIFIED_BY.updateProperty(this, user.getUserId(), defaultVisibility);
         BcSchema.MODIFIED_DATE.updateProperty(this, modifiedDate, defaultVisibility);
         BcSchema.VISIBILITY_JSON.updateProperty(this, visibilityJson, defaultVisibility);
     }

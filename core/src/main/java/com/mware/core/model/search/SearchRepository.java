@@ -57,8 +57,7 @@ public abstract class SearchRepository {
             String name,
             String url,
             JSONObject searchParameters,
-            User user,
-            boolean update
+            User user
     );
 
     public abstract String saveGlobalSearch(
@@ -66,14 +65,20 @@ public abstract class SearchRepository {
             String name,
             String url,
             JSONObject searchParameters,
-            User user,
-            boolean update
+            User user
     );
 
     public abstract ClientApiSearchListResponse getSavedSearches(User user);
 
     public abstract ClientApiSearch getSavedSearch(String id, User user);
 
+    /**
+     * Gets saved searches in a workspace context.
+     * It will return the saved search with the provided id if:
+     * - the search is global
+     * - the search is created by the user
+     * - the user has access to the workspace and the search is created by the owner of the workspace
+     */
     public abstract ClientApiSearch getSavedSearchOnWorkspace(String id, User user, String workspaceId);
 
     public abstract void deleteSearch(String id, User user);

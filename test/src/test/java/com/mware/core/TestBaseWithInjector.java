@@ -45,6 +45,7 @@ import com.mware.core.lifecycle.LifeSupportService;
 import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
 import com.mware.core.model.notification.SystemNotificationService;
+import com.mware.core.model.role.AuthorizationRepository;
 import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.model.termMention.TermMentionRepository;
 import com.mware.core.model.user.GraphAuthorizationRepository;
@@ -87,8 +88,12 @@ public abstract class TestBaseWithInjector {
         setupGraphAuthorizations();
 
         InjectHelper.getInstance(SystemNotificationService.class);
+        InjectHelper.getInstance(UserRepository.class);
+        InjectHelper.getInstance(AuthorizationRepository.class);
 
         graph = InjectHelper.getInstance(Graph.class);
+
+        InjectHelper.getInstance(LifeSupportService.class).start();
     }
 
     @After

@@ -37,7 +37,8 @@ public class ElementTracer {
     public ElementTracer(Graph graph, Configuration configuration, GraphAuthorizationRepository graphAuthorizationRepository) {
         this.graph = graph;
         this.enabled = configuration.getBoolean("elementTracer.enabled", false);
-        graphAuthorizationRepository.addAuthorizationToGraph(AuthorizationRepository.ADMIN_ROLE);
+        graphAuthorizationRepository.addAuthorizationToGraph(AUTHORIZATIONS.getAuthorizations());
+        graph.createAuthorizations(AUTHORIZATIONS.getAuthorizations());
         ensureTraceVertexExists();
     }
 

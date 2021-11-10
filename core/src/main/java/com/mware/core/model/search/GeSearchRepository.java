@@ -49,6 +49,7 @@ import com.mware.core.model.clientapi.dto.Privilege;
 import com.mware.core.model.clientapi.dto.VisibilityJson;
 import com.mware.core.model.graph.GraphRepository;
 import com.mware.core.model.graph.GraphUpdateContext;
+import com.mware.core.model.properties.BcSchema;
 import com.mware.core.model.properties.SearchSchema;
 import com.mware.core.model.properties.types.PropertyMetadata;
 import com.mware.core.model.role.AuthorizationRepository;
@@ -63,6 +64,7 @@ import com.mware.core.user.SystemUser;
 import com.mware.core.user.User;
 import com.mware.core.util.ClientApiConverter;
 import com.mware.ge.*;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
 import java.util.stream.Collectors;
@@ -110,8 +112,7 @@ public class GeSearchRepository extends SearchRepository {
             String name,
             String url,
             JSONObject searchParameters,
-            User user,
-            boolean update
+            User user
     ) {
         checkNotNull(user, "User is required");
         Authorizations authorizations = authorizationRepository.getGraphAuthorizations(
@@ -120,7 +121,7 @@ public class GeSearchRepository extends SearchRepository {
                 UserRepository.VISIBILITY_STRING
         );
 
-        if (!update && savedSearchWithSameNameExists(name, getUserSavedSearches(user, authorizations))) {
+        if (savedSearchWithSameNameExists(id, name, getUserSavedSearches(user, authorizations))) {
             throw new BcException("An existing saved search with the same name already exists.");
         }
 
@@ -162,8 +163,7 @@ public class GeSearchRepository extends SearchRepository {
             String name,
             String url,
             JSONObject searchParameters,
-            User user,
-            boolean update
+            User user
     ) {
         if (!(user instanceof SystemUser) && !privilegeRepository.hasPrivilege(user, Privilege.SEARCH_SAVE_GLOBAL)) {
             throw new BcAccessDeniedException(
@@ -176,7 +176,7 @@ public class GeSearchRepository extends SearchRepository {
                 UserRepository.VISIBILITY_STRING
         );
 
-        if (!update && savedSearchWithSameNameExists(name, getGlobalSavedSearches(authorizations))) {
+        if (savedSearchWithSameNameExists(id, name, getGlobalSavedSearches(authorizations))) {
             throw new BcException("An existing global saved search with the same name already exists.");
         }
 
@@ -209,8 +209,9 @@ public class GeSearchRepository extends SearchRepository {
         }
     }
 
-    private boolean savedSearchWithSameNameExists(String name, Iterable<ClientApiSearch> searches) {
-        return StreamSupport.stream(searches.spliterator(), false).anyMatch(ss -> ss.name.equals(name));
+    private boolean savedSearchWithSameNameExists(String id, String name, Iterable<ClientApiSearch> searches) {
+        return StreamSupport.stream(searches.spliterator(), false)
+                .anyMatch(ss -> ss.name.equals(name) && !ss.id.equals(id));
     }
 
     private GraphUpdateContext.UpdateFuture<Vertex> saveSearchVertex(
@@ -236,11 +237,7 @@ public class GeSearchRepository extends SearchRepository {
     @Override
     public ClientApiSearchListResponse getSavedSearches(User user) {
         checkNotNull(user, "User is required");
-        Authorizations authorizations = authorizationRepository.getGraphAuthorizations(
-                user,
-                VISIBILITY_STRING,
-                UserRepository.VISIBILITY_STRING
-        );
+        Authorizations authorizations = getAuhorizations(user);
 
         ClientApiSearchListResponse result = new ClientApiSearchListResponse();
         Iterables.addAll(result.searches, getGlobalSavedSearches(authorizations));
@@ -248,7 +245,7 @@ public class GeSearchRepository extends SearchRepository {
         return result;
     }
 
-    private Iterable<ClientApiSearch> getUserSavedSearches(User user, Authorizations authorizations) {
+    protected Iterable<ClientApiSearch> getUserSavedSearches(User user, Authorizations authorizations) {
         Vertex userVertex = graph.getVertex(user.getUserId(), authorizations);
         checkNotNull(userVertex, "Could not find user vertex with id " + user.getUserId());
         Iterable<Vertex> userSearchVertices = userVertex.getVertices(
@@ -261,7 +258,7 @@ public class GeSearchRepository extends SearchRepository {
                 .collect(Collectors.toList());
     }
 
-    private Iterable<ClientApiSearch> getGlobalSavedSearches(Authorizations authorizations) {
+    protected Iterable<ClientApiSearch> getGlobalSavedSearches(Authorizations authorizations) {
         Vertex globalSavedSearchesRootVertex = getGlobalSavedSearchesRootVertex();
         Iterable<Vertex> globalSearchVertices = globalSavedSearchesRootVertex.getVertices(
                 Direction.OUT,
@@ -274,10 +271,8 @@ public class GeSearchRepository extends SearchRepository {
     }
 
     private Vertex getGlobalSavedSearchesRootVertex() {
-        Authorizations authorizations = authorizationRepository.getGraphAuthorizations(
-                userRepository.getSystemUser(),
-                VISIBILITY_STRING
-        );
+        Authorizations authorizations = getAuhorizations(new SystemUser());
+
         Vertex globalSavedSearchesRootVertex = graph.getVertex(GLOBAL_SAVED_SEARCHES_ROOT_VERTEX_ID, authorizations);
         if (globalSavedSearchesRootVertex == null) {
             globalSavedSearchesRootVertex = graph.prepareVertex(
@@ -307,11 +302,7 @@ public class GeSearchRepository extends SearchRepository {
 
     @Override
     public ClientApiSearch getSavedSearch(String id, User user) {
-        Authorizations authorizations = authorizationRepository.getGraphAuthorizations(
-                user,
-                VISIBILITY_STRING,
-                UserRepository.VISIBILITY_STRING
-        );
+        Authorizations authorizations = getAuhorizations(user);
         Vertex searchVertex = graph.getVertex(id, authorizations);
         if (searchVertex == null) {
             return null;
@@ -321,11 +312,7 @@ public class GeSearchRepository extends SearchRepository {
 
     @Override
     public ClientApiSearch getSavedSearchOnWorkspace(String id, User user, String workspaceId) {
-        Authorizations authorizations = authorizationRepository.getGraphAuthorizations(
-                user,
-                VISIBILITY_STRING,
-                UserRepository.VISIBILITY_STRING
-        );
+        Authorizations authorizations = getAuhorizations(user);
 
         Vertex searchVertex = graph.getVertex(id, authorizations);
         if (searchVertex == null) {
@@ -335,9 +322,9 @@ public class GeSearchRepository extends SearchRepository {
         boolean isGlobalSearch = isSearchGlobal(id, authorizations);
         boolean hasWorkspaceAccess = workspaceId != null && workspaceRepository.hasReadPermissions(workspaceId, user);
 
-        if (isGlobalSearch /*|| isSearchPrivateToUser(id, user, authorizations)*/) {
+        if (isGlobalSearch || isSearchPrivateToUser(id, user, authorizations)) {
             return toClientApiSearch(searchVertex);
-        } else if (!isGlobalSearch && !hasWorkspaceAccess) {
+        } else if (!hasWorkspaceAccess) {
             return null;
         } else {
             String workspaceCreatorId = workspaceRepository.getCreatorUserId(workspaceId, user);
@@ -351,11 +338,8 @@ public class GeSearchRepository extends SearchRepository {
     @Override
     public void deleteSearch(final String id, User user) {
         checkNotNull(user, "User is required");
-        Authorizations authorizations = authorizationRepository.getGraphAuthorizations(
-                user,
-                VISIBILITY_STRING,
-                UserRepository.VISIBILITY_STRING
-        );
+        Authorizations authorizations = getAuhorizations(user);
+
         Vertex searchVertex = graph.getVertex(id, authorizations);
         checkNotNull(searchVertex, "Could not find search with id " + id);
 
@@ -363,6 +347,11 @@ public class GeSearchRepository extends SearchRepository {
             if (!privilegeRepository.hasPrivilege(user, Privilege.SEARCH_SAVE_GLOBAL)) {
                 throw new BcAccessDeniedException(
                         "User does not have the privilege to delete a global search", user, id);
+            }
+
+            String ownerId = BcSchema.MODIFIED_BY.getPropertyValue(searchVertex);
+            if (!user.getUserId().equals(ownerId)) {
+                throw new BcAccessDeniedException("User does not own this global search", user, id);
             }
         } else if (!isSearchPrivateToUser(id, user, authorizations)) {
             throw new BcAccessDeniedException("User does not own this this search", user, id);
@@ -398,5 +387,13 @@ public class GeSearchRepository extends SearchRepository {
                 authorizations
         );
         return stream(vertexIds).anyMatch(vertexId -> vertexId.equals(id));
+    }
+
+    protected Authorizations getAuhorizations(User user) {
+        return authorizationRepository.getGraphAuthorizations(
+                user,
+                VISIBILITY_STRING,
+                UserRepository.VISIBILITY_STRING
+        );
     }
 }

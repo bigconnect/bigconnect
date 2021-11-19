@@ -43,11 +43,11 @@ import com.mware.ge.event.*;
  * Created by Dan on 12/8/2016.
  */
 public class PropertyEvent {
-    public static final String ADD_PROPERTY_EVENT_TYPE = "Add Property";
-    public static final String DELETE_PROPERTY_EVENT_TYPE = "Delete Property";
-    public static final String MARK_HIDDEN_PROPERTY_EVENT_TYPE = "Mark Hidden Property";
-    public static final String MARK_VISIBLE_PROPERTY_EVENT_TYPE = "Mark Visible Property";
-    public static final String SOFT_DELETE_PROPERTY_EVENT_TYPE = "Soft Delete Property";
+    public static final String ADD_PROPERTY_EVENT_TYPE = "Add";
+    public static final String DELETE_PROPERTY_EVENT_TYPE = "Delete";
+    public static final String MARK_HIDDEN_PROPERTY_EVENT_TYPE = "Mark Hidden";
+    public static final String MARK_VISIBLE_PROPERTY_EVENT_TYPE = "Mark Visible";
+    public static final String SOFT_DELETE_PROPERTY_EVENT_TYPE = "Soft Delete";
 
     private GraphEvent event;
     private String eventType;

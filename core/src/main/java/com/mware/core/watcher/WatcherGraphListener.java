@@ -40,8 +40,11 @@ import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.email.EmailRepository;
 import com.mware.core.model.notification.ExpirationAge;
 import com.mware.core.model.notification.ExpirationAgeUnit;
+import com.mware.core.model.notification.Notification;
 import com.mware.core.model.notification.UserNotificationRepository;
 import com.mware.core.model.properties.BcSchema;
+import com.mware.core.model.schema.Schema;
+import com.mware.core.model.schema.SchemaRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.watcher.Watch;
 import com.mware.core.model.watcher.WatchlistRepository;
@@ -52,6 +55,7 @@ import com.mware.ge.Vertex;
 import com.mware.ge.event.AddPropertyEvent;
 import com.mware.ge.event.GraphEvent;
 import com.mware.ge.event.GraphEventListener;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,91 +63,60 @@ import java.util.stream.Stream;
 
 public class WatcherGraphListener extends GraphEventListener {
     private static final int WATCH_NOTIFICATION_DEFAULT_EXPIRATION_AGE = 10; //In minutes
-    private static final String DEFAULT_EMAIL_FROM = "amplexor@sparksc.com";
-    private static final boolean ENABLE_MAIL_NOTIFICATION = true;
-    private static final List<String> propertiesToIgnore = new ArrayList<>();
+    private static final String DEFAULT_EMAIL_FROM = "admin@localhost";
+    private static final boolean ENABLE_MAIL_NOTIFICATION = false;
+    private List<String> allowedProperties = null;
     private UserNotificationRepository userNotificationRepository;
     private EmailRepository emailRepository;
     private UserRepository userRepository;
     private WatchlistRepository watchlistRepository;
+    private SchemaRepository schemaRepository;
     private User systemUser;
-
-    static {
-        propertiesToIgnore.add("addRelatedConceptWhiteList");
-        propertiesToIgnore.add("addable");
-        propertiesToIgnore.add("boost");
-        propertiesToIgnore.add("color");
-        propertiesToIgnore.add("deleteable");
-        propertiesToIgnore.add("dependentPropertyIri");
-        propertiesToIgnore.add("dependentPropertyIris");
-        propertiesToIgnore.add("displayFormula");
-        propertiesToIgnore.add("displayName");
-        propertiesToIgnore.add("displayType");
-        propertiesToIgnore.add("glyphIconFileName");
-        propertiesToIgnore.add("intent");
-        propertiesToIgnore.add("mapGlyphIconFileName");
-        propertiesToIgnore.add("objectPropertyDomain");
-        propertiesToIgnore.add("possibleValues");
-        propertiesToIgnore.add("propertyGroup");
-        propertiesToIgnore.add("searchable");
-        propertiesToIgnore.add("sortable");
-        propertiesToIgnore.add("subtitleFormula");
-        propertiesToIgnore.add("textIndexHints");
-        propertiesToIgnore.add("timeFormula");
-        propertiesToIgnore.add("titleFormula");
-        propertiesToIgnore.add("updateable");
-        propertiesToIgnore.add("userVisible");
-        propertiesToIgnore.add("validationFormula");
-        propertiesToIgnore.add("analyticsvisible");
-        propertiesToIgnore.add("searchFacet");
-        propertiesToIgnore.add("systemProperty");
-        propertiesToIgnore.add("aggType");
-        propertiesToIgnore.add("aggPrecision");
-        propertiesToIgnore.add("aggInterval");
-        propertiesToIgnore.add("aggMinDocumentCount");
-        propertiesToIgnore.add("aggTimeZone");
-        propertiesToIgnore.add("aggCalendarField");
-        propertiesToIgnore.add("glyphIcon");
-        propertiesToIgnore.add("ontologyFile");
-        propertiesToIgnore.add("ontologyTitle");
-        propertiesToIgnore.add("conceptType");
-        propertiesToIgnore.add("dataType");
-    }
 
     @Override
     public void onGraphEvent(GraphEvent graphEvent) {
-        if(graphEvent instanceof AddPropertyEvent) {
-            if(((AddPropertyEvent)graphEvent).getProperty() == null)
+        if (graphEvent instanceof AddPropertyEvent) {
+            if (((AddPropertyEvent) graphEvent).getProperty() == null)
                 return;
         }
 
-        final PropertyEvent event = new PropertyEvent(graphEvent);
-        if(event.isValid()) {
-            onPropertyEvent(event);
+        final PropertyEvent propEvent = new PropertyEvent(graphEvent);
+        if (propEvent.isValid()) {
+            onPropertyEvent(propEvent);
         } else {
-            final EdgeEvent eevent = new EdgeEvent(graphEvent);
-            if (eevent.isValid()) {
-                onEdgeEvent(eevent);
+            final EdgeEvent edgeEvent = new EdgeEvent(graphEvent);
+            if (edgeEvent.isValid()) {
+                onEdgeEvent(edgeEvent);
             }
         }
     }
 
     private void onPropertyEvent(PropertyEvent event) {
-        String propertyName = event.getPropertyName();
-        for(String prop : propertiesToIgnore) {
-            if(propertyName.endsWith(prop))
-                return;
-        }
+        if (!isPropertyAllowed(event.getPropertyName()))
+            return;
 
         Stream<Watch> watchStream = getWatchlistRepository().getElementWatches(event.getElement().getId());
         watchStream
                 .filter(watch ->
-                    watch.getPropertyName().equals(event.getPropertyName()))
+                        watch.getPropertyName().equals(event.getPropertyName()))
                 .forEach(watch ->
-                    notifyUser(watch.getUserId(),
-                            "Watch alert on element with title: "+ BcSchema.TITLE.getFirstPropertyValue(event.getElement()),
-                            "Property: "+event.getPropertyName()+" changed with event: "+event.getEventType())
-        );
+                        notifyUser(watch.getUserId(), event.getElement().getId(),
+                                "Property change on element: " + event.getElement().getId(),
+                                "Property: " + event.getPropertyName() + ", Event: " + event.getEventType())
+                );
+    }
+
+    private boolean isPropertyAllowed(String propName) {
+        if (allowedProperties == null) {
+            allowedProperties = new ArrayList<>();
+            getSchemaRepository().getProperties().forEach(sp -> {
+                if (sp.getUserVisible()) {
+                    allowedProperties.add(sp.getName());
+                }
+            });
+        }
+
+        return allowedProperties.stream().anyMatch(propName::endsWith);
     }
 
     private void onEdgeEvent(EdgeEvent event) {
@@ -153,11 +126,9 @@ public class WatcherGraphListener extends GraphEventListener {
         //Scan watches for source and destination vertices
         final Vertex inVertex = edge.getVertices(authorizations).getInVertex();
         final Vertex outVertex = edge.getVertices(authorizations).getOutVertex();
-        List<Vertex> vertices = new ArrayList<Vertex>();
+        List<Vertex> vertices = new ArrayList<>();
         vertices.add(inVertex);
-        final String sourceTitle = BcSchema.TITLE.getFirstPropertyValue(inVertex);
         vertices.add(outVertex);
-        final String destTitle = BcSchema.TITLE.getFirstPropertyValue(outVertex);
 
         for (Vertex vertex : vertices) {
             Stream<Watch> watchStream = getWatchlistRepository().getElementWatches(vertex.getId());
@@ -165,25 +136,31 @@ public class WatcherGraphListener extends GraphEventListener {
                     .filter(watch ->
                             watch.getPropertyName().equals(event.getTitle()))
                     .forEach(watch ->
-                            notifyUser(watch.getUserId(),
-                                    "Watch alert on relationship with title: " + event.getTitle(),
-                                    "Relationship: " + event.getTitle() + " between " + (sourceTitle == null ? "-" : sourceTitle) + " and "+
-                                            (destTitle == null ? "-" : destTitle) + " changed with event: " + event.getEventType())
+                            notifyUser(watch.getUserId(), vertex.getId(),
+                                    String.format("Element %s, Relationship %s", vertex.getId(), edge.getLabel()),
+                                    "event: " + event.getEventType())
                     );
         }
     }
 
-    private void notifyUser(String userId, String title, String message) {
+    private void notifyUser(String userId, String elementId, String title, String message) {
         User user = getUserRepository().findById(userId);
+
+        JSONObject actionPayload = new JSONObject();
+        actionPayload.put("id", elementId);
+
         getUserNotificationRepository()
                 .createNotification(userId,
                         title,
-                        message, null,
+                        message,
+                        Notification.ACTION_EVENT_OBJECT_ID,
+                        actionPayload,
                         new ExpirationAge(WATCH_NOTIFICATION_DEFAULT_EXPIRATION_AGE, ExpirationAgeUnit.MINUTE),
                         getSystemUser());
+
         if (ENABLE_MAIL_NOTIFICATION &&
                 (EmailValidator.getInstance().validate(user.getUsername()) ||
-                    EmailValidator.getInstance().validate((user.getEmailAddress())))) {//May impact performance as it's synchronous (maybe create a job for this)
+                        EmailValidator.getInstance().validate((user.getEmailAddress())))) {//May impact performance as it's synchronous (maybe create a job for this)
             getEmailRepository()
                     .send(DEFAULT_EMAIL_FROM,
                             EmailValidator.getInstance().validate(user.getEmailAddress())
@@ -231,5 +208,12 @@ public class WatcherGraphListener extends GraphEventListener {
         }
 
         return emailRepository;
+    }
+
+    public SchemaRepository getSchemaRepository() {
+        if (schemaRepository == null) {
+            schemaRepository = InjectHelper.getInstance(SchemaRepository.class);
+        }
+        return schemaRepository;
     }
 }

@@ -42,9 +42,8 @@ import com.mware.core.model.notification.ExpirationAge;
 import com.mware.core.model.notification.ExpirationAgeUnit;
 import com.mware.core.model.notification.Notification;
 import com.mware.core.model.notification.UserNotificationRepository;
-import com.mware.core.model.properties.BcSchema;
-import com.mware.core.model.schema.Schema;
 import com.mware.core.model.schema.SchemaRepository;
+import com.mware.core.model.termMention.TermMentionRepository;
 import com.mware.core.model.user.UserRepository;
 import com.mware.core.model.watcher.Watch;
 import com.mware.core.model.watcher.WatchlistRepository;
@@ -121,14 +120,21 @@ public class WatcherGraphListener extends GraphEventListener {
 
     private void onEdgeEvent(EdgeEvent event) {
         final Edge edge = event.getEdge();
-        final Authorizations authorizations = edge.getAuthorizations();
+
+        final Authorizations queryAuths = edge.getGraph().createAuthorizations(
+                edge.getAuthorizations(),
+                TermMentionRepository.VISIBILITY_STRING
+        );
 
         //Scan watches for source and destination vertices
-        final Vertex inVertex = edge.getVertices(authorizations).getInVertex();
-        final Vertex outVertex = edge.getVertices(authorizations).getOutVertex();
         List<Vertex> vertices = new ArrayList<>();
-        vertices.add(inVertex);
-        vertices.add(outVertex);
+        final Vertex inVertex = edge.getVertices(queryAuths).getInVertex();
+        if (inVertex != null)
+            vertices.add(inVertex);
+
+        final Vertex outVertex = edge.getVertices(queryAuths).getOutVertex();
+        if (outVertex != null)
+            vertices.add(outVertex);
 
         for (Vertex vertex : vertices) {
             Stream<Watch> watchStream = getWatchlistRepository().getElementWatches(vertex.getId());

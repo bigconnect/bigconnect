@@ -448,7 +448,7 @@ public class Configuration {
         for (String key : getKeys()) {
             if (key.startsWith(Configuration.WEB_CONFIGURATION_PREFIX)) {
                 properties.put(key.replaceFirst(Configuration.WEB_CONFIGURATION_PREFIX, ""), get(key, ""));
-            } else if (key.startsWith("ontology.intent") || key.startsWith("watcher.enabled")) {
+            } else if (key.startsWith("ontology.intent") || key.startsWith("watcher.enabled") || key.startsWith("ldap.enabled")) {
                 properties.put(key, get(key, ""));
             }
         }

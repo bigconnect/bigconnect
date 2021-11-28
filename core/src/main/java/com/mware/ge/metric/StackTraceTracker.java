@@ -36,19 +36,21 @@
  */
 package com.mware.ge.metric;
 
+import com.google.common.collect.Sets;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 public class StackTraceTracker {
-    private final Set<StackTraceItem> roots = Collections.synchronizedSet(new HashSet<>());
+    private final Set<StackTraceItem> roots = Sets.newConcurrentHashSet();
 
     public void addStackTrace() {
         addStackTrace(Thread.currentThread().getStackTrace());
     }
 
-    public void addStackTrace(StackTraceElement[] stackTraceElements) {
+    public synchronized void addStackTrace(StackTraceElement[] stackTraceElements) {
         Set<StackTraceItem> parents = roots;
         for (int i = stackTraceElements.length - 1; i >= 0; i--) {
             StackTraceElement stackTraceElement = stackTraceElements[i];

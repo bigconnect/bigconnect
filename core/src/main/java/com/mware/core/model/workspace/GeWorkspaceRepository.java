@@ -306,6 +306,8 @@ public class GeWorkspaceRepository extends WorkspaceRepository {
 
         VertexBuilder workspaceVertexBuilder = getGraph().prepareVertex(workspaceId, VISIBILITY.getVisibility(), WORKSPACE_CONCEPT_NAME);
         WorkspaceSchema.TITLE.setProperty(workspaceVertexBuilder, title, VISIBILITY.getVisibility());
+        WorkspaceSchema.STAGING.setProperty(workspaceVertexBuilder, isGlobalStagingEnabled(), VISIBILITY.getVisibility());
+
         Vertex workspaceVertex = workspaceVertexBuilder.save(authorizations);
 
         if (userVertex != null) {
@@ -391,6 +393,21 @@ public class GeWorkspaceRepository extends WorkspaceRepository {
         Authorizations authorizations = getAuthorizationRepository().getGraphAuthorizations(user);
         Vertex workspaceVertex = getVertexFromWorkspace(workspace, false, authorizations);
         WorkspaceSchema.TITLE.setProperty(workspaceVertex, title, VISIBILITY.getVisibility(), authorizations);
+        getGraph().flush();
+    }
+
+    @Override
+    public void setStaging(Workspace workspace, Boolean staging, User user) {
+        if (!hasWritePermissions(workspace.getWorkspaceId(), user)) {
+            throw new BcAccessDeniedException(
+                    "user " + user.getUserId() + " does not have write access to workspace " + workspace.getWorkspaceId(),
+                    user,
+                    workspace.getWorkspaceId()
+            );
+        }
+        Authorizations authorizations = getAuthorizationRepository().getGraphAuthorizations(user);
+        Vertex workspaceVertex = getVertexFromWorkspace(workspace, false, authorizations);
+        WorkspaceSchema.STAGING.setProperty(workspaceVertex, staging, VISIBILITY.getVisibility(), authorizations);
         getGraph().flush();
     }
 

@@ -151,7 +151,8 @@ public abstract class WorkspaceRepository {
         return add(null, title, user);
     }
 
-    public void clearCache() {}
+    public void clearCache() {
+    }
 
     /**
      * Finds all workspaces the given user has access to. Including workspaces shared to that user.
@@ -166,6 +167,8 @@ public abstract class WorkspaceRepository {
     public abstract Iterable<Workspace> findAll(User user);
 
     public abstract void setTitle(Workspace workspace, String title, User user);
+
+    public abstract void setStaging(Workspace workspace, Boolean staging, User user);
 
     public abstract List<WorkspaceUser> findUsersWithAccess(String workspaceId, User user);
 
@@ -283,6 +286,7 @@ public abstract class WorkspaceRepository {
             ClientApiWorkspace workspaceClientApi = new ClientApiWorkspace();
             workspaceClientApi.setWorkspaceId(workspace.getWorkspaceId());
             workspaceClientApi.setTitle(workspace.getDisplayTitle());
+            workspaceClientApi.setStaging(workspace.getStaging());
 
             String creatorUserId = getCreatorUserId(workspace.getWorkspaceId(), user);
             if (creatorUserId == null) {
@@ -403,6 +407,19 @@ public abstract class WorkspaceRepository {
 
     protected AuthorizationRepository getAuthorizationRepository() {
         return authorizationRepository;
+    }
+
+    public boolean isStagingEnabled(String workspaceId, User user) {
+        Workspace workspace = findById(workspaceId, user);
+        return isStagingEnabled(workspace);
+    }
+
+    public boolean isStagingEnabled(Workspace workspace) {
+        return workspace.getStaging() == null ? isGlobalStagingEnabled() : workspace.getStaging();
+    }
+
+    public boolean isGlobalStagingEnabled() {
+        return !configuration.getBoolean(Configuration.WORKSPACE_AUTO_PUBLISH, false);
     }
 }
 

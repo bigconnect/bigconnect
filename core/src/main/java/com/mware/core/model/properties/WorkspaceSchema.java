@@ -47,6 +47,7 @@ public class WorkspaceSchema {
     public static final String WORKSPACE_TO_USER_RELATIONSHIP_NAME = "__wsToUsr";
 
     public static final StringSingleValueBcProperty TITLE = new StringSingleValueBcProperty("workspaceTitle");
+    public static final BooleanSingleValueBcProperty STAGING = new BooleanSingleValueBcProperty("workspaceStaging");
     public static final BooleanSingleValueBcProperty WORKSPACE_TO_USER_IS_CREATOR = new BooleanSingleValueBcProperty("workspaceUserIsCreator");
     public static final StringSingleValueBcProperty WORKSPACE_TO_USER_ACCESS = new StringSingleValueBcProperty("workspaceUserAccess");
 }

@@ -37,6 +37,7 @@
 package com.mware.core.model.graph;
 
 import com.google.inject.Inject;
+import com.mware.core.bootstrap.InjectHelper;
 import com.mware.core.config.Configuration;
 import com.mware.core.exception.BcException;
 import com.mware.core.exception.BcResourceNotFoundException;
@@ -50,6 +51,7 @@ import com.mware.core.model.termMention.TermMentionRepository;
 import com.mware.core.model.workQueue.Priority;
 import com.mware.core.model.workQueue.WebQueueRepository;
 import com.mware.core.model.workQueue.WorkQueueRepository;
+import com.mware.core.model.workspace.WorkspaceRepository;
 import com.mware.core.security.BcVisibility;
 import com.mware.core.security.VisibilityTranslator;
 import com.mware.core.user.User;
@@ -73,8 +75,6 @@ public class GraphRepository {
     private final TermMentionRepository termMentionRepository;
     private final WorkQueueRepository workQueueRepository;
     private final WebQueueRepository webQueueRepository;
-    private final Boolean autoPublish;
-    public static final String WORKSPACE_AUTO_PUBLISH_KEY = "workspace.autopublish";
 
     @Inject
     public GraphRepository(
@@ -90,7 +90,6 @@ public class GraphRepository {
         this.termMentionRepository = termMentionRepository;
         this.workQueueRepository = workQueueRepository;
         this.webQueueRepository = webQueueRepository;
-        this.autoPublish = configuration.getBoolean(WORKSPACE_AUTO_PUBLISH_KEY, false);
     }
 
     public void verifyVersion() {
@@ -235,7 +234,9 @@ public class GraphRepository {
             User user,
             Authorizations authorizations
     ) {
-        if (autoPublish) {
+        WorkspaceRepository workspaceRepository = InjectHelper.getInstance(WorkspaceRepository.class);
+        boolean workspaceStaging = workspaceRepository.isStagingEnabled(workspaceId, user);
+        if (!workspaceStaging) {
             workspaceId = null;
         }
         Visibility defaultVisibility = visibilityTranslator.getDefaultVisibility();
@@ -350,7 +351,10 @@ public class GraphRepository {
             User user,
             Authorizations authorizations
     ) {
-        if (autoPublish) {
+        WorkspaceRepository workspaceRepository = InjectHelper.getInstance(WorkspaceRepository.class);
+        boolean workspaceStaging = workspaceRepository.isStagingEnabled(workspaceId, user);
+
+        if (!workspaceStaging) {
             workspaceId = null;
         }
         VisibilityJson visibilityJson = VisibilityJson.updateVisibilitySourceAndAddWorkspaceId(
@@ -436,7 +440,10 @@ public class GraphRepository {
             User user,
             Authorizations authorizations
     ) {
-        if (autoPublish) {
+        WorkspaceRepository workspaceRepository = InjectHelper.getInstance(WorkspaceRepository.class);
+        boolean workspaceStaging = workspaceRepository.isStagingEnabled(workspaceId, user);
+
+        if (!workspaceStaging) {
             workspaceId = null;
         }
         VisibilityJson visibilityJson = VisibilityJson.updateVisibilitySourceAndAddWorkspaceId(

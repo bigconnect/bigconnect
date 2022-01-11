@@ -43,6 +43,7 @@ import java.util.List;
 public class ClientApiWorkspace implements ClientApiObject {
     private String workspaceId;
     private String title;
+    private Boolean staging;
     private String createdBy;
     private boolean isSharedToUser;
     private boolean isEditable;
@@ -50,7 +51,6 @@ public class ClientApiWorkspace implements ClientApiObject {
     private List<User> users = new ArrayList<User>();
     private Collection<ClientApiProduct> products;
     private Boolean active;
-
 
     public String getWorkspaceId() {
         return workspaceId;
@@ -66,6 +66,14 @@ public class ClientApiWorkspace implements ClientApiObject {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Boolean getStaging() {
+        return staging;
+    }
+
+    public void setStaging(Boolean staging) {
+        this.staging = staging;
     }
 
     public String getCreatedBy() {

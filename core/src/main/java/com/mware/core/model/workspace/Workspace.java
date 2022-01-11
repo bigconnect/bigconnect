@@ -44,5 +44,7 @@ public interface Workspace extends Serializable {
     String getWorkspaceId();
 
     String getDisplayTitle();
+
+    Boolean getStaging();
 }
 

@@ -128,6 +128,8 @@ public class Configuration {
     public static final String HTTP_GZIP_ENABLED = "http.gzipEnabled";
     public static final String WEB_RESPONSE_HEADER_X_FRAME_OPTIONS = "web.response.header.X-Frame-Options";
 
+    public static final String WORKSPACE_AUTO_PUBLISH = "workspace.autopublish";
+
     private final ConfigurationLoader configurationLoader;
     private PrivilegeRepository privilegeRepository;
     private SchemaRepository schemaRepository;

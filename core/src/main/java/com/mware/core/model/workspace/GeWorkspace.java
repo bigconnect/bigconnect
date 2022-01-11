@@ -44,11 +44,13 @@ import com.mware.ge.Vertex;
 
 public class GeWorkspace implements Workspace {
     private static final long serialVersionUID = -1692706831716776578L;
+    private Boolean staging;
     private String displayTitle;
     private String workspaceId;
     private transient Vertex workspaceVertex;
 
     public GeWorkspace(Vertex workspaceVertex) {
+        this.staging = WorkspaceSchema.STAGING.getPropertyValue(workspaceVertex);
         this.displayTitle = WorkspaceSchema.TITLE.getPropertyValue(workspaceVertex);
         this.workspaceId = workspaceVertex.getId();
         this.workspaceVertex = workspaceVertex;
@@ -64,6 +66,11 @@ public class GeWorkspace implements Workspace {
         return displayTitle;
     }
 
+    @Override
+    public Boolean getStaging() {
+        return staging;
+    }
+
     public Vertex getVertex(Graph graph, boolean includeHidden, Authorizations authorizations) {
         if (this.workspaceVertex == null) {
             this.workspaceVertex = graph.getVertex(getWorkspaceId(), includeHidden ? FetchHints.ALL_INCLUDING_HIDDEN : FetchHints.ALL, authorizations);
@@ -76,6 +83,7 @@ public class GeWorkspace implements Workspace {
         return "GeWorkspace{" +
                 "workspaceId='" + workspaceId + '\'' +
                 ", displayTitle='" + displayTitle + '\'' +
+                ", staging='" + staging + '\'' +
                 '}';
     }
 }

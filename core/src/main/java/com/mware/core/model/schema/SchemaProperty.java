@@ -38,38 +38,33 @@ package com.mware.core.model.schema;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.mware.core.model.properties.types.*;
-import com.mware.core.user.User;
-import com.mware.core.model.clientapi.dto.SandboxStatus;
-import com.mware.ge.type.GeoShape;
-import com.mware.ge.values.storable.*;
-import org.joda.time.DateTime;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import com.mware.ge.Authorizations;
-import com.mware.ge.type.GeoCircle;
-import com.mware.ge.type.GeoHash;
-import com.mware.ge.type.GeoPoint;
 import com.mware.core.exception.BcException;
 import com.mware.core.model.clientapi.dto.ClientApiSchema;
 import com.mware.core.model.clientapi.dto.PropertyType;
+import com.mware.core.model.clientapi.dto.SandboxStatus;
+import com.mware.core.model.properties.types.*;
+import com.mware.core.user.User;
+import com.mware.ge.Authorizations;
+import com.mware.ge.TextIndexHint;
+import com.mware.ge.type.GeoCircle;
+import com.mware.ge.type.GeoHash;
+import com.mware.ge.type.GeoPoint;
+import com.mware.ge.type.GeoShape;
+import com.mware.ge.values.storable.*;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.math.BigDecimal;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import java.util.stream.Collectors;
 
 public abstract class SchemaProperty {
     public static final DateTimeFormatter DATE_FORMAT;
@@ -137,9 +132,9 @@ public abstract class SchemaProperty {
 
     public abstract String[] getIntents();
 
-    public abstract String[] getTextIndexHints();
-
-    public abstract void addTextIndexHints(String textIndexHints, Authorizations authorizations);
+    public abstract TextIndexHint[] getTextIndexHints();
+    public abstract void addTextIndexHint(TextIndexHint textIndexHint, Authorizations authorizations);
+    public abstract void removeTextIndexHint(TextIndexHint textIndexHint, Authorizations authorizations);
 
     public abstract void addIntent(String intent, Authorizations authorizations);
 
@@ -222,7 +217,11 @@ public abstract class SchemaProperty {
                 result.getIntents().addAll(Arrays.asList(getIntents()));
             }
             if (getTextIndexHints() != null) {
-                result.getTextIndexHints().addAll(Arrays.asList(getTextIndexHints()));
+                result.getTextIndexHints().addAll(
+                        Arrays.stream(getTextIndexHints())
+                                .map(TextIndexHint::name)
+                                .collect(Collectors.toList())
+                );
             }
             for (Map.Entry<String, String> additionalProperty : getMetadata().entrySet()) {
                 result.getMetadata().put(additionalProperty.getKey(), additionalProperty.getValue());

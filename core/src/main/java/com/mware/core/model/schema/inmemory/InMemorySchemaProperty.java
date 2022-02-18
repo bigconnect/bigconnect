@@ -43,6 +43,7 @@ import com.mware.core.model.properties.SchemaProperties;
 import com.mware.core.model.schema.SchemaProperty;
 import com.mware.core.user.User;
 import com.mware.ge.Authorizations;
+import com.mware.ge.TextIndexHint;
 import com.mware.ge.values.storable.*;
 
 import java.util.*;
@@ -74,7 +75,7 @@ public class InMemorySchemaProperty extends SchemaProperty {
     private String aggCalendarField;
     private ImmutableList<String> dependentPropertyNames = ImmutableList.of();
     private List<String> intents = new ArrayList<>();
-    private List<String> textIndexHints = new ArrayList<>();
+    private List<TextIndexHint> textIndexHints = new ArrayList<>();
     private Map<String, String> metadata = new HashMap<>();
 
     private List<String> conceptNames = new ArrayList<>();
@@ -212,17 +213,21 @@ public class InMemorySchemaProperty extends SchemaProperty {
     }
 
     @Override
-    public String[] getTextIndexHints() {
-        return this.textIndexHints.toArray(new String[this.textIndexHints.size()]);
+    public TextIndexHint[] getTextIndexHints() {
+        return this.textIndexHints.toArray(new TextIndexHint[this.textIndexHints.size()]);
     }
 
     @Override
-    public void addTextIndexHints(String textIndexHints, Authorizations authorizations) {
-        addTextIndexHints(textIndexHints);
+    public void addTextIndexHint(TextIndexHint textIndexHint, Authorizations authorizations) {
+        addTextIndexHints(textIndexHint);
     }
 
-    public void addTextIndexHints(String textIndexHints) {
-        this.textIndexHints.add(textIndexHints);
+    public void removeTextIndexHint(TextIndexHint textIndexHint, Authorizations authorizations) {
+        this.textIndexHints.remove(textIndexHint);
+    }
+
+    public void addTextIndexHints(TextIndexHint textIndexHint) {
+        this.textIndexHints.add(textIndexHint);
     }
 
     public String getDisplayType() {

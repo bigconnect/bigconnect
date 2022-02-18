@@ -45,6 +45,7 @@ import com.mware.core.user.User;
 import com.mware.core.util.JSONUtil;
 import com.mware.core.util.SandboxStatusUtil;
 import com.mware.ge.*;
+import com.mware.ge.collection.Iterables;
 import com.mware.ge.util.CloseableUtils;
 import com.mware.ge.util.IterableUtils;
 import com.mware.ge.values.storable.Value;
@@ -119,18 +120,21 @@ public class GeSchemaProperty extends SchemaProperty {
     }
 
     @Override
-    public String[] getTextIndexHints() {
-        return IterableUtils.toArray(SchemaProperties.TEXT_INDEX_HINTS.getPropertyValues(vertex), String.class);
+    public TextIndexHint[] getTextIndexHints() {
+        Iterable<String> strTextIndexHints = SchemaProperties.TEXT_INDEX_HINTS.getPropertyValues(vertex);
+        Iterable<TextIndexHint> mapped = Iterables.map(hint -> TextIndexHint.valueOf(hint), strTextIndexHints);
+        return IterableUtils.toArray(mapped, TextIndexHint.class);
     }
 
     @Override
-    public void addTextIndexHints(String textIndexHints, Authorizations authorizations) {
-        SchemaProperties.TEXT_INDEX_HINTS.addPropertyValue(vertex, textIndexHints, textIndexHints, SchemaRepository.VISIBILITY.getVisibility(), authorizations);
+    public void addTextIndexHint(TextIndexHint textIndexHint, Authorizations authorizations) {
+        SchemaProperties.TEXT_INDEX_HINTS.addPropertyValue(vertex, textIndexHint.name(), textIndexHint.name(), SchemaRepository.VISIBILITY.getVisibility(), authorizations);
         getVertex().getGraph().flush();
     }
 
-    public void removeTextIndexHint(String textIndexHint, Authorizations authorizations) {
-        SchemaProperties.TEXT_INDEX_HINTS.removeProperty(vertex, textIndexHint, authorizations);
+    @Override
+    public void removeTextIndexHint(TextIndexHint textIndexHint, Authorizations authorizations) {
+        SchemaProperties.TEXT_INDEX_HINTS.removeProperty(vertex, textIndexHint.name(), authorizations);
         SchemaProperties.TEXT_INDEX_HINTS.removeProperty(vertex, "", authorizations);
         getVertex().getGraph().flush();
     }

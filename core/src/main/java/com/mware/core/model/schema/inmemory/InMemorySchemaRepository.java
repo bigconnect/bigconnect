@@ -53,7 +53,6 @@ import com.mware.ge.Authorizations;
 import com.mware.ge.Graph;
 import com.mware.ge.TextIndexHint;
 import com.mware.ge.util.ConvertingIterable;
-import com.mware.ge.values.storable.Values;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -274,7 +273,7 @@ public class InMemorySchemaRepository extends SchemaRepositoryBase {
         }
         if (textIndexHints != null && textIndexHints.size() > 0) {
             for (TextIndexHint textIndexHint : textIndexHints) {
-                property.addTextIndexHints(textIndexHint.toString());
+                property.addTextIndexHints(textIndexHint);
             }
         }
         property.setPossibleValues(possibleValues);

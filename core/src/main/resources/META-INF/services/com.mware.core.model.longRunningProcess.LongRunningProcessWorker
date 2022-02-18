@@ -2,3 +2,5 @@ com.mware.core.model.longRunningProcess.FindPathLongRunningProcessWorker
 com.mware.core.ping.PingLongRunningProcess
 com.mware.core.model.longRunningProcess.ReindexLongRunningProcessWorker
 com.mware.core.model.longRunningProcess.DeleteElementsLongRunningWorker
+com.mware.core.ingest.structured.StructuredIngestProcessWorker
+com.mware.core.ingest.database.DataSourceImportLongRunningProcess

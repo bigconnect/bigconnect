@@ -1,0 +1,2 @@
+com.mware.core.ingest.structured.spreadsheet.ExcelParser
+com.mware.core.ingest.structured.spreadsheet.CsvParser

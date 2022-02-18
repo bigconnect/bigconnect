@@ -173,7 +173,7 @@ public class DriverTest {
     }
 
     public static Driver getDriver() {
-        URI uri = URI.create("bolt://localhost:10242");
+        URI uri = URI.create("bolt://core-1384056566956822528.cloud.bigconnect.io:10242");
         Driver driver = BigConnect.driver(uri, basic( "admin", "admin"), secureBuilder().build());
         driver.verifyConnectivity();
         return driver;
@@ -181,7 +181,8 @@ public class DriverTest {
 
     public static Config.ConfigBuilder secureBuilder() {
         return Config.builder()
-                .withoutEncryption()
+                .withEncryption()
+                .withConnectionTimeout(5, TimeUnit.SECONDS)
                 .withTrustStrategy(Config.TrustStrategy.trustAllCertificates())
                 .withLogging(slf4j());
     }

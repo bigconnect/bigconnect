@@ -120,6 +120,7 @@ public class GeSchemaProperty extends SchemaProperty {
 
     @Override
     public TextIndexHint[] getTextIndexHints() {
+        System.out.println("#### getTextIndexHints() for "+ getName());
         Iterable<String> strTextIndexHints = SchemaProperties.TEXT_INDEX_HINTS.getPropertyValues(vertex);
         Set<TextIndexHint> textIndexHints = new HashSet<>();
         for (String strTextHint : strTextIndexHints) {

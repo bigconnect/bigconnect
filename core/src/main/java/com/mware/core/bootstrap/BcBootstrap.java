@@ -36,20 +36,20 @@
  */
 package com.mware.core.bootstrap;
 
-import com.google.inject.*;
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
 import com.google.inject.matcher.Matchers;
-import com.google.inject.spi.InjectionListener;
-import com.google.inject.spi.TypeEncounter;
-import com.google.inject.spi.TypeListener;
 import com.mware.core.cache.CacheService;
 import com.mware.core.cache.InMemoryCacheService;
 import com.mware.core.config.Configuration;
 import com.mware.core.email.EmailRepository;
 import com.mware.core.email.NopEmailRepository;
 import com.mware.core.exception.BcException;
+import com.mware.core.ingest.database.DataConnectionRepository;
+import com.mware.core.ingest.database.GeDataConnectionRepository;
 import com.mware.core.lifecycle.LifeSupportService;
-import com.mware.core.lifecycle.Lifecycle;
 import com.mware.core.lifecycle.LifecycleListener;
 import com.mware.core.lifecycle.LifecycleStatus;
 import com.mware.core.model.file.FileSystemRepository;
@@ -61,7 +61,6 @@ import com.mware.core.model.longRunningProcess.LongRunningProcessRepository;
 import com.mware.core.model.regex.GeRegexRepository;
 import com.mware.core.model.regex.RegexRepository;
 import com.mware.core.model.role.AuthorizationRepository;
-import com.mware.core.model.role.AuthorizationRepositoryBase;
 import com.mware.core.model.role.GeAuthorizationRepository;
 import com.mware.core.model.schema.GeSchemaRepository;
 import com.mware.core.model.schema.SchemaRepository;
@@ -233,6 +232,9 @@ public class BcBootstrap extends AbstractModule implements LifecycleListener  {
                 .in(Scopes.SINGLETON);
         bind(SearchRepository.class)
                 .toProvider(BcBootstrap.getConfigurableProvider(configuration, null, GeSearchRepository.class))
+                .in(Scopes.SINGLETON);
+        bind(DataConnectionRepository.class)
+                .toProvider(BcBootstrap.getConfigurableProvider(configuration, null, GeDataConnectionRepository.class))
                 .in(Scopes.SINGLETON);
 
         injectProviders();

@@ -64,7 +64,6 @@ import com.mware.core.user.SystemUser;
 import com.mware.core.user.User;
 import com.mware.core.util.ClientApiConverter;
 import com.mware.ge.*;
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 
 import java.util.stream.Collectors;
@@ -258,7 +257,7 @@ public class GeSearchRepository extends SearchRepository {
                 .collect(Collectors.toList());
     }
 
-    protected Iterable<ClientApiSearch> getGlobalSavedSearches(Authorizations authorizations) {
+    public Iterable<ClientApiSearch> getGlobalSavedSearches(Authorizations authorizations) {
         Vertex globalSavedSearchesRootVertex = getGlobalSavedSearchesRootVertex();
         Iterable<Vertex> globalSearchVertices = globalSavedSearchesRootVertex.getVertices(
                 Direction.OUT,

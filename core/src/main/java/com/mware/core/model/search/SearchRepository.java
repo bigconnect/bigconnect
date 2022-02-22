@@ -41,6 +41,7 @@ import com.mware.core.config.Configuration;
 import com.mware.core.model.clientapi.dto.ClientApiSearch;
 import com.mware.core.model.clientapi.dto.ClientApiSearchListResponse;
 import com.mware.core.user.User;
+import com.mware.ge.Authorizations;
 import org.json.JSONObject;
 
 import java.util.Collection;
@@ -91,4 +92,6 @@ public abstract class SearchRepository {
         }
         return null;
     }
+
+    public abstract Iterable<ClientApiSearch> getGlobalSavedSearches(Authorizations authorizations);
 }

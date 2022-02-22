@@ -98,6 +98,10 @@ public abstract class GeObjectSearchRunnerBase extends SearchRunner {
         String sourceLogicalOperator = getSourceLogicalOperator(searchOptions);
 
         Query query = getQuery(searchOptions, authorizations);
+        String optShardId = searchOptions.getOptionalParameter("shardId", String.class);
+        if (!StringUtils.isEmpty(optShardId)) {
+            query.setShard(optShardId);
+        }
         applyLogicalOperatorsToQuery(query, sourceLogicalOperator);
         applyFiltersToQuery(query, filterJson, user, searchOptions);
         applyConceptTypeFilterToQuery(query, searchOptions);

@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>io.bigconnect</groupId>
-            <artifactId>storage-rocksdb</artifactId>
+            <artifactId>storage-accumulo</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -119,4 +119,17 @@
             </build>
         </profile>
     </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <mainClass>com.mware.bigconnect.BigConnectRunner</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

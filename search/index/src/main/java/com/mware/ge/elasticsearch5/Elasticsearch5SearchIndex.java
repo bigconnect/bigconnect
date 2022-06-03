@@ -99,7 +99,6 @@ import java.net.UnknownHostException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -1560,6 +1559,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public Collection<String> getQueryablePropertyNames(Graph graph, Authorizations authorizations) {
         Set<String> propertyNames = new HashSet<>();
         for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
+            if (propertyDefinition.getTextIndexHints() == null || propertyDefinition.getTextIndexHints().size() == 0)
+                continue;
+
             List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition);
             if (queryableTypeSuffixes.size() == 0) {
                 continue;

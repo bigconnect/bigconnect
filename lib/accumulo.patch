@@ -1,0 +1,27 @@
+Index: core/src/main/java/org/apache/accumulo/core/client/impl/ZookeeperLockChecker.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/core/src/main/java/org/apache/accumulo/core/client/impl/ZookeeperLockChecker.java b/core/src/main/java/org/apache/accumulo/core/client/impl/ZookeeperLockChecker.java
+--- a/core/src/main/java/org/apache/accumulo/core/client/impl/ZookeeperLockChecker.java	(revision 3520d31ba60f5b50a9558bac087b8221d0df7900)
++++ b/core/src/main/java/org/apache/accumulo/core/client/impl/ZookeeperLockChecker.java	(date 1664963012905)
+@@ -16,6 +16,8 @@
+  */
+ package org.apache.accumulo.core.client.impl;
+ 
++import java.math.BigInteger;
++
+ import org.apache.accumulo.core.Constants;
+ import org.apache.accumulo.core.client.Instance;
+ import org.apache.accumulo.core.client.impl.TabletLocatorImpl.TabletServerLockChecker;
+@@ -45,7 +47,8 @@
+   @Override
+   public boolean isLockHeld(String tserver, String session) {
+     try {
+-      return ZooLock.getSessionId(zc, root + "/" + tserver) == Long.parseLong(session, 16);
++      return ZooLock.getSessionId(zc, root + "/" + tserver) == new BigInteger(session, 16)
++          .longValue();
+     } catch (KeeperException e) {
+       throw new RuntimeException(e);
+     } catch (InterruptedException e) {

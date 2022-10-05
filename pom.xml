@@ -87,6 +87,7 @@
 
         <!-- Dependency Versions -->
         <accumulo.version>1.10.0</accumulo.version>
+        <accumulo-core.version>1.10.0-bc</accumulo-core.version>
         <hadoop.version>2.10.1</hadoop.version>
         <zookeeper.version>3.4.14</zookeeper.version>
         <lombok.version>1.18.4</lombok.version>
@@ -602,7 +603,7 @@
             <dependency>
                 <groupId>org.apache.accumulo</groupId>
                 <artifactId>accumulo-core</artifactId>
-                <version>${accumulo.version}</version>
+                <version>${accumulo-core.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.httpcomponents</groupId>
@@ -994,7 +995,6 @@
                                         <exclude>com.google.guava:guava</exclude>
                                     </excludes>
                                 </requireUpperBoundDeps>
-                                <DependencyConvergence />
                             </rules>
                         </configuration>
                     </execution>

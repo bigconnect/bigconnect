@@ -891,7 +891,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
                 for (Relationship relationship : getRelationships(namespace)) {
                     if (relationship.getSourceConceptNames().contains(conceptTypeName) ||
                             relationship.getTargetConceptNames().contains(conceptTypeName)) {
-                        throw new BcException("Unable to delete concept that is used in domain/range of relationship");
+                        throw new BcException("Unable to delete a concept that is used in a relationship");
                     }
                 }
                 Graph graph = getGraph();
@@ -900,7 +900,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
                 addConceptTypeFilterToQuery(query, concept.getName(), false, namespace);
                 query.limit(0);
 
-                QueryResultsIterable resultsIterable = query.search();
+                QueryResultsIterable<String> resultsIterable = query.vertexIds();
                 long results = resultsIterable.getTotalHits();
                 safeClose(resultsIterable);
 
@@ -918,11 +918,11 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
                         internalDeleteProperty(property, namespace);
                     }
                 } else {
-                    throw new BcException("Unable to delete concept that have vertices assigned to it");
+                    throw new BcException("Unable to delete a concept that has vertices assigned to it");
                 }
             }
         } else {
-            throw new BcException("Unable to delete concept that have children");
+            throw new BcException("Unable to delete a concept that has children");
         }
 
         clearCache();
@@ -951,18 +951,18 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
             query.has(propertyName);
             query.limit(0);
 
-            QueryResultsIterable resultsIterable = query.elementIds();
+            QueryResultsIterable<String> resultsIterable = query.elementIds();
             long results = resultsIterable.getTotalHits();
             safeClose(resultsIterable);
 
-            resultsIterable = query.extendedDataRowIds();
-            results += resultsIterable.getTotalHits();
-            safeClose(resultsIterable);
+            QueryResultsIterable<ExtendedDataRowId> resultsIterable2 = query.extendedDataRowIds();
+            results += resultsIterable2.getTotalHits();
+            safeClose(resultsIterable2);
 
             if (results == 0) {
                 internalDeleteProperty(property, namespace);
             } else {
-                throw new BcException("Unable to delete property that have elements using it");
+                throw new BcException("Unable to delete a property that has elements using it");
             }
         } else throw new BcResourceNotFoundException("Property not found");
 
@@ -981,7 +981,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
                 addEdgeLabelFilterToQuery(query, relationshipName, false, namespace);
                 query.limit(0);
 
-                QueryResultsIterable resultsIterable = query.search();
+                QueryResultsIterable<String> resultsIterable = query.edgeIds();
                 long results = resultsIterable.getTotalHits();
                 safeClose(resultsIterable);
 
@@ -998,7 +998,7 @@ public abstract class SchemaRepositoryBase implements SchemaRepository {
                         internalDeleteProperty(property, namespace);
                     }
                 } else {
-                    throw new BcException("Unable to delete relationship that have edges using it");
+                    throw new BcException("Unable to delete a relationship that has edges using it");
                 }
             }
         } else throw new BcException("Unable to delete relationship that have children");

@@ -415,7 +415,7 @@ public abstract class WorkspaceRepository {
     }
 
     public boolean isStagingEnabled(Workspace workspace) {
-        return workspace.getStaging() == null ? isGlobalStagingEnabled() : workspace.getStaging();
+        return workspace == null || workspace.getStaging() == null ? isGlobalStagingEnabled() : workspace.getStaging();
     }
 
     public boolean isGlobalStagingEnabled() {

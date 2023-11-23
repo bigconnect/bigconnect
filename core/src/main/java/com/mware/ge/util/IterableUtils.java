@@ -215,11 +215,11 @@ public class IterableUtils {
 
         T result = i.next();
 
-        if (i.hasNext()) {
-            T nextValue = i.next();
-            closeQuietly(i, it);
-            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
-        }
+//        if (i.hasNext()) {
+//            T nextValue = i.next();
+//            closeQuietly(i, it);
+//            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
+//        }
 
         closeQuietly(i, it);
         return result;
@@ -233,11 +233,11 @@ public class IterableUtils {
 
         T result = it.next();
 
-        if (it.hasNext()) {
-            T nextValue = it.next();
-            closeQuietly(it, it);
-            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
-        }
+//        if (it.hasNext()) {
+//            T nextValue = it.next();
+//            closeQuietly(it, it);
+//            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
+//        }
 
         closeQuietly(it);
         return result;

@@ -44,7 +44,6 @@ import com.mware.core.model.user.UserRepository;
 import com.mware.core.ping.PingSchema;
 import com.mware.ge.TextIndexHint;
 import com.mware.ge.values.storable.BooleanValue;
-import com.mware.ge.values.storable.Values;
 
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -55,13 +54,9 @@ public class DefaultSchemaCreator {
     private Concept thingConcept;
     private Relationship topObjectProperty;
     private Concept userConcept;
-    private SchemaRepository schemaRepository;
-    private boolean simple;
-    private SchemaFactory schemaFactory;
-
-    public DefaultSchemaCreator(SchemaRepository schemaRepository) {
-        this(schemaRepository, false);
-    }
+    private final SchemaRepository schemaRepository;
+    private final boolean simple;
+    private final SchemaFactory schemaFactory;
 
     public DefaultSchemaCreator(SchemaRepository schemaRepository, boolean simple) {
         this.schemaRepository = schemaRepository;
@@ -92,6 +87,7 @@ public class DefaultSchemaCreator {
         createSpongeOntology();
         createNerOntology();
         createFaceRecognitionOntology();
+        createSocialCrawlingOntology();
     }
 
     public void createBaseOntology() {
@@ -1237,6 +1233,207 @@ public class DefaultSchemaCreator {
                     put("zh", "Chinese (Simplified)");
                     put("zh-Hant", "Chinese (Traditional)");
                 }})
+                .save();
+    }
+
+    private void createSocialCrawlingOntology() {
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_FACEBOOK_POST)
+                .displayName("Facebook Post")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_FACEBOOK_COMMENT)
+                .displayName("Facebook Comment")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_FACEBOOK_USER)
+                .displayName("Facebook User")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_INSTAGRAM_POST)
+                .displayName("Instagram Post")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_INSTAGRAM_COMMENT)
+                .displayName("Instagram Comment")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_INSTAGRAM_USER)
+                .displayName("Instagram User")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_TIKTOK_USER)
+                .displayName("TikTok User")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_TIKTOK_VIDEO)
+                .displayName("TikTok Video")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_TWITTER_POST)
+                .displayName("Twitter Post")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_TWITTER_COMMENT)
+                .displayName("Twitter Comment")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_TWITTER_USER)
+                .displayName("Twitter User")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_WEB_ARTICLE)
+                .displayName("Web Article")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_YOUTUBE_VIDEO)
+                .displayName("YouTube Video")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConcept()
+                .conceptType(SchemaConstants.CONCEPT_TYPE_YOUTUBE_CHANNEL)
+                .displayName("YouTube Channel")
+                .parent(thingConcept)
+                .property(SchemaProperties.USER_VISIBLE.getPropertyName(), BooleanValue.TRUE)
+                .property(SchemaProperties.DISPLAY_TYPE.getPropertyName(), stringValue(SchemaConstants.DISPLAY_TYPE_DOCUMENT))
+                .glyphIcon("socialcomment.png")
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.PAGE_URL.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayType(SchemaConstants.CUSTOM_DISPLAY_LINK)
+                .displayName("Page URL")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.LOCATION.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("Location")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.SERP_PROJECT.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("SERP Project")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.SERP_LOCATION.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("SERP Location")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.SERP_KEYWORD.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("SERP Keyword")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.SERP_CATEGORY.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("SERP Category")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.SERP_BUCKET.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("SERP Bucket")
+                .userVisible(true)
+                .type(PropertyType.STRING)
+                .save();
+
+        schemaFactory.newConceptProperty()
+                .concepts(thingConcept)
+                .name(RawObjectSchema.IS_SERP_AD.getPropertyName())
+                .textIndexHints(TextIndexHint.NONE)
+                .displayName("Is SERP Ad")
+                .userVisible(true)
+                .type(PropertyType.STRING)
                 .save();
     }
 

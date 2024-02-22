@@ -50,6 +50,21 @@ public interface SchemaConstants {
     String CONCEPT_TYPE_SOCIAL_COMMENT = "socialComment";
     String CONCEPT_TYPE_ORGANIZATION = "organization";
 
+    String CONCEPT_TYPE_FACEBOOK_POST = "fbPost";
+    String CONCEPT_TYPE_FACEBOOK_COMMENT = "fbComment";
+    String CONCEPT_TYPE_FACEBOOK_USER = "fbUser";
+    String CONCEPT_TYPE_INSTAGRAM_POST = "instagramPost";
+    String CONCEPT_TYPE_INSTAGRAM_COMMENT = "instagramComment";
+    String CONCEPT_TYPE_INSTAGRAM_USER = "instagramUser";
+    String CONCEPT_TYPE_TIKTOK_USER = "ttUser";
+    String CONCEPT_TYPE_TIKTOK_VIDEO = "ttVideo";
+    String CONCEPT_TYPE_TWITTER_POST = "twitterPost";
+    String CONCEPT_TYPE_TWITTER_COMMENT = "twitterComment";
+    String CONCEPT_TYPE_TWITTER_USER = "twitterUser";
+    String CONCEPT_TYPE_WEB_ARTICLE = "webArticle";
+    String CONCEPT_TYPE_YOUTUBE_VIDEO = "youtubeVideo";
+    String CONCEPT_TYPE_YOUTUBE_CHANNEL = "youtubeChannel";
+
     String EDGE_LABEL_HAS_SOURCE = "hasSource";
     String EDGE_LABEL_HAS_ENTITY = "hasEntity";
     String EDGE_LABEL_RAW_CONTAINS_IMAGE_OF_ENTITY = "rawContainsImageOfEntity";
@@ -94,5 +109,4 @@ public interface SchemaConstants {
     String DISPLAY_TYPE_IMAGE = "image";
     String DISPLAY_TYPE_VIDEO = "video";
     String DISPLAY_TYPE_DOCUMENT = "document";
-
 }

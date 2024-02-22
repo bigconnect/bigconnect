@@ -76,4 +76,12 @@ public class RawObjectSchema {
     public static final StringSingleValueBcProperty ORIGINAL_AUTHOR_ID = new StringSingleValueBcProperty("socialOrigAuthorId");
     public static final StringBcProperty LINKS = new StringBcProperty("links");
     public static final StringBcProperty HASHTAGS = new StringBcProperty("hashtags");
+    public static final StringSingleValueBcProperty PAGE_URL = new StringSingleValueBcProperty("page_url");
+    public static final StringSingleValueBcProperty LOCATION = new StringSingleValueBcProperty("location");
+    public static final StringSingleValueBcProperty SERP_PROJECT = new StringSingleValueBcProperty("serpProject");
+    public static final StringSingleValueBcProperty SERP_LOCATION = new StringSingleValueBcProperty("serpLocation");
+    public static final StringSingleValueBcProperty SERP_KEYWORD = new StringSingleValueBcProperty("serpKeyword");
+    public static final StringSingleValueBcProperty SERP_CATEGORY = new StringSingleValueBcProperty("serpCategory");
+    public static final StringSingleValueBcProperty SERP_BUCKET = new StringSingleValueBcProperty("serpBucket");
+    public static final StringSingleValueBcProperty IS_SERP_AD = new StringSingleValueBcProperty("is_serp_ad");
 }

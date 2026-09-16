@@ -125,7 +125,6 @@ public class GeCypherQueryContext {
     private Schema schema;
     private Map<String, SchemaProperty> propertiesByName = new HashMap<>();
     private final int esShards;
-    private final ExecutorService executor;
 
     private final Map<String, ElementMutation<? extends Element>> elementBuilders = new HashMap<>();
     private final List<ElementId> deletedElements = new ArrayList<>();
@@ -162,7 +161,6 @@ public class GeCypherQueryContext {
         this.schema = schemaRepository.getOntology(workspaceId);
         this.propertiesByName.putAll(this.schema.getPropertiesByName());
         this.esShards = graph.getSearchIndex().getNumShards();
-        this.executor = Executors.newFixedThreadPool(QUERY_THREADPOOL_SIZE);
     }
 
     public GraphWithSearchIndex getGraph() {
@@ -729,31 +727,38 @@ public class GeCypherQueryContext {
         final List<Future<List<NodeValue>>> futures = new ArrayList<>();
         final List<NodeValue> result = new ArrayList<>();
 
-        for (int i = 0; i < esShards; i++) {
-            final int shard = i;
-            futures.add(
-                    executor.submit(() -> {
-                        try (QueryResultsIterable<String> ids = graph.query(authorizations)
-                                .hasConceptType(conceptType)
-                                .setShard(String.valueOf(shard))
-                                .vertexIds()) {
+        // one pool per call, shut down when the shards are read: a pool kept on the query context was never closed,
+        // so every query left its threads running
+        final ExecutorService executor = Executors.newFixedThreadPool(Math.max(1, Math.min(esShards, QUERY_THREADPOOL_SIZE)));
+        try {
+            for (int i = 0; i < esShards; i++) {
+                final int shard = i;
+                futures.add(
+                        executor.submit(() -> {
+                            try (QueryResultsIterable<String> ids = graph.query(authorizations)
+                                    .hasConceptType(conceptType)
+                                    .setShard(String.valueOf(shard))
+                                    .vertexIds()) {
 
-                            final Iterable<NodeValue> vertices = getVertices(IterableUtils.toList(ids));
-                            return IterableUtils.toList(vertices);
-                        } catch (IOException ex) {
-                            throw new GeException("Could not load Accumulo elements", ex);
-                        }
-                    })
-            );
-        }
-
-        futures.forEach(f -> {
-            try {
-                result.addAll(f.get());
-            } catch (InterruptedException | ExecutionException ex) {
-                throw new GeException("Interrupted while loading data", ex);
+                                final Iterable<NodeValue> vertices = getVertices(IterableUtils.toList(ids));
+                                return IterableUtils.toList(vertices);
+                            } catch (IOException ex) {
+                                throw new GeException("Could not load Accumulo elements", ex);
+                            }
+                        })
+                );
             }
-        });
+
+            futures.forEach(f -> {
+                try {
+                    result.addAll(f.get());
+                } catch (InterruptedException | ExecutionException ex) {
+                    throw new GeException("Interrupted while loading data", ex);
+                }
+            });
+        } finally {
+            executor.shutdownNow();
+        }
 
         elementBuilders.values().forEach(m -> {
             if (m instanceof VertexMutation) {
